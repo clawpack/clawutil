@@ -41,6 +41,8 @@ class Data(object):
             for attr in attributes:
                 self.__setattr__(attr,None)
 
+    def add_attribute(self, name, value=None, add_to_list=True):
+        setattr(self,name,value)
 
 # ========================
 class ClawData(object):
@@ -900,7 +902,7 @@ class UserData(ClawData):
          make_userdatafile(self)
 
 
-class GeoclawInputData(ClawData):
+class GeoclawInputData(Data):
     r"""
     Object that will be written out to the various GeoClaw data files.
     """
