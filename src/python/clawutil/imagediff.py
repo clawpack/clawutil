@@ -65,6 +65,9 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
     
     if dir1[-1] == '/': dir1 = dir1[:-1]
     if dir2[-1] == '/': dir2 = dir2[:-1]
+    dir1 = os.path.abspath(dir1)
+    dir2 = os.path.abspath(dir2)
+    
     
     files1 = glob.glob("%s/*%s" % (dir1,ext))    
     files1 = [f.replace(dir1+'/','') for f in files1]
@@ -90,8 +93,7 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
         os.system('mkdir -p %s' % dir3)
     startdir = os.getcwd()
 
-    dir1 = '../' + dir1
-    dir2 = '../' + dir2
+
     
     
     os.chdir(dir3)
