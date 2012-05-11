@@ -4,15 +4,20 @@ Module to diff two images or directories full of images.
 
 Can by used from the command line via:
    python imagediff.py file1 file2
-   python imagediff.py dir1 dir2
-Assumes dir1 and dir2 are subdirectories of working directory.
+   python imagediff.py dir1 dir2 [dir3]
+In the latter case dir1 and dir2 are any two directories and all
+images will be compared.  The optional dir3 argument gives the directory
+for the resulting diff's and html files.  Default is '_image_diff'.
 
 Command line flags include:
     -v, --verbose = Verbose output   
+    -r, --relocatable = Copy original image files to dir3 also
     -h, --help = Display this help
 """
 
-import os, sys, getopt
+help_message = __doc__
+
+import os, sys, getopt, shutil
 
 def imagediff_file(fname1, fname2, verbose):
     
@@ -59,7 +64,7 @@ def make_imagediff(fname1,fname2,fname3='', verbose=False):
     
     
 def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
-                  overwrite=False, verbose=False):
+                  relocatable=False, overwrite=False, verbose=False):
     
     import filecmp,glob
     
@@ -82,7 +87,7 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
     
     print "Comparing files in the  directory: ", dir1
     print "               with the directory: ", dir2
-    
+
     if os.path.isdir(dir3):
         if (len(os.listdir(dir3)) > 0)  and (not overwrite):
             ans = raw_input("Ok to overwrite files in %s ?  " % dir3)
@@ -110,6 +115,24 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
             """ % (dir1,dir2,ext))
             
     f_equal, f_diff, f_other = filecmp.cmpfiles(dir1,dir2,files,False)
+
+    if relocatable:
+        # copy files from dir1 and dir2 into dir3 so the whole thing can
+        # be moved elsewhere, e.g. to post on web for discussion of a bug.
+        dir1copy = 'dir1'
+        dir2copy = 'dir2'
+        os.system('mkdir %s' % dir1copy)
+        os.system('mkdir %s' % dir2copy)
+        for f in files:
+            shutil.copy(os.path.join(dir1,f),dir1copy)
+            shutil.copy(os.path.join(dir2,f),dir2copy)
+            fhtml = os.path.splitext(f)[0] + '.html'  ## Specific to Clawpack _plots
+            if not os.path.isfile(os.path.join(dir1,fhtml)): fhtml = f
+            shutil.copy(os.path.join(dir1,fhtml),dir1copy)
+            shutil.copy(os.path.join(dir2,fhtml),dir2copy)
+        dir1 = 'dir1'
+        dir2 = 'dir2'
+
     
     for f in files:
         fhtml = os.path.splitext(f)[0] + '.html'  ## Specific to Clawpack _plots
@@ -174,31 +197,41 @@ class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
 
+
 if __name__ == "__main__":    
     # Parse input arguments
     argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hv",["help","verbose"])
+            opts, args = getopt.getopt(argv[1:], "hv",["help","verbose","relocatable"])
         except getopt.error, msg:
             raise Usage(msg)
 
         # Default script parameter values
         verbose = False
+        relocatable = False
 
         # option processing
         for option, value in opts:
             # Script parameters
             if option in ("-v","--verbose"):
                  verbose = True
+            if option in ("-r","--relocatable"):
+                 relocatable = True
             if option in ("-h","--help"):
                 raise Usage(help_message)
 
+        #import pdb; pdb.set_trace()
         # Run diff
         if os.path.isfile(args[0]) and os.path.isfile(args[1]):
             sys.exit(imagediff_file(args[0],args[1],verbose=verbose))
         elif os.path.isdir(args[0]) and os.path.isdir(args[1]):
-            sys.exit(imagediff_dir(args[0],args[1],verbose=verbose))
+            if len(args)==3:
+                sys.exit(imagediff_dir(args[0],args[1],args[2],verbose=verbose,\
+                     relocatable=relocatable))
+            else:
+                sys.exit(imagediff_dir(args[0],args[1],verbose=verbose,\
+                     relocatable=relocatable))
         else:
               raise Usage("Both paths must either be files or directories.")
         
