@@ -346,7 +346,7 @@ def open_datafile(name, datasource='setrun.py'):
     return file
 
 
-def data_write(file, dataobj, name=None, descr=''):
+def data_write_old(file, dataobj, name=None, descr=''):
     r"""
     Write out value to data file, in the form ::
 
@@ -386,6 +386,43 @@ def data_write(file, dataobj, name=None, descr=''):
         padded_name = string.ljust(name, 12)
         file.write('%s =: %s %s\n' % (padded_value, padded_name, descr))
 
+def data_write(file, value, name=None, description=''):
+    r"""
+    Write out value to data file, in the form ::
+
+       value    # name  [description]
+
+    Remove brackets and commas from lists, and replace booleans by T/F.
+
+    :Input:
+     - *name* - (string) normally a string defining the variable,
+       ``if name==None``, write a blank line.
+     - *description* - (string) optional description
+    """
+
+    import string
+    from numpy import ndarray
+    if name is None:
+        file.write('\n')
+    else:
+        # Convert value to an appropriate string repr
+        if isinstance(value,ndarray):
+            value = list(value)
+        if isinstance(value,tuple) | isinstance(value,list):
+            # Remove [], (), and ','
+            string_value = repr(value)[1:-1]
+            string_value = string_value.replace(',','')
+        elif isinstance(value,bool):
+            if value:
+                string_value = 'T'
+            else:
+                string_value = 'F'
+        else:
+            string_value = repr(value)
+        padded_value = string.ljust(string_value, 40)
+        #padded_name = string.ljust(name, 12)
+        file.write('%s # %s  %s\n' % (padded_value, name, description))
+
 
 def make_clawdatafile(clawdata):
     r"""
@@ -406,29 +443,29 @@ def write_clawdata_noamr(clawdata, file):
     Write out the Clawpack parameters that are used both for Classic and AMR.
     """
     
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     num_dim = clawdata.num_dim
-    data_write(file, clawdata, 'num_dim')
-    data_write(file, clawdata, 'lower[0]')
-    if num_dim > 1:
-        data_write(file, clawdata, 'lower[1]')
-    if num_dim == 3:
-        data_write(file, clawdata, 'lower[2]')
+    data_write(file, clawdata.num_dim, 'num_dim')
+    data_write(file, clawdata.lower, 'lower')
+    data_write(file, clawdata.upper, 'upper')
+    data_write(file, clawdata.num_cells, 'num_cells')
     data_write(file, clawdata, None)  # writes blank line
-    data_write(file, clawdata, 'num_eqn')
-    data_write(file, clawdata, 'num_waves')
-    data_write(file, clawdata, 'num_aux')
+    data_write(file, clawdata.num_eqn, 'num_eqn')
+    data_write(file, clawdata.num_waves, 'num_waves')
+    data_write(file, clawdata.num_aux, 'num_aux')
     data_write(file, clawdata, None)  # writes blank line
 
-    clawdata._num_output_times = len(clawdata.output_times)
-    data_write(file, clawdata, 'num_output_times')
-    if clawdata._num_output_times > 0:
-        data_write(file, clawdata, 'output_times')
+    data_write(file, clawdata.t0, 't0')
+    data_write(file, clawdata, None)
+    num_output_times = len(clawdata.output_times)
+    data_write(file, num_output_times, 'num_output_times')
+    if num_output_times > 0:
+        data_write(file, clawdata.output_times, 'output_times')
 
-    clawdata._num_output_steps = len(clawdata.output_steps)
-    data_write(file, clawdata, 'num_output_steps')
-    if clawdata._num_output_steps > 0:
-        data_write(file, clawdata, 'output_steps')
+    num_output_steps = len(clawdata.output_steps)
+    data_write(file, num_output_steps, 'num_output_steps')
+    if num_output_steps > 0:
+        data_write(file, clawdata.output_steps, 'output_steps')
 
     data_write(file, clawdata, None)
     if clawdata.output_format in [1,'ascii']:
@@ -439,14 +476,14 @@ def write_clawdata_noamr(clawdata, file):
         raise ValueError("*** Error in data parameter: " + \
               "output_format unrecognized: ",clawdata.output_format)
         
-    data_write(file, clawdata, 'output_format')
+    data_write(file, clawdata.output_format, 'output_format')
 
     clawdata._iout_q = clawdata.num_eqn * [1]
     if clawdata.output_q_components != 'all':
         for i in range(clawdata.num_eqn):
             if i+1 not in clawdata.output_q_components:
                 clawdata._iout_q[i] = 0
-    data_write(file, clawdata, '_iout_q')
+    data_write(file, clawdata._iout_q, '_iout_q')
 
     if clawdata.num_aux > 0:
         clawdata._iout_aux = clawdata.num_aux * [1]
@@ -454,91 +491,98 @@ def write_clawdata_noamr(clawdata, file):
             for i in range(clawdata.num_aux):
                 if i+1 not in clawdata.output_aux_components:
                     clawdata._iout_aux[i] = 0
-        data_write(file, clawdata, '_iout_aux')
-        data_write(file, clawdata, 'output_aux_onlyonce')
+        data_write(file, clawdata._iout_aux, '_iout_aux')
+        data_write(file, clawdata.output_aux_onlyonce, 'output_aux_onlyonce')
 
     data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_initial')
-    data_write(file, clawdata, 'dt_max')
-    data_write(file, clawdata, 'cfl_max')
-    data_write(file, clawdata, 'cfl_desired')
-    data_write(file, clawdata, 'steps_max')
+    data_write(file, clawdata.dt_initial, 'dt_initial')
+    data_write(file, clawdata.dt_max, 'dt_max')
+    data_write(file, clawdata.cfl_max, 'cfl_max')
+    data_write(file, clawdata.cfl_desired, 'cfl_desired')
+    data_write(file, clawdata.steps_max, 'steps_max')
     data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_variable')
-    data_write(file, clawdata, 'order')
+    data_write(file, clawdata.dt_variable, 'dt_variable')
+    data_write(file, clawdata.order, 'order')
     if num_dim == 1:
         pass
     else:
-        if clawdata.transverse_waves == 'none':  
+        if clawdata.transverse_waves in [0,'none']:  
             clawdata.transverse_waves = 0
-        elif clawdata.transverse_waves == 'increment':  
+        elif clawdata.transverse_waves in [1,'increment']:  
             clawdata.transverse_waves = 1
-        elif clawdata.transverse_waves == 'all':  
+        elif clawdata.transverse_waves in [2,'all']:  
             clawdata.transverse_waves = 2
         else:
             raise AttributeError("Unrecognized transverse_waves: %s" \
                   % clawdata.transverse_waves)
-        data_write(file, clawdata, 'transverse_waves')
+        data_write(file, clawdata.transverse_waves, 'transverse_waves')
 
-        if clawdata.dimensional_split == 'unsplit':  
+        if clawdata.dimensional_split in [0,'unsplit']:  
             clawdata.dimensional_split = 0
-        elif clawdata.dimensional_split == 'godunov':  
+        elif clawdata.dimensional_split in [1,'godunov']:  
             clawdata.dimensional_split = 1
-        elif clawdata.dimensional_split == 'strang':  
+        elif clawdata.dimensional_split in [2,'strang']:  
             clawdata.dimensional_split = 2
         else:
             raise AttributeError("Unrecognized dimensional_split: %s" \
                   % clawdata.dimensional_split)
-        data_write(file, clawdata, 'dimensional_split')
+        data_write(file, clawdata.dimensional_split, 'dimensional_split')
         
-    data_write(file, clawdata, 'verbosity')
-    data_write(file, clawdata, 'source_split')
-    data_write(file, clawdata, 'capa_index')
-    data_write(file, clawdata, 'fwave')
+    data_write(file, clawdata.verbosity, 'verbosity')
+
+    if clawdata.source_split in [0,'none']:  
+        clawdata.source_split = 0
+    elif clawdata.source_split in [1,'godunov']:  
+        clawdata.source_split = 1
+    elif clawdata.source_split in [2,'strang']:  
+        clawdata.source_split = 2
+    else:
+        raise AttributeError("Unrecognized source_split: %s" \
+              % clawdata.source_split)
+    data_write(file, clawdata.source_split, 'source_split')
+
+    data_write(file, clawdata.capa_index, 'capa_index')
+    data_write(file, clawdata.fwave, 'fwave')
     data_write(file, clawdata, None)
 
-    for i in range(len(limiter)):
-        if clawdata.limiter[i] == 'none':        clawdata.limiter[i] = 0
-        elif clawdata.limiter[i] == 'minmod':    clawdata.limiter[i] = 1
-        elif clawdata.limiter[i] == 'superbee':  clawdata.limiter[i] = 2
-        elif clawdata.limiter[i] == 'mc':        clawdata.limiter[i] = 3
-        elif clawdata.limiter[i] == 'vanleer':   clawdata.limiter[i] = 4
+    for i in range(len(clawdata.limiter)):
+        if clawdata.limiter[i] in [0,'none']:        clawdata.limiter[i] = 0
+        elif clawdata.limiter[i] in [1,'minmod']:    clawdata.limiter[i] = 1
+        elif clawdata.limiter[i] in [2,'superbee']:  clawdata.limiter[i] = 2
+        elif clawdata.limiter[i] in [3,'mc']:        clawdata.limiter[i] = 3
+        elif clawdata.limiter[i] in [4,'vanleer']:   clawdata.limiter[i] = 4
         else:
             raise AttributeError("Unrecognized limiter: %s" \
                   % clawdata.limiter[i])
-    data_write(file, clawdata, 'limiter')
+    data_write(file, clawdata.limiter, 'limiter')
 
     data_write(file, clawdata, None)
 
-    data_write(file, clawdata, 't0')
-    data_write(file, clawdata, 'lower')
-    data_write(file, clawdata, 'upper')
-    data_write(file, clawdata, None)
 
-    data_write(file, clawdata, 'num_ghost')
+    data_write(file, clawdata.num_ghost, 'num_ghost')
     for i in range(num_dim):
-        if clawdata.bc_lower[i] == 'user':       clawdata.bc_lower[i] = 0
-        elif clawdata.bc_lower[i] == 'extrap':   clawdata.bc_lower[i] = 1
-        elif clawdata.bc_lower[i] == 'periodic': clawdata.bc_lower[i] = 2
-        elif clawdata.bc_lower[i] == 'wall':     clawdata.bc_lower[i] = 3
+        if clawdata.bc_lower[i] in [0,'user']:       clawdata.bc_lower[i] = 0
+        elif clawdata.bc_lower[i] in [1,'extrap']:   clawdata.bc_lower[i] = 1
+        elif clawdata.bc_lower[i] in [2,'periodic']: clawdata.bc_lower[i] = 2
+        elif clawdata.bc_lower[i] in [3,'wall']:     clawdata.bc_lower[i] = 3
         else:
             raise AttributeError("Unrecognized bc_lower: %s" \
                   % clawdata.bc_lower[i])
-    data_write(file, clawdata, 'bc_lower')
+    data_write(file, clawdata.bc_lower, 'bc_lower')
 
     for i in range(num_dim):
-        if clawdata.bc_upper[i] == 'user':       clawdata.bc_upper[i] = 0
-        elif clawdata.bc_upper[i] == 'extrap':   clawdata.bc_upper[i] = 1
-        elif clawdata.bc_upper[i] == 'periodic': clawdata.bc_upper[i] = 2
-        elif clawdata.bc_upper[i] == 'wall':     clawdata.bc_upper[i] = 3
+        if clawdata.bc_upper[i] in [0,'user']:       clawdata.bc_upper[i] = 0
+        elif clawdata.bc_upper[i] in [1,'extrap']:   clawdata.bc_upper[i] = 1
+        elif clawdata.bc_upper[i] in [2,'periodic']: clawdata.bc_upper[i] = 2
+        elif clawdata.bc_upper[i] in [3,'wall']:     clawdata.bc_upper[i] = 3
         else:
             raise AttributeError("Unrecognized bc_upper: %s" \
                   % clawdata.bc_upper[i])
-    data_write(file, clawdata, 'bc_upper')
+    data_write(file, clawdata.bc_upper, 'bc_upper')
 
     data_write(file, clawdata, None)
-    data_write(file, clawdata, 'restart')
-    data_write(file, clawdata, 'restart_frame')
+    data_write(file, clawdata.restart, 'restart')
+    data_write(file, clawdata.restart_frame, 'restart_frame')
     data_write(file, clawdata, None)
 
 
@@ -562,7 +606,8 @@ def write_clawdata_amr(clawdata, file):
     Write the input parameters only used by AMRClaw.
     """
 
-    data_write(file, clawdata, 'amr_levels_max')
+    num_dim = clawdata.num_dim
+    data_write(file, clawdata.amr_levels_max, 'amr_levels_max')
 
     num_ratios = max(abs(clawdata.amr_levels_max)-1, 1)
     if len(clawdata.refinement_ratio_x) < num_ratios:
@@ -571,43 +616,43 @@ def write_clawdata_amr(clawdata, file):
     if len(clawdata.refinement_ratio_y) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
               "require len(refinement_ratio_y) >= %s " % num_ratios)
-    data_write(file, clawdata, 'refinement_ratio_x')
-    data_write(file, clawdata, 'refinement_ratio_y')
+    data_write(file, clawdata.refinement_ratio_x, 'refinement_ratio_x')
+    data_write(file, clawdata.refinement_ratio_y, 'refinement_ratio_y')
     if num_dim == 3:
         if len(clawdata.refinement_ratio_z) < num_ratios:
                 raise ValueError("*** Error in data parameter: " + \
                   "require len(refinement_ratio_z) >= %s " % num_ratios)
-        data_write(file, clawdata, 'refinement_ratio_z')
+        data_write(file, clawdata.refinement_ratio_z, 'refinement_ratio_z')
     if len(clawdata.refinement_ratio_t) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
               "require len(refinement_ratio_t) >= %s " % num_ratios)
-    data_write(file, clawdata, 'refinement_ratio_t')
+    data_write(file, clawdata.refinement_ratio_t, 'refinement_ratio_t')
 
     data_write(file, clawdata, None)  # writes blank line
 
         
-    data_write(file, clawdata, 'flag_richardson')
-    data_write(file, clawdata, 'flag_richardson_tol')
-    data_write(file, clawdata, 'flag2refine')
-    data_write(file, clawdata, 'flag2refine_tol')
-    data_write(file, clawdata, 'regrid_interval')
-    data_write(file, clawdata, 'regrid_buffer_width')
-    data_write(file, clawdata, 'clustering_cutoff')
-    data_write(file, clawdata, 'verbosity_regrid')
+    data_write(file, clawdata.flag_richardson, 'flag_richardson')
+    data_write(file, clawdata.flag_richardson_tol, 'flag_richardson_tol')
+    data_write(file, clawdata.flag2refine, 'flag2refine')
+    data_write(file, clawdata.flag2refine_tol, 'flag2refine_tol')
+    data_write(file, clawdata.regrid_interval, 'regrid_interval')
+    data_write(file, clawdata.regrid_buffer_width, 'regrid_buffer_width')
+    data_write(file, clawdata.clustering_cutoff, 'clustering_cutoff')
+    data_write(file, clawdata.verbosity_regrid, 'verbosity_regrid')
     data_write(file, clawdata, None)
 
     data_write(file, clawdata, None)
 
-    data_write(file, clawdata, 'dprint')
-    data_write(file, clawdata, 'eprint')
-    data_write(file, clawdata, 'edebug')
-    data_write(file, clawdata, 'gprint')
-    data_write(file, clawdata, 'nprint')
-    data_write(file, clawdata, 'pprint')
-    data_write(file, clawdata, 'rprint')
-    data_write(file, clawdata, 'sprint')
-    data_write(file, clawdata, 'tprint')
-    data_write(file, clawdata, 'uprint')
+    data_write(file, clawdata.dprint, 'dprint')
+    data_write(file, clawdata.eprint, 'eprint')
+    data_write(file, clawdata.edebug, 'edebug')
+    data_write(file, clawdata.gprint, 'gprint')
+    data_write(file, clawdata.nprint, 'nprint')
+    data_write(file, clawdata.pprint, 'pprint')
+    data_write(file, clawdata.rprint, 'rprint')
+    data_write(file, clawdata.sprint, 'sprint')
+    data_write(file, clawdata.tprint, 'tprint')
+    data_write(file, clawdata.uprint, 'uprint')
     data_write(file, clawdata, None)
 
 def regions_and_gauges():
@@ -615,12 +660,12 @@ def regions_and_gauges():
     Placeholder... where to put these?
     """
     clawdata.add_attribute('nregions', len(clawdata.regions))
-    data_write(file, clawdata, 'nregions')
+    data_write(file, clawdata.nregions, 'nregions')
     for regions in clawdata.regions:
         file.write(8*"   %g" % tuple(regions) +"\n")
 
     clawdata.add_attribute('ngauges', len(clawdata.gauges))
-    data_write(file, clawdata, 'ngauges')
+    data_write(file, clawdata.ngauges, 'ngauges')
     gaugeno_used = []
     for gauge in clawdata.gauges:
         gaugeno = gauge[0]
@@ -647,8 +692,8 @@ def make_userdatafile(userdata):
 
     # write all the parameters:
     for param in userdata._attributes:
-        data_write(file, userdata, param, \
-                   userdata.__descr__[param])
+        descr = userdata.__descr__.get(param, '')
+        data_write(file, getattr(userdata,param), param, descr)
 
     file.close()
 
