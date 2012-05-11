@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 r"""
 Data Module
 
@@ -11,16 +9,7 @@ Rewritten for 5.0:
  data classes are now subclasses of ClawData, which checks if attributes
    already exist before setting.
 
-
-:Authors:
-    Kyle T. Mandli and Randall J. LeVeque 
-
 """
-# ============================================================================
-#  Distributed under the terms of the Berkeley Software Distribution (BSD)
-#  license
-#                     http://www.opensource.org/licenses/
-# ============================================================================
 
 import os
 import logging
@@ -197,26 +186,21 @@ class ClawInputData(ClawData):
     r"""
     Object that will be written out to claw.data.
     """
-    def __init__(self, ndim):
+    def __init__(self, num_dim):
         super(ClawInputData,self).__init__()
-        self.add_attribute('ndim',ndim)
 
         # Set default values:
-        self.add_attribute('mx',100)
-        self.add_attribute('meqn',1)
-        self.add_attribute('mwaves',1)
-        self.add_attribute('maux',0)
+        self.add_attribute('num_dim',num_dim)
+        self.add_attribute('num_eqn',1)
+        self.add_attribute('num_waves',1)
+        self.add_attribute('num_aux',0)
         self.add_attribute('output_style',1)
-        self.add_attribute('output_ntimes',1)
-        self.add_attribute('output_times',[1.])
-        self.add_attribute('output_step_interval',10)
-        self.add_attribute('total_steps',5)     
-        self.add_attribute('output_time_interval',1.)
+        self.add_attribute('output_times',[])
+        self.add_attribute('output_steps',[])
         self.add_attribute('output_format',1)
         self.add_attribute('output_q_components','all')
         self.add_attribute('output_aux_components',[])
         self.add_attribute('output_aux_onlyonce',True)
-        self.add_attribute('tfinal',1.0)
         
         self.add_attribute('dt_initial',1.e-5)
         self.add_attribute('dt_max',1.e99)
@@ -225,44 +209,42 @@ class ClawInputData(ClawData):
         self.add_attribute('cfl_max',1.0)
         self.add_attribute('steps_max',50000)
         self.add_attribute('order',2)
-        self.add_attribute('order_trans',0)
+        self.add_attribute('transverse_waves',2)
         self.add_attribute('dimensional_split',0)
         self.add_attribute('verbosity',0)
         self.add_attribute('verbosity_regrid',0)
-        self.add_attribute('src_split',0)
-        self.add_attribute('mcapa',0)
+        self.add_attribute('source_split',0)
+        self.add_attribute('capa_index',0)
         self.add_attribute('limiter',[4])
         self.add_attribute('t0',0.)
-        self.add_attribute('xlower',0.)
-        self.add_attribute('xupper',1.)
         self.add_attribute('num_ghost',2)
-        self.add_attribute('bc_xlower',1)
-        self.add_attribute('bc_xupper',1)
-        self.add_attribute('restart',0)
-        self.add_attribute('restart_frame',0)
         self.add_attribute('fwave',False)
         self.add_attribute('restart',False)
+        self.add_attribute('restart_frame',0)
         self.add_attribute('restart_file','')
         self.add_attribute('regions',[])
         self.add_attribute('gauges',[])
 
-
-        if ndim >= 2:
-            self.add_attribute('my',100)
-            self.add_attribute('ylower',0.)
-            self.add_attribute('yupper',1.)
-            self.add_attribute('bc_ylower',1)
-            self.add_attribute('bc_yupper',1)       
-
-        if ndim == 3:
-            self.add_attribute('mz',100)
-            self.add_attribute('zlower',0.)
-            self.add_attribute('zupper',1.)
-            self.add_attribute('bc_zlower',1)
-            self.add_attribute('bc_zupper',1)       
-
-        if ndim not in [1,2,3]:
-            raise ValueError("Only ndim=1, 2, or 3 supported ")
+        if num_dim == 1:
+            self.add_attribute('lower',[0.])
+            self.add_attribute('upper',[1.])
+            self.add_attribute('num_cells',[100])
+            self.add_attribute('bc_lower',[0])
+            self.add_attribute('bc_upper',[0])
+        elif num_dim == 2:
+            self.add_attribute('lower',[0.,0.])
+            self.add_attribute('upper',[1.,1.])
+            self.add_attribute('num_cells',[100,100])
+            self.add_attribute('bc_lower',[0,0])
+            self.add_attribute('bc_upper',[0,0])
+        elif num_dim == 3:
+            self.add_attribute('lower',[0.,0.,0.])
+            self.add_attribute('upper',[1.,1.,1.])
+            self.add_attribute('num_cells',[100,100,100])
+            self.add_attribute('bc_lower',[0,0,0])
+            self.add_attribute('bc_upper',[0,0,0])
+        else:
+            raise ValueError("Only num_dim=1, 2, or 3 supported ")
 
     def write(self):
         print 'Creating data file claw.data for use with xclaw'
@@ -273,28 +255,34 @@ class AmrclawInputData(ClawInputData):
     r"""
     Object that will be written out to amrclaw.data.
     """
-    def __init__(self, ndim):
+    def __init__(self, num_dim):
 
         # Set default values:
         
         # Some defaults are inherited from ClawInputData:
-        super(AmrclawInputData,self).__init__(ndim)
+        super(AmrclawInputData,self).__init__(num_dim)
         
-        self.add_attribute('amrlevels_max',1)
+        self.add_attribute('amr_levels_max',1)
         self.add_attribute('refinement_ratio_x',[1])
+        self.add_attribute('refinement_ratio_y',[1])
+        if num_dim == 3:
+            self.add_attribute('refinement_ratio_z',[1])
+        if num_dim == 1:
+            raise Exception("*** 1d AMR not yet supported")
+        self.add_attribute('variable_dt_refinement_ratios',False)
+
         self.add_attribute('refinement_ratio_t',[1])
-        self.add_attribute('auxtype',[])
+        self.add_attribute('aux_type',[])
 
         self.add_attribute('checkpt_style',1)
         self.add_attribute('checkpt_interval',1000)
         self.add_attribute('checkpt_time_interval',1000.)
         self.add_attribute('checkpt_times',[1000.])
-        self.add_attribute('checkpt_ntimes',1)
         
         self.add_attribute('flag_richardson',False)
         self.add_attribute('flag_richardson_tol',1.0)
-        self.add_attribute('flag_gradient',True)
-        self.add_attribute('flag_gradient_tol',0.05)
+        self.add_attribute('flag2refine',True)
+        self.add_attribute('flag2refine_tol',0.05)
         self.add_attribute('regrid_interval',2)
         self.add_attribute('regrid_buffer_width',3)
         self.add_attribute('clustering_cutoff',0.7)
@@ -313,8 +301,7 @@ class AmrclawInputData(ClawInputData):
         self.add_attribute('uprint',False)
 
         
-        
-        if ndim == 1:
+        if num_dim == 1:
             
             # attributes needed only because 1d AMR is done using 2d amrclaw:
             self.add_attribute('my',1)
@@ -324,14 +311,6 @@ class AmrclawInputData(ClawInputData):
             self.add_attribute('bc_yupper',1)
             self.add_attribute('refinement_ratio_y',[1,1,1,1,1,1])
 
-        elif ndim >= 2:
-
-            self.add_attribute('refinement_ratio_y',[1])
-
-
-        if ndim not in [1,2]:
-            print '*** Error: only ndim=1 or 2 supported so far ***'
-            raise AttributeError("Only ndim=1 or 2 supported so far")
 
     def write(self):
         print 'Creating data file amrclaw.data for use with xamr'
@@ -418,125 +397,150 @@ def make_clawdatafile(clawdata):
     # open file and write a warning header:
     file = open_datafile('claw.data')
 
-    ndim = clawdata.ndim
-    data_write(file, clawdata, 'ndim', '(number of dimensions)')
-    data_write(file, clawdata, 'mx', '(cells in x direction)')
-    if ndim > 1:
-        data_write(file, clawdata, 'my', '(cells in y direction)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mz', '(cells in z direction)')
+    write_clawdata_noamr(clawdata, file)
+    file.close()
+
+
+def write_clawdata_noamr(clawdata, file):
+    r"""
+    Write out the Clawpack parameters that are used both for Classic and AMR.
+    """
+    
+    import pdb; pdb.set_trace()
+    num_dim = clawdata.num_dim
+    data_write(file, clawdata, 'num_dim')
+    data_write(file, clawdata, 'lower[0]')
+    if num_dim > 1:
+        data_write(file, clawdata, 'lower[1]')
+    if num_dim == 3:
+        data_write(file, clawdata, 'lower[2]')
     data_write(file, clawdata, None)  # writes blank line
-    data_write(file, clawdata, 'meqn', '(number of equations)')
-    data_write(file, clawdata, 'mwaves', '(number of waves)')
-    data_write(file, clawdata, 'maux', '(number of aux variables)')
+    data_write(file, clawdata, 'num_eqn')
+    data_write(file, clawdata, 'num_waves')
+    data_write(file, clawdata, 'num_aux')
     data_write(file, clawdata, None)  # writes blank line
 
-    data_write(file, clawdata, 'output_style', '(style of specifying output times)')
-    if clawdata.output_style == 1:
-        data_write(file, clawdata, 'output_ntimes', '(number of output times)')
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    elif clawdata.output_style == 2:
-        clawdata.output_ntimes = len(clawdata.output_times)
-        data_write(file, clawdata, 'output_ntimes', '(number of output times)')
-        data_write(file, clawdata, 'output_times', '(output times)')
-    elif clawdata.output_style == 3:
-        data_write(file, clawdata, 'output_step_interval', '(timesteps between output)')
-        data_write(file, clawdata, 'total_steps', '(number of output times)')
-    elif clawdata.output_style == 4:
-        data_write(file, clawdata, 'output_time_interval', '(output interval)')
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    else:
-        print '*** Error: unrecognized output_style'
-        raise
-        return
+    clawdata._num_output_times = len(clawdata.output_times)
+    data_write(file, clawdata, 'num_output_times')
+    if clawdata._num_output_times > 0:
+        data_write(file, clawdata, 'output_times')
+
+    clawdata._num_output_steps = len(clawdata.output_steps)
+    data_write(file, clawdata, 'num_output_steps')
+    if clawdata._num_output_steps > 0:
+        data_write(file, clawdata, 'output_steps')
 
     data_write(file, clawdata, None)
     if clawdata.output_format in [1,'ascii']:
         clawdata.output_format = 1
-    elif clawdata.output_format in [2,'binary']:
+    elif clawdata.output_format in [2,'netcdf']:
         clawdata.output_format = 2
     else:
         raise ValueError("*** Error in data parameter: " + \
               "output_format unrecognized: ",clawdata.output_format)
         
-    data_write(file, clawdata, 'output_format', '(output format)')
-    clawdata._iout_q = clawdata.meqn * [1]
+    data_write(file, clawdata, 'output_format')
+
+    clawdata._iout_q = clawdata.num_eqn * [1]
     if clawdata.output_q_components != 'all':
-        for i in range(clawdata.meqn):
+        for i in range(clawdata.num_eqn):
             if i+1 not in clawdata.output_q_components:
                 clawdata._iout_q[i] = 0
-    data_write(file, clawdata, '_iout_q', '(which components of q)')
-    if clawdata.maux > 0:
-        clawdata._iout_aux = clawdata.maux * [1]
+    data_write(file, clawdata, '_iout_q')
+
+    if clawdata.num_aux > 0:
+        clawdata._iout_aux = clawdata.num_aux * [1]
         if clawdata.output_aux_components != 'all':
-            for i in range(clawdata.maux):
+            for i in range(clawdata.num_aux):
                 if i+1 not in clawdata.output_aux_components:
                     clawdata._iout_aux[i] = 0
-        data_write(file, clawdata, '_iout_aux', '(which components of aux)')
-        data_write(file, clawdata, 'output_aux_onlyonce', '(only once?)')
+        data_write(file, clawdata, '_iout_aux')
+        data_write(file, clawdata, 'output_aux_onlyonce')
+
     data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_initial', '(initial time step dt)')
-    data_write(file, clawdata, 'dt_max', '(max allowable dt)')
-    data_write(file, clawdata, 'cfl_max', '(max allowable Courant number)')
-    data_write(file, clawdata, 'cfl_desired', '(desired Courant number)')
-    data_write(file, clawdata, 'steps_max', '(max time steps per call to claw)')
+    data_write(file, clawdata, 'dt_initial')
+    data_write(file, clawdata, 'dt_max')
+    data_write(file, clawdata, 'cfl_max')
+    data_write(file, clawdata, 'cfl_desired')
+    data_write(file, clawdata, 'steps_max')
     data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_variable', '(1 for variable dt, 0 for fixed)')
-    data_write(file, clawdata, 'order', '(1 or 2)')
-    if ndim == 1:
-        #data_write(file, clawdata, 'order_trans', '(not used in 1d)')
+    data_write(file, clawdata, 'dt_variable')
+    data_write(file, clawdata, 'order')
+    if num_dim == 1:
         pass
     else:
-        data_write(file, clawdata, 'order_trans', '(transverse order)')
-        data_write(file, clawdata, 'dimensional_split', '(use dimensional splitting?)')
+        if clawdata.transverse_waves == 'none':  
+            clawdata.transverse_waves = 0
+        elif clawdata.transverse_waves == 'increment':  
+            clawdata.transverse_waves = 1
+        elif clawdata.transverse_waves == 'all':  
+            clawdata.transverse_waves = 2
+        else:
+            raise AttributeError("Unrecognized transverse_waves: %s" \
+                  % clawdata.transverse_waves)
+        data_write(file, clawdata, 'transverse_waves')
+
+        if clawdata.dimensional_split == 'unsplit':  
+            clawdata.dimensional_split = 0
+        elif clawdata.dimensional_split == 'godunov':  
+            clawdata.dimensional_split = 1
+        elif clawdata.dimensional_split == 'strang':  
+            clawdata.dimensional_split = 2
+        else:
+            raise AttributeError("Unrecognized dimensional_split: %s" \
+                  % clawdata.dimensional_split)
+        data_write(file, clawdata, 'dimensional_split')
         
-    data_write(file, clawdata, 'verbosity', '(verbosity of output)')
-    data_write(file, clawdata, 'src_split', '(source term splitting)')
-    data_write(file, clawdata, 'mcapa', '(aux index for capacity fcn)')
+    data_write(file, clawdata, 'verbosity')
+    data_write(file, clawdata, 'source_split')
+    data_write(file, clawdata, 'capa_index')
+    data_write(file, clawdata, 'fwave')
     data_write(file, clawdata, None)
 
-    data_write(file, clawdata, 'limiter', '(limiter choice for each wave)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 't0', '(initial time)')
-    data_write(file, clawdata, 'xlower', '(xlower)')
-    data_write(file, clawdata, 'xupper', '(xupper)')
-    if ndim > 1:
-        data_write(file, clawdata, 'ylower', '(ylower)')
-        data_write(file, clawdata, 'yupper', '(yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'zlower', '(zlower)')
-        data_write(file, clawdata, 'zupper', '(zupper)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'num_ghost', '(number of ghost cells)')
-    
-    for bdry in ['xlower','xupper','ylower','yupper','zlower','zupper']:
-        bc = getattr(clawdata, 'bc_'+bdry, None) 
-        if bc == 'user':
-            setattr(clawdata, 'bc_'+bdry, 0)
-        if bc == 'extrap':
-            setattr(clawdata, 'bc_'+bdry, 1)
-        if bc == 'periodic':
-            setattr(clawdata, 'bc_'+bdry, 2)
-        if bc == 'wall':
-            setattr(clawdata, 'bc_'+bdry, 3)
-            
-    data_write(file, clawdata, 'bc_xlower', '(type of BC at xlower)')
-    data_write(file, clawdata, 'bc_xupper', '(type of BC at xupper)')
-    if ndim > 1:
-        data_write(file, clawdata, 'bc_ylower', '(type of BC at ylower)')
-        data_write(file, clawdata, 'bc_yupper', '(type of BC at yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'bc_zlower', '(type of BC at zlower)')
-        data_write(file, clawdata, 'bc_zupper', '(type of BC at zupper)')
+    for i in range(len(limiter)):
+        if clawdata.limiter[i] == 'none':        clawdata.limiter[i] = 0
+        elif clawdata.limiter[i] == 'minmod':    clawdata.limiter[i] = 1
+        elif clawdata.limiter[i] == 'superbee':  clawdata.limiter[i] = 2
+        elif clawdata.limiter[i] == 'mc':        clawdata.limiter[i] = 3
+        elif clawdata.limiter[i] == 'vanleer':   clawdata.limiter[i] = 4
+        else:
+            raise AttributeError("Unrecognized limiter: %s" \
+                  % clawdata.limiter[i])
+    data_write(file, clawdata, 'limiter')
 
     data_write(file, clawdata, None)
-    data_write(file, clawdata, 'restart', '(T to restart from a past run)')
-    data_write(file, clawdata, 'restart_frame', '(which frame to restart from)')
+
+    data_write(file, clawdata, 't0')
+    data_write(file, clawdata, 'lower')
+    data_write(file, clawdata, 'upper')
     data_write(file, clawdata, None)
 
-    file.close()
+    data_write(file, clawdata, 'num_ghost')
+    for i in range(num_dim):
+        if clawdata.bc_lower[i] == 'user':       clawdata.bc_lower[i] = 0
+        elif clawdata.bc_lower[i] == 'extrap':   clawdata.bc_lower[i] = 1
+        elif clawdata.bc_lower[i] == 'periodic': clawdata.bc_lower[i] = 2
+        elif clawdata.bc_lower[i] == 'wall':     clawdata.bc_lower[i] = 3
+        else:
+            raise AttributeError("Unrecognized bc_lower: %s" \
+                  % clawdata.bc_lower[i])
+    data_write(file, clawdata, 'bc_lower')
+
+    for i in range(num_dim):
+        if clawdata.bc_upper[i] == 'user':       clawdata.bc_upper[i] = 0
+        elif clawdata.bc_upper[i] == 'extrap':   clawdata.bc_upper[i] = 1
+        elif clawdata.bc_upper[i] == 'periodic': clawdata.bc_upper[i] = 2
+        elif clawdata.bc_upper[i] == 'wall':     clawdata.bc_upper[i] = 3
+        else:
+            raise AttributeError("Unrecognized bc_upper: %s" \
+                  % clawdata.bc_upper[i])
+    data_write(file, clawdata, 'bc_upper')
+
+    data_write(file, clawdata, None)
+    data_write(file, clawdata, 'restart')
+    data_write(file, clawdata, 'restart_frame')
+    data_write(file, clawdata, None)
+
 
 def make_amrclawdatafile(clawdata):
     r"""
@@ -548,205 +552,75 @@ def make_amrclawdatafile(clawdata):
     # open file and write a warning header:
     file = open_datafile('amrclaw.data')
 
-    ndim = clawdata.ndim
-    data_write(file, clawdata, 'ndim', '(number of dimensions)')
-    data_write(file, clawdata, 'mx', '(cells in x direction)')
-    data_write(file, clawdata, 'my', '(cells in y direction)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mz', '(cells in z direction)')
+    write_clawdata_noamr(clawdata, file)
+    write_clawdata_amr(clawdata, file)
+    file.close()
 
-    data_write(file, clawdata, 'amrlevels_max', '(max number of grid levels)')
-    if len(clawdata.refinement_ratio_x) < max(abs(clawdata.amrlevels_max)-1, 1):
+
+def write_clawdata_amr(clawdata, file):
+    r"""
+    Write the input parameters only used by AMRClaw.
+    """
+
+    data_write(file, clawdata, 'amr_levels_max')
+
+    num_ratios = max(abs(clawdata.amr_levels_max)-1, 1)
+    if len(clawdata.refinement_ratio_x) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
-              "require len(refinement_ratio_x) >= %s " % max(abs(clawdata.amrlevels_max) - 1, 1))
-    if len(clawdata.refinement_ratio_y) < max(abs(clawdata.amrlevels_max)-1, 1):
+              "require len(refinement_ratio_x) >= %s " % num_ratios)
+    if len(clawdata.refinement_ratio_y) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
-              "require len(refinement_ratio_y) >= %s " % max(abs(clawdata.amrlevels_max) - 1, 1))
-    data_write(file, clawdata, 'refinement_ratio_x', '(refinement ratios)')
-    data_write(file, clawdata, 'refinement_ratio_y', '(refinement ratios)')
-    if ndim == 3:
-        if len(clawdata.refinement_ratio_z) < max(abs(clawdata.amrlevels_max)-1, 1):
+              "require len(refinement_ratio_y) >= %s " % num_ratios)
+    data_write(file, clawdata, 'refinement_ratio_x')
+    data_write(file, clawdata, 'refinement_ratio_y')
+    if num_dim == 3:
+        if len(clawdata.refinement_ratio_z) < num_ratios:
                 raise ValueError("*** Error in data parameter: " + \
-                  "require len(refinement_ratio_z) >= %s " % max(abs(clawdata.amrlevels_max) - 1, 1))
-        data_write(file, clawdata, 'refinement_ratio_z', '(refinement ratios)')
-    if len(clawdata.refinement_ratio_t) < max(abs(clawdata.amrlevels_max)-1, 1):
+                  "require len(refinement_ratio_z) >= %s " % num_ratios)
+        data_write(file, clawdata, 'refinement_ratio_z')
+    if len(clawdata.refinement_ratio_t) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
-              "require len(refinement_ratio_t) >= %s " % max(abs(clawdata.amrlevels_max) - 1, 1))
-    data_write(file, clawdata, 'refinement_ratio_t', '(refinement ratios)')
+              "require len(refinement_ratio_t) >= %s " % num_ratios)
+    data_write(file, clawdata, 'refinement_ratio_t')
 
     data_write(file, clawdata, None)  # writes blank line
-    data_write(file, clawdata, 't0', '(initial time)')
 
-    data_write(file, clawdata, 'output_style', '(style of specifying output times)')
-    if clawdata.output_style == 1:
-        data_write(file, clawdata, 'output_ntimes', '(number of output times)')
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    elif clawdata.output_style == 2:
-        clawdata.output_ntimes = len(clawdata.output_times)
-        data_write(file, clawdata, 'output_ntimes', '(number of output times)')
-        data_write(file, clawdata, 'output_times', '(output times)')
-    elif clawdata.output_style == 3:
-        data_write(file, clawdata, 'output_step_interval', '(output every output_step_interval steps)')
-        data_write(file, clawdata, 'total_steps', '(number of steps to take)')
-    elif clawdata.output_style == 4:
-        data_write(file, clawdata, 'output_time_interval', '(time between outputs)')
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    else:
-        print '*** Error: unrecognized output_style = ',output_style
-        raise
-        return
-
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_initial', '(initial time step dt)')
-    data_write(file, clawdata, 'dt_max', '(max allowable dt)')
-    data_write(file, clawdata, 'cfl_max', '(max allowable Courant number)')
-    data_write(file, clawdata, 'cfl_desired', '(desired Courant number)')
-    data_write(file, clawdata, 'steps_max', '(max time steps per call to claw)')
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_variable', '(1 for variable dt, 0 for fixed)')
-    data_write(file, clawdata, 'order', '(1 or 2)')
-    if ndim == 1:
-        data_write(file, clawdata, 'order_trans', '(not used in 1d)')
-    else:
-        data_write(file, clawdata, 'order_trans', '(transverse order)')
-    data_write(file, clawdata, 'dimensional_split', '(use dimensional splitting?)')
         
-    data_write(file, clawdata, 'verbosity', '(verbosity of output)')
-    data_write(file, clawdata, 'src_split', '(source term splitting)')
-    data_write(file, clawdata, 'mcapa', '(aux index for capacity fcn)')
-    data_write(file, clawdata, 'maux', '(number of aux variables)')
-    if len(clawdata.auxtype) != clawdata.maux:
-        file.close()
-        print "*** Error: An auxtype array must be specified of length maux"
-        raise AttributeError, "require len(clawdata.auxtype) == clawdata.maux"
-    for i in range(clawdata.maux):
-        file.write("'%s'\n" % clawdata.auxtype[i])
+    data_write(file, clawdata, 'flag_richardson')
+    data_write(file, clawdata, 'flag_richardson_tol')
+    data_write(file, clawdata, 'flag2refine')
+    data_write(file, clawdata, 'flag2refine_tol')
+    data_write(file, clawdata, 'regrid_interval')
+    data_write(file, clawdata, 'regrid_buffer_width')
+    data_write(file, clawdata, 'clustering_cutoff')
+    data_write(file, clawdata, 'verbosity_regrid')
     data_write(file, clawdata, None)
 
-    data_write(file, clawdata, 'meqn', '(number of equations)')
-    data_write(file, clawdata, 'mwaves', '(number of waves)')
-    data_write(file, clawdata, 'limiter', '(limiter choice for each wave)')
-    if clawdata.fwave:
-        clawdata.add_attribute('ifwave',1)
-    else:
-        clawdata.add_attribute('ifwave',0)
-    data_write(file, clawdata, 'ifwave', '(use f-wave form?)')
     data_write(file, clawdata, None)
 
-    data_write(file, clawdata, 'xlower', '(xlower)')
-    data_write(file, clawdata, 'xupper', '(xupper)')
-    data_write(file, clawdata, 'ylower', '(ylower)')
-    data_write(file, clawdata, 'yupper', '(yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'zlower', '(zlower)')
-        data_write(file, clawdata, 'zupper', '(zupper)')
+    data_write(file, clawdata, 'dprint')
+    data_write(file, clawdata, 'eprint')
+    data_write(file, clawdata, 'edebug')
+    data_write(file, clawdata, 'gprint')
+    data_write(file, clawdata, 'nprint')
+    data_write(file, clawdata, 'pprint')
+    data_write(file, clawdata, 'rprint')
+    data_write(file, clawdata, 'sprint')
+    data_write(file, clawdata, 'tprint')
+    data_write(file, clawdata, 'uprint')
     data_write(file, clawdata, None)
 
-    for bdry in ['xlower','xupper','ylower','yupper','zlower','zupper']:
-        bc = getattr(clawdata, 'bc_'+bdry, None) 
-        if bc == 'user':
-            setattr(clawdata, 'bc_'+bdry, 0)
-        if bc == 'extrap':
-            setattr(clawdata, 'bc_'+bdry, 1)
-        if bc == 'periodic':
-            setattr(clawdata, 'bc_'+bdry, 2)
-        if bc == 'wall':
-            setattr(clawdata, 'bc_'+bdry, 3)
-
-    data_write(file, clawdata, 'num_ghost', '(number of ghost cells)')
-    data_write(file, clawdata, 'bc_xlower', '(type of BC at xlower)')
-    data_write(file, clawdata, 'bc_xupper', '(type of BC at xupper)')
-    data_write(file, clawdata, 'bc_ylower', '(type of BC at ylower)')
-    data_write(file, clawdata, 'bc_yupper', '(type of BC at yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'bc_zlower', '(type of BC at zlower)')
-        data_write(file, clawdata, 'bc_zupper', '(type of BC at zupper)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'restart', '(1 to restart from a past run)')
-    data_write(file, clawdata, 'checkpt_style', '(how checkpoints specified)')
-    
-    if clawdata.checkpt_style == 2:  
-        clawdata.checkpt_ntimes = len(clawdata.checkpt_times)
-        data_write(file, clawdata, 'checkpt_ntimes', '(number of checkpoint times)')
-        data_write(file, clawdata, 'checkpt_times', '(checkpoint times)')
-    elif clawdata.checkpt_style == 3:        
-        data_write(file, clawdata, 'checkpt_interval', '(step interval for checkpoint)')
-    elif clawdata.checkpt_style == 4:  
-        print "*** Error: checkpt_style==4 not yet implemented"
-        raise ValueError("Invalid checkpt_style")      
-        data_write(file, clawdata, 'checkpt_time_interval', '(time interval for checkpoint)')
-    else:
-        print "*** Error, unrecognized checkpt_style = ",clawdata.checkpt_style
-        print "*** Require: 0,2,3, or 4"
-        raise ValueError("Unrecognized checkpt_style")
-        return
-        
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'flag_richardson', '(use Richardson extrap?)')
-    data_write(file, clawdata, 'flag_richardson_tol', '(tolerance for Richardson)')
-    data_write(file, clawdata, 'flag_gradient', '(use gradient flagging?)')
-    data_write(file, clawdata, 'flag_gradient_tol', '(tolerance used for gradient)')
-    data_write(file, clawdata, 'regrid_interval', '(how often to regrid)')
-    data_write(file, clawdata, 'regrid_buffer_width', '(buffer zone around flagged pts)')
-    data_write(file, clawdata, 'clustering_cutoff', '(efficiency cutoff for clustering)')
-    data_write(file, clawdata, 'verbosity_regrid', '(what levels to print grid info)')
-    data_write(file, clawdata, None)
-
-    if clawdata.output_format == 'ascii':
-        clawdata.output_format = 1
-    elif clawdata.output_format == 'binary':
-        clawdata.output_format = 2
-    else:
-        if clawdata.output_format not in [1,2]:
-            print "*** Unrecognized output_format: ",clawdata.output_format
-            raise
-            return
-    data_write(file, clawdata, 'output_format', '(format for fort.q files)')
-    
-    if clawdata.output_q_components=='all':
-        clawdata.output_q_components = range(1,clawdata.meqn+1)
-
-    nq_components = len(clawdata.output_q_components)
-    clawdata.add_attribute('output_nq_components',nq_components)
-    data_write(file, clawdata, 'output_nq_components', '(number of q vals to print)')
-    if clawdata.output_nq_components > 0:
-        data_write(file, clawdata, 'output_q_components', '(which components of q)')
-    
-    if clawdata.output_aux_components=='all':
-        clawdata.output_aux_components = range(1,clawdata.maux+1)
-        
-    naux_components = len(clawdata.output_aux_components)
-    clawdata.add_attribute('output_naux_components',naux_components)
-    data_write(file, clawdata, 'output_naux_components', '(number of aux vals to print)')
-    if clawdata.output_naux_components > 0:
-        data_write(file, clawdata, 'output_aux_components', '(which components of aux)')
-    data_write(file, clawdata, 'output_aux_onlyonce', '(only at t0?)')
-        
-             
-        
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'dprint', '(print domain flags)')
-    data_write(file, clawdata, 'eprint', '(print err est flags)')
-    data_write(file, clawdata, 'edebug', '(even more err est flags)')
-    data_write(file, clawdata, 'gprint', '(grid bisection/clustering)')
-    data_write(file, clawdata, 'nprint', '(proper nesting output)')
-    data_write(file, clawdata, 'pprint', '(proj. of tagged points)')
-    data_write(file, clawdata, 'rprint', '(print regridding summary)')
-    data_write(file, clawdata, 'sprint', '(space/memory output)')
-    data_write(file, clawdata, 'tprint', '(time step reporting each level)')
-    data_write(file, clawdata, 'uprint', '(update/upbnd reporting)')
-    data_write(file, clawdata, None)
-
+def regions_and_gauges():
+    r"""
+    Placeholder... where to put these?
+    """
     clawdata.add_attribute('nregions', len(clawdata.regions))
-    data_write(file, clawdata, 'nregions', '(nregions)')
+    data_write(file, clawdata, 'nregions')
     for regions in clawdata.regions:
         file.write(8*"   %g" % tuple(regions) +"\n")
 
     clawdata.add_attribute('ngauges', len(clawdata.gauges))
-    data_write(file, clawdata, 'ngauges', '(ngauges)')
+    data_write(file, clawdata, 'ngauges')
     gaugeno_used = []
     for gauge in clawdata.gauges:
         gaugeno = gauge[0]
@@ -758,7 +632,6 @@ def make_amrclawdatafile(clawdata):
         #file.write("%4i %19.10e  %17.10e  %13.6e  %13.6e\n" % tuple(gauge))
         file.write(5*"   %g" % tuple(gauge) +"\n")
 
-    file.close()
 
 def make_userdatafile(userdata):
     r"""
@@ -812,10 +685,10 @@ class ClawRunData(ClawData):
     r"""
     Object that will be written out to claw.data.
     """
-    def __init__(self, pkg, ndim):
+    def __init__(self, pkg, num_dim):
         super(ClawRunData,self).__init__()
         self.add_attribute('pkg',pkg)
-        self.add_attribute('ndim',ndim)
+        self.add_attribute('num_dim',num_dim)
         self.add_attribute('datalist',[])
 
 
@@ -823,7 +696,7 @@ class ClawRunData(ClawData):
             self.add_attribute('xclawcmd', 'xclaw')
 
             # Required data set for basic run parameters:
-            clawdata = ClawInputData(ndim)
+            clawdata = ClawInputData(num_dim)
             self.add_attribute('clawdata', clawdata)
             self.datalist.append(clawdata)
 
@@ -831,7 +704,7 @@ class ClawRunData(ClawData):
             self.add_attribute('xclawcmd', 'xamr')
 
             # Required data set for basic run parameters:
-            clawdata = AmrclawInputData(ndim)
+            clawdata = AmrclawInputData(num_dim)
             self.add_attribute('clawdata', clawdata)
             self.datalist.append(clawdata)
 
@@ -839,10 +712,10 @@ class ClawRunData(ClawData):
             self.add_attribute('xclawcmd', 'xgeoclaw')
 
             # Required data set for basic run parameters:
-            clawdata = AmrclawInputData(ndim)
+            clawdata = AmrclawInputData(num_dim)
             self.add_attribute('clawdata', clawdata)
             self.datalist.append(clawdata)
-            geodata = GeoclawInputData(ndim)
+            geodata = GeoclawInputData(num_dim)
             self.add_attribute('geodata', geodata)
             self.datalist.append(geodata)
 
@@ -865,7 +738,7 @@ class ClawRunData(ClawData):
         r"""
         Create a gaugedata attribute for writing to gauges.data.
         """
-        gaugedata = GaugeData(self.ndim)
+        gaugedata = GaugeData(self.num_dim)
         self.datalist.append(gaugedata)
         self.gaugedata = gaugedata
         return gaugedata
@@ -906,7 +779,7 @@ class GeoclawInputData(Data):
     r"""
     Object that will be written out to the various GeoClaw data files.
     """
-    def __init__(self, ndim):
+    def __init__(self, num_dim):
         super(GeoclawInputData,self).__init__()
 
         # Set default values:
