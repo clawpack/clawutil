@@ -13,7 +13,8 @@ Rewritten for 5.0:
 
 import os
 import logging
-        
+
+import numpy as np
 
 
 # ========================
@@ -196,7 +197,11 @@ class ClawInputData(ClawData):
         self.add_attribute('num_aux',0)
         self.add_attribute('output_style',1)
         self.add_attribute('output_times',[])
-        self.add_attribute('output_steps',[])
+        self.add_attribute('num_output_times',None)
+        self.add_attribute('output_t0',True)
+        self.add_attribute('output_step_interval',None)
+        self.add_attribute('total_steps',None)
+        self.add_attribute('tfinal',None)
         self.add_attribute('output_format',1)
         self.add_attribute('output_q_components','all')
         self.add_attribute('output_aux_components',[])
@@ -220,7 +225,6 @@ class ClawInputData(ClawData):
         self.add_attribute('num_ghost',2)
         self.add_attribute('fwave',False)
         self.add_attribute('restart',False)
-        self.add_attribute('restart_frame',0)
         self.add_attribute('restart_file','')
         self.add_attribute('regions',[])
         self.add_attribute('gauges',[])
@@ -457,15 +461,24 @@ def write_clawdata_noamr(clawdata, file):
 
     data_write(file, clawdata.t0, 't0')
     data_write(file, clawdata, None)
-    num_output_times = len(clawdata.output_times)
-    data_write(file, num_output_times, 'num_output_times')
-    if num_output_times > 0:
-        data_write(file, clawdata.output_times, 'output_times')
+    data_write(file, clawdata.output_style, 'output_style')
 
-    num_output_steps = len(clawdata.output_steps)
-    data_write(file, num_output_steps, 'num_output_steps')
-    if num_output_steps > 0:
-        data_write(file, clawdata.output_steps, 'output_steps')
+    if clawdata.output_style==1:
+        data_write(file, clawdata.num_output_times, 'num_output_times')
+        data_write(file, clawdata.tfinal, 'tfinal')
+        data_write(file, clawdata.output_t0, 'output_t0')
+    elif clawdata.output_style==2:
+        clawdata.num_output_times = len(clawdata.output_times)
+        data_write(file, clawdata.num_output_times, 'num_output_times')
+        data_write(file, clawdata.output_times, 'output_times')
+    elif clawdata.output_style==3:
+        data_write(file, clawdata.output_step_interval, 'output_step_interval')
+        data_write(file, clawdata.total_steps, 'total_steps')
+        data_write(file, clawdata.output_t0, 'output_t0')
+    else:
+        raise AttributeError("*** Unrecognized output_style: %s"\
+              % clawdata.output_style)
+        
 
     data_write(file, clawdata, None)
     if clawdata.output_format in [1,'ascii']:
@@ -478,20 +491,23 @@ def write_clawdata_noamr(clawdata, file):
         
     data_write(file, clawdata.output_format, 'output_format')
 
-    clawdata._iout_q = clawdata.num_eqn * [1]
-    if clawdata.output_q_components != 'all':
-        for i in range(clawdata.num_eqn):
-            if i+1 not in clawdata.output_q_components:
-                clawdata._iout_q[i] = 0
-    data_write(file, clawdata._iout_q, '_iout_q')
+    if clawdata.output_q_components == 'all':
+        iout_q = clawdata.num_eqn * [1]
+    elif clawdata.output_q_components == 'none':
+        iout_q = clawdata.num_eqn * [0]
+    else:
+        iout_q = np.where(clawdata.output_q_components, 1, 0)
+
+    data_write(file, iout_q, 'iout_q')
 
     if clawdata.num_aux > 0:
-        clawdata._iout_aux = clawdata.num_aux * [1]
-        if clawdata.output_aux_components != 'all':
-            for i in range(clawdata.num_aux):
-                if i+1 not in clawdata.output_aux_components:
-                    clawdata._iout_aux[i] = 0
-        data_write(file, clawdata._iout_aux, '_iout_aux')
+        if clawdata.output_aux_components == 'all':
+            iout_aux = clawdata.num_aux * [1]
+        elif clawdata.output_aux_components == 'none':
+            iout_aux = clawdata.num_aux * [0]
+        else:
+            iout_aux = np.where(clawdata.output_aux_components, 1, 0)
+        data_write(file, iout_aux, 'iout_aux')
         data_write(file, clawdata.output_aux_onlyonce, 'output_aux_onlyonce')
 
     data_write(file, clawdata, None)
@@ -582,7 +598,18 @@ def write_clawdata_noamr(clawdata, file):
 
     data_write(file, clawdata, None)
     data_write(file, clawdata.restart, 'restart')
-    data_write(file, clawdata.restart_frame, 'restart_frame')
+    data_write(file, clawdata.restart_file, 'restart_file')
+    data_write(file, clawdata.checkpt_style, 'checkpt_style')
+    if clawdata.checkpt_style==2:
+        num_checkpt_times = len(clawdata.checkpt_times)
+        data_write(file, num_checkpt_times, 'num_checkpt_times')
+        data_write(file, clawdata.checkpt_times, 'checkpt_times')
+    elif clawdata.checkpt_style==3:
+        data_write(file, checkpt_interval, 'checkpt_interval')
+    elif clawdata.checkpt_style not in [1,2]:
+        raise AttributeError("*** Unrecognized checkpt_style: %s"\
+              % clawdata.checkpt_style)
+
     data_write(file, clawdata, None)
 
 
