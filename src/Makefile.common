@@ -26,8 +26,8 @@ CLAW_PYTHON ?= $(PYTHON)
 # Default values if not set:
 CLAW_EXE ?= xclaw
 CLAW_PKG ?= classic
-OUT_DIR ?= _output
-PLOT_DIR ?= _plots
+OUTDIR ?= _output
+PLOTDIR ?= _plots
 LIB_PATHS ?= $(CURDIR)/
 OVERWRITE ?= True
 RESTART ?= False
@@ -176,9 +176,9 @@ data: $(MAKEFILE_LIST);
 # runclaw will execute setrun.py to create data files and determine
 # what executable to run, e.g. xclaw or xamr.
 .output: $(CLAW_EXE) .data $(MAKEFILE_LIST);
-	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py  $(CLAW_EXE) $(OUT_DIR) \
+	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py  $(CLAW_EXE) $(OUTDIR) \
 	$(OVERWRITE) $(RESTART)
-	@echo $(OUT_DIR) > .output
+	@echo $(OUTDIR) > .output
 
 #----------------------------------------------------------------------------
 # Run the code without checking dependencies:
@@ -194,12 +194,12 @@ output: $(MAKEFILE_LIST);
 # Plotting command
 PLOTCMD ?= $(CLAW_PYTHON) $(VISCLAW)/src/python/visclaw/plotclaw.py
 
-# Rule to make the plots into subdirectory specified by PLOT_DIR,
-# using data in subdirectory specified by OUT_DIR and the plotting
+# Rule to make the plots into subdirectory specified by PLOTDIR,
+# using data in subdirectory specified by OUTDIR and the plotting
 # commands specified in CLAW_SETPLOT.
 .plots: .output $(SETPLOT_FILE) $(MAKEFILE_LIST) ;
-	$(PLOTCMD) $(OUT_DIR) $(PLOT_DIR) $(SETPLOT_FILE)
-	@echo $(PLOT_DIR) > .plots
+	$(PLOTCMD) $(OUTDIR) $(PLOTDIR) $(SETPLOT_FILE)
+	@echo $(PLOTDIR) > .plots
 
 # Make the plots without checking dependencies:
 plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
@@ -241,7 +241,7 @@ clobber:
 	-rm -f $(MODULE_OBJECTS)
 	-rm -f $(MODULE_FILES)
 	-rm -f fort.*  *.pyc pyclaw.log 
-	-rm -f -r $(OUT_DIR) $(PLOT_DIR)
+	-rm -f -r $(OUTDIR) $(PLOTDIR)
 
 #----------------------------------------------------------------------------
 
