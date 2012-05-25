@@ -468,6 +468,9 @@ def write_clawdata_noamr(clawdata, file):
         data_write(file, clawdata.tfinal, 'tfinal')
         data_write(file, clawdata.output_t0, 'output_t0')
     elif clawdata.output_style==2:
+        if len(clawdata.output_times) == 0:
+            raise AttributeError("*** output_style==2 requires nonempty list" \
+                    + " of output times")
         clawdata.num_output_times = len(clawdata.output_times)
         data_write(file, clawdata.num_output_times, 'num_output_times')
         data_write(file, clawdata.output_times, 'output_times')
@@ -605,7 +608,7 @@ def write_clawdata_noamr(clawdata, file):
         data_write(file, num_checkpt_times, 'num_checkpt_times')
         data_write(file, clawdata.checkpt_times, 'checkpt_times')
     elif clawdata.checkpt_style==3:
-        data_write(file, checkpt_interval, 'checkpt_interval')
+        data_write(file, clawdata.checkpt_interval, 'checkpt_interval')
     elif clawdata.checkpt_style not in [1,2]:
         raise AttributeError("*** Unrecognized checkpt_style: %s"\
               % clawdata.checkpt_style)
