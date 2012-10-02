@@ -83,7 +83,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
             hour = str(tm[3]).zfill(2)
             minute = str(tm[4]).zfill(2)
             second = str(tm[5]).zfill(2)
-            outdir_backup = outdir + '_%s%s%s-%s%s%s' \
+            outdir_backup = outdir + '_%s-%s-%s-%s%s%s' \
                   % (year,month,day,hour,minute,second)
             if verbose:
                 print "==> runclaw: Directory already exists: ",os.path.split(outdir)[1]

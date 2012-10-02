@@ -24,7 +24,7 @@ CLAW_PYTHON ?= $(PYTHON)
 
 # Variables below should be set in Makefile that "includes" this one.
 # Default values if not set:
-CLAW_EXE ?= xclaw
+EXE ?= xclaw
 CLAW_PKG ?= classic
 OUTDIR ?= _output
 PLOTDIR ?= _plots
@@ -115,10 +115,10 @@ endif
 .objs:  $(MODULE_FILES) $(OBJECTS);
 
 # The order here is to again build the module files correctly
-$(CLAW_EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
-	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(CLAW_EXE)
+$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
-.exe: $(CLAW_EXE)
+.exe: $(EXE)
 
 debug:
 	@echo 'debugging -- MODULES:'
@@ -175,16 +175,16 @@ data: $(MAKEFILE_LIST);
 # Run the code and put fort.* files into subdirectory named output:
 # runclaw will execute setrun.py to create data files and determine
 # what executable to run, e.g. xclaw or xamr.
-.output: $(CLAW_EXE) .data $(MAKEFILE_LIST);
+.output: $(EXE) .data $(MAKEFILE_LIST);
 	$(MAKE) output
 
 #----------------------------------------------------------------------------
 # Run the code without checking dependencies:
 output: $(MAKEFILE_LIST);
 	-rm -f .output
-	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py $(CLAW_EXE) $(OUT_DIR) \
+	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
 	$(OVERWRITE) $(RESTART)
-	@echo $(OUT_DIR) > .output
+	@echo $(OUTDIR) > .output
 
 #----------------------------------------------------------------------------
 
@@ -194,17 +194,17 @@ output: $(MAKEFILE_LIST);
 # Plotting command
 PLOTCMD ?= $(CLAW_PYTHON) $(VISCLAW)/src/python/visclaw/plotclaw.py
 
-# Rule to make the plots into subdirectory specified by PLOT_DIR,
-# using data in subdirectory specified by OUT_DIR and the plotting
-# commands specified in CLAW_SETPLOT.
+# Rule to make the plots into subdirectory specified by PLOTDIR,
+# using data in subdirectory specified by OUTDIR and the plotting
+# commands specified in SETPLOT_FILE.
 .plots: .output $(SETPLOT_FILE) $(MAKEFILE_LIST) ;
 	$(MAKE) plots
 
 # Make the plots without checking dependencies:
 plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
 	-rm -f .plots
-	$(PLOTCMD) $(OUT_DIR) $(PLOT_DIR) $(SETPLOT_FILE)
-	@echo $(PLOT_DIR) > .plots
+	$(PLOTCMD) $(OUTDIR) $(PLOTDIR) $(SETPLOT_FILE)
+	@echo $(PLOTDIR) > .plots
 
 
 #----------------------------------------------------------------------------
@@ -227,13 +227,13 @@ new:
 	-rm -f  $(OBJECTS)
 	-rm -f  $(MODULE_OBJECTS)
 	-rm -f  $(MODULE_FILES)
-	-rm -f  $(CLAW_EXE)
-	$(MAKE) $(CLAW_EXE) MAKELEVEL=0
+	-rm -f  $(EXE)
+	$(MAKE) $(EXE) MAKELEVEL=0
 
 
 # Clean up options:
 clean:
-	-rm -f $(CLAW_EXE) $(HTML)
+	-rm -f $(EXE) $(HTML)
 	-rm -f .data .output .plots .htmls 
 
 clobber:
