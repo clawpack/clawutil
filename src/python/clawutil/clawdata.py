@@ -609,7 +609,7 @@ def write_clawdata_noamr(clawdata, file):
         data_write(file, clawdata.checkpt_times, 'checkpt_times')
     elif clawdata.checkpt_style==3:
         data_write(file, clawdata.checkpt_interval, 'checkpt_interval')
-    elif clawdata.checkpt_style not in [1,2]:
+    elif clawdata.checkpt_style not in [0,1]:
         raise AttributeError("*** Unrecognized checkpt_style: %s"\
               % clawdata.checkpt_style)
 
