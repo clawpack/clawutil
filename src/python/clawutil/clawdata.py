@@ -267,15 +267,15 @@ class AmrclawInputData(ClawInputData):
         super(AmrclawInputData,self).__init__(num_dim)
         
         self.add_attribute('amr_levels_max',1)
-        self.add_attribute('refinement_ratio_x',[1])
-        self.add_attribute('refinement_ratio_y',[1])
+        self.add_attribute('refinement_ratios_x',[1])
+        self.add_attribute('refinement_ratios_y',[1])
         if num_dim == 3:
-            self.add_attribute('refinement_ratio_z',[1])
+            self.add_attribute('refinement_ratios_z',[1])
         if num_dim == 1:
             raise Exception("*** 1d AMR not yet supported")
         self.add_attribute('variable_dt_refinement_ratios',False)
 
-        self.add_attribute('refinement_ratio_t',[1])
+        self.add_attribute('refinement_ratios_t',[1])
         self.add_attribute('aux_type',[])
 
         self.add_attribute('checkpt_style',1)
@@ -313,7 +313,7 @@ class AmrclawInputData(ClawInputData):
             self.add_attribute('yupper',1.)
             self.add_attribute('bc_ylower',1)
             self.add_attribute('bc_yupper',1)
-            self.add_attribute('refinement_ratio_y',[1,1,1,1,1,1])
+            self.add_attribute('refinement_ratios_y',[1,1,1,1,1,1])
 
 
     def write(self):
@@ -640,23 +640,23 @@ def write_clawdata_amr(clawdata, file):
     data_write(file, clawdata.amr_levels_max, 'amr_levels_max')
 
     num_ratios = max(abs(clawdata.amr_levels_max)-1, 1)
-    if len(clawdata.refinement_ratio_x) < num_ratios:
+    if len(clawdata.refinement_ratios_x) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
-              "require len(refinement_ratio_x) >= %s " % num_ratios)
-    if len(clawdata.refinement_ratio_y) < num_ratios:
+              "require len(refinement_ratios_x) >= %s " % num_ratios)
+    if len(clawdata.refinement_ratios_y) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
-              "require len(refinement_ratio_y) >= %s " % num_ratios)
-    data_write(file, clawdata.refinement_ratio_x, 'refinement_ratio_x')
-    data_write(file, clawdata.refinement_ratio_y, 'refinement_ratio_y')
+              "require len(refinement_ratios_y) >= %s " % num_ratios)
+    data_write(file, clawdata.refinement_ratios_x, 'refinement_ratios_x')
+    data_write(file, clawdata.refinement_ratios_y, 'refinement_ratios_y')
     if num_dim == 3:
-        if len(clawdata.refinement_ratio_z) < num_ratios:
+        if len(clawdata.refinement_ratios_z) < num_ratios:
                 raise ValueError("*** Error in data parameter: " + \
-                  "require len(refinement_ratio_z) >= %s " % num_ratios)
-        data_write(file, clawdata.refinement_ratio_z, 'refinement_ratio_z')
-    if len(clawdata.refinement_ratio_t) < num_ratios:
+                  "require len(refinement_ratios_z) >= %s " % num_ratios)
+        data_write(file, clawdata.refinement_ratios_z, 'refinement_ratios_z')
+    if len(clawdata.refinement_ratios_t) < num_ratios:
         raise ValueError("*** Error in data parameter: " + \
-              "require len(refinement_ratio_t) >= %s " % num_ratios)
-    data_write(file, clawdata.refinement_ratio_t, 'refinement_ratio_t')
+              "require len(refinement_ratios_t) >= %s " % num_ratios)
+    data_write(file, clawdata.refinement_ratios_t, 'refinement_ratios_t')
 
     data_write(file, clawdata, None)  # writes blank line
 
