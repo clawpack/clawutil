@@ -561,6 +561,8 @@ def write_clawdata_noamr(clawdata, file):
     data_write(file, clawdata.source_split, 'source_split')
 
     data_write(file, clawdata.capa_index, 'capa_index')
+    if clawdata.num_aux > 0:
+        data_write(file, clawdata.aux_type, 'aux_type')
     data_write(file, clawdata.fwave, 'fwave')
     data_write(file, clawdata, None)
 
