@@ -31,6 +31,19 @@ def convert(setrun_file='setrun.py'):
         else:
             exec("mthbc_%s = '%s'" % (b,s))
             
+    try:
+        gauges = c.gauges
+    except:
+        gauges = []
+
+    try:
+        regions = c.regions
+    except:
+        regions = []
+
+
+    # -------------------------------------------------
+    # Mapping from old setrun variables to new ones:
 
     mapping = {
         'xlower': c.xlower,
@@ -73,6 +86,8 @@ def convert(setrun_file='setrun.py'):
         'regrid_interval': c.kcheck,
         'regrid_buffer_width': c.ibuff,
         'clustering_cutoff': c.cutoff,
+        'gauges': gauges,
+        'regions': regions,
         }
 
     newtext = template.format(**mapping)

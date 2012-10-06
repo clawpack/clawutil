@@ -229,6 +229,13 @@ def setrun(claw_pkg='amrclaw'):
     clawdata.bc_lower[1] = {mthbc_ylower:s}   # at ylower
     clawdata.bc_upper[1] = {mthbc_yupper:s}   # at yupper
                          
+
+    # ---------------
+    # Gauges:
+    # ---------------
+    clawdata.gauges = {gauges:s}
+    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
+
     
 
     # ---------------
@@ -275,6 +282,19 @@ def setrun(claw_pkg='amrclaw'):
 
     # print info about each regridding up to this level:
     clawdata.verbosity_regrid = 0      
+
+
+    # ---------------
+    # Regions:
+    # ---------------
+    clawdata.regions = {regions:s}
+    # to specify regions of refinement append lines of the form
+    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
+
+
+    # --------------
+    # Checkpointing:
+    # --------------
 
     # Specify when checkpoint files should be created that can be
     # used to restart a computation.

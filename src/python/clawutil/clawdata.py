@@ -319,7 +319,7 @@ class AmrclawInputData(ClawInputData):
     def write(self):
         print 'Creating data file amrclaw.data for use with xamr'
         make_amrclawdatafile(self)
-        #make_setgauges_datafile(self)
+        make_setgauges_datafile(self)
 
 
 
