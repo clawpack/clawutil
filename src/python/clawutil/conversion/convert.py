@@ -12,7 +12,7 @@ template_amrclaw_2d = open(clawutil \
 sys.path.insert(0,os.getcwd())
 sys.path.append(os.getcwd() + '/pyclaw')
 
-def convert(setrun_file='setrun.py', claw_pkg=None):
+def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
 
     setrun_text = open(setrun_file).readlines()
     if claw_pkg is None:
@@ -38,7 +38,6 @@ def convert(setrun_file='setrun.py', claw_pkg=None):
 
     limiter_map = {0:'none',1:'minmod',2:'superbee',3:'mc',4:'vanleer'}
     limiter = [limiter_map.get(i,i) for i in c.mthlim]
-    print "limiter: ", c.mthlim, limiter
 
 
     bc_map = {0:'user', 1:'extrap', 2:'periodic', 3:'wall'}
@@ -111,7 +110,7 @@ def convert(setrun_file='setrun.py', claw_pkg=None):
     if claw_pkg == 'amrclaw':
         newtext = template_amrclaw_2d.format(**mapping)
     else:
-        raise ValueError("*** convert not yet implemented for %s" \
+        raise ValueError("*** convert not yet implemented for claw_pkg = %s" \
                     % claw_pkg)
 
     setrun_text = open(setrun_file).readlines()
@@ -128,12 +127,10 @@ def convert(setrun_file='setrun.py', claw_pkg=None):
     print 'Moved %s to original_%s ' % (setrun_file,setrun_file)
     open(setrun_file,'w').write(newtext)
     print 'Created ', setrun_file
-
-    copy_Makefile(claw_pkg)
+    return claw_pkg
 
 
 def copy_Makefile(claw_pkg):
-    import pdb; pdb.set_trace()
     if claw_pkg == 'amrclaw':
         try:
             os.system("mv Makefile original_Makefile")
@@ -142,7 +139,7 @@ def copy_Makefile(claw_pkg):
         except:
             raise Exception("*** Error copying Makefile")
     else:
-        raise ValueError("*** convert not yet implemented for %s" \
+        raise ValueError("*** convert not yet implemented for claw_pkg = %s" \
                     % claw_pkg)
 
     print "Moved Makefile to original_Makefile"
@@ -150,5 +147,22 @@ def copy_Makefile(claw_pkg):
     print "*** Edit Makefile based on original_Makefile, e.g. point to"
     print "*** any local files, correct Riemann solver, etc."
 
+
+def convert_setplot(setplot_file='setplot.py'):
+
+    setplot_text = open(setplot_file).read()
+    setplot_text = setplot_text.replace('pyclaw.plotters','clawpack.visclaw')
+    setplot_text = setplot_text.replace('2d_grid','2d_patch')
+    setplot_text = setplot_text.replace('gridedges','patchedges')
+    setplot_text = setplot_text.replace('gridlines','celledges')
+
+    os.system("mv %s original_%s" % (setplot_file,setplot_file))
+    print 'Moved %s to original_%s ' % (setplot_file,setplot_file)
+    open(setplot_file,'w').write(setplot_text)
+    print 'Created ', setplot_file
+
+
 if __name__ == "__main__":
-    convert(*sys.argv[1:])
+    claw_pkg = convert_setrun()
+    copy_Makefile(claw_pkg)
+    convert_setplot()
