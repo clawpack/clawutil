@@ -146,6 +146,8 @@ def copy_Makefile(claw_pkg):
     print "Created new Makefile template -- must be customized!"
     print "*** Edit Makefile based on original_Makefile, e.g. point to"
     print "*** any local files, correct Riemann solver, etc."
+    print "*** You might have to make other modifications to local fortran"
+    print "*** files -- in particular indices have been reordered!"
 
 
 def convert_setplot(setplot_file='setplot.py'):
