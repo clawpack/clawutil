@@ -320,6 +320,8 @@ class AmrclawInputData(ClawInputData):
         print 'Creating data file amrclaw.data for use with xamr'
         make_amrclawdatafile(self)
         make_setgauges_datafile(self)
+        if len(self.regions) > 0:
+            print "*** Warning: regions not yet implemented!"
 
 
 

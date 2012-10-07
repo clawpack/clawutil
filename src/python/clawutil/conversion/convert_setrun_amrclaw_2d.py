@@ -6,11 +6,29 @@ Conversion module for 2d amrclaw setrun.py file from 4.6 to 5.0 format.
 import os,sys
 
 clawutil = os.environ['CLAWUTIL'] + '/src/python/clawutil'
-template = open(clawutil + '/conversion/setrun_template_amrclaw_2d.py').read()
+template_amrclaw_2d = open(clawutil \
+             + '/conversion/setrun_template_amrclaw_2d.py').read()
 
 sys.path.insert(0,os.getcwd())
+sys.path.append(os.getcwd() + '/pyclaw')
 
-def convert(setrun_file='setrun.py'):
+def convert(setrun_file='setrun.py', claw_pkg=None):
+
+    setrun_text = open(setrun_file).readlines()
+    if claw_pkg is None:
+        for line in setrun_text:
+            if 'claw_pkg' in line:
+                if 'classic' in line:
+                    claw_pkg = 'classic'
+                elif 'amrclaw' in line:
+                    claw_pkg = 'amrclaw'
+                elif 'geoclaw' in line:
+                    claw_pkg = 'geoclaw'
+
+    if claw_pkg is None:
+        raise ValueError("*** Could not determine claw_pkg from %s" \
+                                % setrun_file)
+        
 
     setrun_module = os.path.splitext(setrun_file)[0]
     exec('from %s import setrun' % setrun_module)
@@ -90,8 +108,11 @@ def convert(setrun_file='setrun.py'):
         'regions': regions,
         }
 
-    newtext = template.format(**mapping)
-    new_setrun_file = 'new_' + setrun_file
+    if claw_pkg == 'amrclaw':
+        newtext = template_amrclaw_2d.format(**mapping)
+    else:
+        raise ValueError("*** convert not yet implemented for %s" \
+                    % claw_pkg)
 
     setrun_text = open(setrun_file).readlines()
     for line in setrun_text:
@@ -103,8 +124,31 @@ def convert(setrun_file='setrun.py'):
                         % (setrun_file, new_setrun_file)
 
 
-    open(new_setrun_file,'w').write(newtext)
-    print 'Created ', new_setrun_file
+    os.system("mv %s original_%s" % (setrun_file,setrun_file))
+    print 'Moved %s to original_%s ' % (setrun_file,setrun_file)
+    open(setrun_file,'w').write(newtext)
+    print 'Created ', setrun_file
+
+    copy_Makefile(claw_pkg)
+
+
+def copy_Makefile(claw_pkg):
+    import pdb; pdb.set_trace()
+    if claw_pkg == 'amrclaw':
+        try:
+            os.system("mv Makefile original_Makefile")
+            os.system("cp %s/conversion/Makefile_amrclaw_2d Makefile" \
+                    % clawutil)
+        except:
+            raise Exception("*** Error copying Makefile")
+    else:
+        raise ValueError("*** convert not yet implemented for %s" \
+                    % claw_pkg)
+
+    print "Moved Makefile to original_Makefile"
+    print "Created new Makefile template -- must be customized!"
+    print "*** Edit Makefile based on original_Makefile, e.g. point to"
+    print "*** any local files, correct Riemann solver, etc."
 
 if __name__ == "__main__":
     convert(*sys.argv[1:])
