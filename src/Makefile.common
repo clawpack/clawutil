@@ -131,7 +131,7 @@ debug:
 #----------------------------------------------------------------------------
 
 # Command to create *.html files from *.f etc:
-CC2HTML = $(CLAW_PYTHON) $(CLAW)/doc/clawcode2html.py --force 
+CC2HTML = $(CLAW_PYTHON) $(CLAWUTIL)/src/python/clawutil/clawcode2html.py --force 
 
 # make list of html files to be created by 'make .htmls':
 HTML = \
@@ -182,7 +182,7 @@ data: $(MAKEFILE_LIST);
 # Run the code without checking dependencies:
 output: $(MAKEFILE_LIST);
 	-rm -f .output
-	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
+	$(CLAW_PYTHON) $(CLAWUTIL)/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
 	$(OVERWRITE) $(RESTART)
 	@echo $(OUTDIR) > .output
 
