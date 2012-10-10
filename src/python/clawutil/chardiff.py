@@ -34,6 +34,8 @@ def chardiff_file(fname1, fname2, print_all_lines=True, hfile1='', \
 
     if (len(f1) != len(f2)) and verbose:
         print "*** files have different number of lines"
+        print "    %s: %s lines" % (fname1,len(f1))
+        print "    %s: %s lines" % (fname2,len(f2))
     flen = min(len(f1), len(f2))
     
     table1 = []
@@ -114,9 +116,6 @@ def chardiff_file(fname1, fname2, print_all_lines=True, hfile1='', \
     numchanges = sum(changed)
 
     html = open(hfile1,"w")
-    if verbose:
-        print "Point your browser to: "
-        print "  view all %s lines with diffs: %s" % (flen, hfile1)
     hf2 = os.path.split(hfile2)[1]
     html.write("""
         <html>
@@ -154,8 +153,6 @@ def chardiff_file(fname1, fname2, print_all_lines=True, hfile1='', \
     # Only changed lines:
     
     html = open(hfile2,"w")
-    if verbose:
-        print "  view only %s lines with changes: %s" % (numchanges, hfile2)
     hf1 = os.path.split(hfile1)[1]
     html.write("""
         <html>
@@ -211,7 +208,7 @@ def chardiff_dir(dir1, dir2, file_pattern='all', dir3="_char_diff",
     checkfiles = filecmp.dircmp(dir1,dir2)
     allsame = (checkfiles.diff_files==[]) and (checkfiles.left_list == checkfiles.right_list)
     
-    if allsame and verbose:
+    if allsame:
          print "*All* files in the two directories are equal"
     elif verbose:
         if len(checkfiles.diff_files)>0:
@@ -343,7 +340,16 @@ if __name__ == "__main__":
         
         # Run diff
         if os.path.isfile(args[0]) and os.path.isfile(args[1]):
-            sys.exit(chardiff_file(args[0],args[1],verbose=verbose))
+            try:
+                hfile1 = "diff_all_lines.html"
+                hfile2 = "diff_changed_lines.html"
+                (flen,numchanges) = chardiff_file(args[0],args[1],\
+                   hfile1=hfile1,hfile2=hfile2,verbose=verbose)
+                print "View all %s lines with diffs: %s" % (flen, hfile1)
+                print "View only %s lines with changes: %s" % (numchanges, hfile2)
+                sys.exit(0)
+            except:
+                sys.exit(1)
         elif os.path.isdir(args[0]) and os.path.isdir(args[1]):
             if len(args) > 2:
                 if args[2][0] == '[':
