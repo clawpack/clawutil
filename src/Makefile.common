@@ -75,24 +75,20 @@ ALL_LFLAGS += $(LFLAGS)
 ifeq ($(findstring gfortran,$(CLAW_FC)),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
-	# PPFLAGS += -cpp
+	OMP_FLAG = -fopenmp
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
-	# PPFLAGS += -fpp 
+	OMP_FLAG = -openmp
 else
 	# Assume gcc like flagging, probably should raise an error here
 	MODULE_FLAG = -J
-	# PPFLAGS += -cpp
+	OMP_FLAG = -fopenmp
 endif
 
-# Only set PPFLAGS in ALL_FFLAGS if this is the base Makefile run, MAKELEVEL
-# should be set by make itself but some versions do not so we default to
-# always setting it if that's the case
-MAKELEVEL ?= 0
-# ifeq ($(MAKELEVEL),0)
-# 	ALL_FFLAGS += $(PPFLAGS)
-# endif
+# We may want to set MAKELEVEL here as it is not always set but we know we are
+# not the first level (the original calling Makefile should be MAKELEVEL = 0)
+# MAKELEVEL ?= 0
 
 #----------------------------------------------------------------------------
 # Targets that do not correspond to file names:
