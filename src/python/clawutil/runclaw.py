@@ -22,7 +22,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     """
 
     import os,glob,shutil,time
-    verbose = False
+    verbose = True
     xclawout = None
     xclawerr = None
 
@@ -47,11 +47,11 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     if rundir is None:
         rundir = os.getcwd()
     rundir = os.path.abspath(rundir)
-    print "Will take data from ", rundir
+    print "==> runclaw: Will take data from ", rundir
 
     # directory for fort.* files:
     outdir = os.path.abspath(outdir)
-    print '== runclaw: Will write output to ',outdir
+    print '==> runclaw: Will write output to ',outdir
     
     
     #returncode = clawjob.runxclaw()
@@ -83,7 +83,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
             hour = str(tm[3]).zfill(2)
             minute = str(tm[4]).zfill(2)
             second = str(tm[5]).zfill(2)
-            outdir_backup = outdir + '_%s%s%s-%s%s%s' \
+            outdir_backup = outdir + '_%s-%s-%s-%s%s%s' \
                   % (year,month,day,hour,minute,second)
             if verbose:
                 print "==> runclaw: Directory already exists: ",os.path.split(outdir)[1]
