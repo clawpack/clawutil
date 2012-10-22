@@ -1419,19 +1419,19 @@ class GeoclawInputData(Data):
         file.close()
 
         # Topography data
-        file = open_datafile('topo.data')
-        data_write(file,self,'topo_type','(Type topography specification)')
+        out_file = open_datafile('topo.data')
+        data_write(out_file,self,'topo_type','(Type topography specification)')
         if self.topo_type == 0:
             self.ntopofiles = len(self.topofiles)
-            data_write(file, self, 'ntopofiles')
+            data_write(out_file, self, 'ntopofiles')
             for tfile in self.topofiles:
                 try:
                     fname = os.path.abspath(tfile[-1])
                 except:
                     print "*** Error: file not found: ",tfile[-1]
                     raise MissingFile("file not found")
-                file.write("\n'%s' \n " % fname)
-                file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
+                out_file.write("\n'%s' \n " % fname)
+                out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.topo_type == 1:
             data_write(out_file,self,'topo_location','(Bathymetry jump location)')
             data_write(out_file,self,'topo_left','(Depth to left of bathy_location)')
@@ -1445,7 +1445,7 @@ class GeoclawInputData(Data):
             data_write(out_file,self,'beach_slope','(Slope of beach)')
         else:
             raise NotImplemented("Topography type %s has not been implemented." % topo_type)    
-        file.close()
+        out_file.close()
 
         # Moving topography settings
         file = open_datafile('dtopo.data')
