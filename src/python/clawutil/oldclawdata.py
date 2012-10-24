@@ -1448,33 +1448,33 @@ class GeoclawInputData(Data):
         out_file.close()
 
         # Moving topography settings
-        file = open_datafile('dtopo.data')
+        out_file = open_datafile('dtopo.data')
         self.mdtopofiles = len(self.dtopofiles)
-        data_write(file, self, 'mdtopofiles')
-        data_write(file, self, None)
+        data_write(out_file, self, 'mdtopofiles')
+        data_write(out_file, self, None)
         for tfile in self.dtopofiles:
             try:
                 fname = "'%s'" % os.path.abspath(tfile[-1])
             except:
                 # print "*** Error: file not found: ",tfile[-1]
                 raise MissingFile("file not found")
-            file.write("\n%s \n" % fname)
-            file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
-        file.close()
+            out_file.write("\n%s \n" % fname)
+            out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
+        out_file.close()
 
         # Initial perturbation
-        file = open_datafile('qinit.data')
-        data_write(file, self, 'qinit_type')
+        out_file = open_datafile('qinit.data')
+        data_write(out_file, self, 'qinit_type')
         # Single-layer perturbation requested
         if self.num_layers == 1:
-            data_write(file, self, None)
+            data_write(out_file, self, None)
             for tfile in self.qinitfiles:
                 try:
                     fname = "'%s'" % os.path.abspath(tfile[-1])
                 except:
                     raise MissingFile("file not found")
-                file.write("\n%s  \n" % fname)
-                file.write("%3i %3i \n" % tuple(tfile[:-1]))
+                out_file.write("\n%s  \n" % fname)
+                out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         # Analytical initialization, good for 2 layers
         elif self.num_layers == 2:
             data.data_write(out_file,self,'epsilon','(Perturbation strength)')
@@ -1489,17 +1489,17 @@ class GeoclawInputData(Data):
                 data_write(out_file,self,'sigma','(Gaussian width')
             else:
                 raise NotImplemented("Initialization type %s not implemented." % qinit_type)
-        file.close()
+        out_file.close()
 
         # Create gauges file
         make_setgauges_datafile(self)
 
         # Fixed grid settings
-        file = open_datafile('fixed_grids.data')
+        out_file = open_datafile('fixed_grids.data')
         self.nfixedgrids = len(self.fixedgrids)
-        data_write(file, self, 'nfixedgrids')
-        data_write(file, self, None)
+        data_write(out_file, self, 'nfixedgrids')
+        data_write(out_file, self, None)
         for fixedgrid in self.fixedgrids:
-            file.write(11*"%g  " % tuple(fixedgrid) +"\n")
-        file.close()
+            out_file.write(11*"%g  " % tuple(fixedgrid) +"\n")
+        out_file.close()
 
