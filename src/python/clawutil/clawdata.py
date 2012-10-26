@@ -745,7 +745,7 @@ class GaugeData(ClawData):
         # Open and read in gauge file
         path = os.path.join(data_path, file_name)
         if not os.path.isfile(path):
-            raise IOException("Cannot find gauge data file %s" % path)
+            raise IOError("Cannot find gauge data file %s" % path)
 
         gauge_file = open(path,'r')
         lines = gauge_file.readlines()
@@ -779,7 +779,7 @@ class GaugeData(ClawData):
                 sgno = [sgno]; x = [x]; y = [y]; t1 = [t1]; t2 = [t2]
 
         except:
-            raise IOException("Failed to read in gauge data.")
+            raise IOError("Failed to read in gauge data.")
 
         # gauge number, x, y, t1, t2
         sgno = np.array(sgno, dtype=int)  # convert to int
@@ -792,11 +792,7 @@ class GaugeData(ClawData):
             if len(nn) == 0:
                 print "*** Error: didn't find gauge number %s in %s" % (n,fname)
             else:
-                self.gauges[0] = n
-                self.gauges[1] = x[nn[0]]
-                self.gauges[2] = y[nn[0]]
-                self.gauges[3] = t1[nn[0]]
-                self.gauges[3] = t2[nn[0]]
+                self.gauges.append([n, x[nn[0]], y[nn[0]], t1[nn[0]], t2[nn[0]]])
 
 
 class UserData(ClawData):
