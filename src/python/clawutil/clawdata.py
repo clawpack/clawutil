@@ -596,37 +596,7 @@ class AmrclawInputData(ClawInputData):
         self.data_write('uprint')
         self.data_write()
 
-        if len(self.regions) > 0:
-            print "*** Warning: regions not yet implemented!"
 
-
-def regions_and_gauges():
-    r"""
-    Placeholder... where to put these?
-    """
-    clawdata.add_attribute('nregions', len(clawdata.regions))
-    data_write(file, clawdata.nregions, 'nregions')
-    for regions in clawdata.regions:
-        file.write(8*"   %g" % tuple(regions) +"\n")
-
-    clawdata.add_attribute('ngauges', len(clawdata.gauges))
-    data_write(file, clawdata.ngauges, 'ngauges')
-    gaugeno_used = []
-    for gauge in clawdata.gauges:
-        gaugeno = gauge[0]
-        if gaugeno in gaugeno_used:
-            print "*** Gauge number %s used more than once! " % gaugeno
-            raise Exception("Repeated gauge number")
-        else:
-            gaugeno_used.append(gauge[0])
-        #file.write("%4i %19.10e  %17.10e  %13.6e  %13.6e\n" % tuple(gauge))
-        file.write(5*"   %g" % tuple(gauge) +"\n")
-
-
-
-
-#-----------------------------------------------------
-# New version 6/30/09
 
 class ClawRunData(ClawData):
     r"""
@@ -654,6 +624,9 @@ class ClawRunData(ClawData):
             clawdata = AmrclawInputData(num_dim)
             self.add_attribute('clawdata', clawdata)
             self.datalist.append(clawdata)
+            regiondata = RegionData()
+            self.add_attribute('regiondata',regiondata)
+            self.datalist.append(regiondata)
             gaugedata = GaugeData()
             self.add_attribute('gaugedata',gaugedata)
             self.datalist.append(gaugedata)
@@ -668,6 +641,9 @@ class ClawRunData(ClawData):
             geodata = GeoclawInputData(num_dim)
             self.add_attribute('geodata', geodata)
             self.datalist.append(geodata)
+            regiondata = RegionData()
+            self.add_attribute('regiondata',regiondata)
+            self.datalist.append(regiondata)
             gaugedata = GaugeData()
             self.add_attribute('gaugedata',gaugedata)
             self.datalist.append(gaugedata)
@@ -688,19 +664,33 @@ class ClawRunData(ClawData):
         exec('self.%s = userdata' % name)
         return userdata
 
-    def add_GaugeData(self):
-        r"""
-        Create a gaugedata attribute for writing to gauges.data.
-        """
-        gaugedata = GaugeData(self.num_dim)
-        self.add_attribute(gaugedata)
-        self.datalist.append(gaugedata)
-        
-        return gaugedata
 
     def write(self):
         for d in self.datalist:
             d.write()
+
+class RegionData(ClawData):
+    r""""""
+
+    def __init__(self,regions=None):
+
+        super(RegionData,self).__init__()
+
+        if regions is None or not isinstance(regions,list):
+            self.add_attribute('regions',[])
+        else:
+            self.add_attribute('regions',regions)
+
+
+    def write(self,out_file='regions.data',data_source='setrun.py'):
+
+        self.open_data_file(out_file,data_source)
+
+        self.data_write(value=len(self.regions),alt_name='num_regions')
+        for regions in self.regions:
+            self._out_file.write(8*"%g  " % tuple(regions) +"\n")
+        self.close_data_file()
+
 
 
 class GaugeData(ClawData):
@@ -849,7 +839,6 @@ class GeoclawInputData(ClawData):
         self.add_attribute('speed_tolerance',[1.0e12]*6)
         self.add_attribute('deep_depth',1.0e2)
         self.add_attribute('max_level_deep',3)
-        self.add_attribute('regions',[])
         
         # Multilayer data
         self.add_attribute('check_richardson',False)
@@ -937,13 +926,6 @@ class GeoclawInputData(ClawData):
         self.data_write('deep_depth')
         self.data_write('max_level_deep')
         self.data_write()
-        
-        # Regions settings
-        nregions = len(self.regions)
-        self.data_write(value=nregions,alt_name='nregions')
-        for regions in self.regions:
-            self._out_file.write(8*"%g  " % tuple(regions) +"\n")
-        self.close_data_file()
 
         # Topography data
         self.open_data_file('topo.data',data_source)
