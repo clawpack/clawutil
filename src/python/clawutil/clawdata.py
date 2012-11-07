@@ -4,9 +4,9 @@ Data Module
 Contains the general class definition and the subclasses of the Clawpack data
 objects.
 
-Rewritten for 5.0:
+Changes in 5.0:
  Stripped down version of Data object, no longer keeps track of "owners".
- data classes are now subclasses of ClawData, which checks if attributes
+ Data classes are now subclasses of ClawData, which checks if attributes
    already exist before setting.
 
 """
@@ -15,12 +15,10 @@ import os
 import string
 
 import numpy as np
-from matplotlib.mlab import find
 
-
-# ========================
+# ==============================================================================
+#  Base data class for Clawpack data objects
 class ClawData(object):
-# ========================
     r"""
     Class to be subclassed when defining data objects that should have
     a limited set of allowed attributes.  Useful to guard against
@@ -48,6 +46,7 @@ class ClawData(object):
             for attr in attributes:
                 self.add_attribute(attr,None)
 
+
     def __setattr__(self,name,value):
         r"""
         Check that attribute exists before setting it.
@@ -64,12 +63,14 @@ class ClawData(object):
         # attribute exists, ok to set:
         object.__setattr__(self,name,value)
 
+
     def __str__(self):
         r"""Returns string representation of this object"""
         output = "%s%s\n" % ("Name".ljust(25),"Value".ljust(12))
         for (k,v) in self.iteritems():
             output += "%s%s\n" % (str(k).ljust(25),str(v).ljust(12))
         return output
+
 
     def add_attribute(self, name, value=None, add_to_list=True):
         r"""
@@ -86,12 +87,14 @@ class ClawData(object):
             self._attributes.append(name)
         object.__setattr__(self,name,value)
 
+
     def add_attributes(self, arg_list, value=None):
         r"""
         Add a list of attributes, each initialized to *value*.
         """
         for name in arg_list:
             self.add_attribute(name, value)
+
 
     def remove_attributes(self, arg_list):
         r"""
@@ -106,6 +109,12 @@ class ClawData(object):
             self._attributes.remove(arg)
             delattr(self,arg)
 
+
+    def attributes(self):
+        r"""Returns tuple of attribute names"""
+        return tuple(self._attributes)
+
+
     def has_attribute(self,name):
         r"""
         Check if this data object has the given attributes
@@ -117,6 +126,7 @@ class ClawData(object):
          - (bool) - True if data object contains a data attribute name
         """
         return name in self._attributes
+
         
     def iteritems(self):
         r"""
@@ -126,6 +136,7 @@ class ClawData(object):
          - (Iterator) Iterator over attributes and values
         """
         return [(k,getattr(self,k)) for k in self._attributes]
+
 
     def open_data_file(self, name, datasource='setrun.py'):
         """
@@ -250,15 +261,85 @@ class ClawData(object):
 
         return value
 
+#  Base data class for Clawpack data objects
+# ==============================================================================
 
-#-----------------------------------------------------------------------
 
-# New classes and functions for dealing with data in setrun function.
+# ==============================================================================
+# Clawpack input data classes
+class ClawRunData(ClawData):
+    r"""
+    Object that contains all data objects that need to written out.
+
+    Depending on the package type, this object contains the necessary data
+    objects that need to eventually be written out to files.
+    """
+
+    def __init__(self, pkg, num_dim):
+        super(ClawRunData,self).__init__()
+        self.add_attribute('pkg',pkg)
+        self.add_attribute('num_dim',num_dim)
+        self.add_attribute('data_list',[])
+        self.add_attribute('xclawcmd',None)
+
+
+        # Add package specific data objects
+        if pkg.lower() in ['classic', 'classicclaw']:
+            self.xclawcmd = 'xclaw'
+
+            self.add_data(ClawInputData(num_dim),'clawdata')
+
+        elif pkg.lower() in ['amrclaw', 'amr']:
+            self.xclawcmd = 'xamr'
+
+            self.add_data(AmrclawInputData(num_dim),'clawdata')
+            self.add_data(RegionData(),'regiondata')
+            self.add_data(GaugeData(),'gaugedata')
+
+        elif pkg.lower() in ['geoclaw']:
+            self.xclawcmd = 'xgeoclaw'
+
+            # Required data set for basic run parameters:
+            self.add_data(AmrclawInputData(num_dim),'clawdata')
+            self.add_data(GeoclawInputData(num_dim),'geodata')
+            self.add_data(RegionData(),'regiondata')
+            self.add_data(GaugeData(),'gaugedata')
+
+        else:
+            raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
+
+
+    def add_data(self,data,name,file_name=None):
+        r"""Add data object named *name* and written to *file_name*."""
+        self.add_attribute(name,data)
+        self.data_list.append(data)
+
+
+    def new_UserData(self,name,fname):
+        r"""
+        Create a new attribute called name
+        for application specific data to be written
+        to the data file fname.
+        """
+        data = UserData(fname)
+        self.add_data(data,name,fname)
+        return data
+
+
+    def write(self):
+        r"""Write out each data objects in datalist """
+        for data_object in self.data_list:
+            data_object.write()
+
+
 
 class ClawInputData(ClawData):
     r"""
-    Object that will be written out to claw.data.
+    Object containing basic Clawpack input data, usually written to 'claw.data'.
+
+
     """
+
     def __init__(self, num_dim):
         super(ClawInputData,self).__init__()
 
@@ -298,8 +379,6 @@ class ClawInputData(ClawData):
         self.add_attribute('fwave',False)
         self.add_attribute('restart',False)
         self.add_attribute('restart_file','')
-        self.add_attribute('regions',[])
-        self.add_attribute('gauges',[])
 
         if num_dim == 1:
             self.add_attribute('lower',[0.])
@@ -497,9 +576,12 @@ class ClawInputData(ClawData):
         self.data_write()
 
 
+
 class AmrclawInputData(ClawInputData):
     r"""
-    Object that will be written out to amrclaw.data.
+    Data object containing AMRClaw input data.
+
+    Extends ClawInputData adding necessary data for AMR.
     """
     def __init__(self, num_dim):
 
@@ -512,7 +594,7 @@ class AmrclawInputData(ClawInputData):
         if num_dim == 3:
             self.add_attribute('refinement_ratios_z',[1])
         if num_dim == 1:
-            raise Exception("*** 1d AMR not yet supported")
+            raise NotImplemented("1d AMR not yet supported")
         self.add_attribute('variable_dt_refinement_ratios',False)
 
         self.add_attribute('refinement_ratios_t',[1])
@@ -598,239 +680,29 @@ class AmrclawInputData(ClawInputData):
 
 
 
-class ClawRunData(ClawData):
-    r"""
-    Object that will be written out to claw.data.
-    """
-    def __init__(self, pkg, num_dim):
-        super(ClawRunData,self).__init__()
-        self.add_attribute('pkg',pkg)
-        self.add_attribute('num_dim',num_dim)
-        self.add_attribute('datalist',[])
-
-
-        if pkg.lower() in ['classic', 'classicclaw']:
-            self.add_attribute('xclawcmd', 'xclaw')
-
-            # Required data set for basic run parameters:
-            clawdata = ClawInputData(num_dim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
-
-        elif pkg.lower() in ['amrclaw', 'amr']:
-            self.add_attribute('xclawcmd', 'xamr')
-
-            # Required data set for basic run parameters:
-            clawdata = AmrclawInputData(num_dim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
-            regiondata = RegionData()
-            self.add_attribute('regiondata',regiondata)
-            self.datalist.append(regiondata)
-            gaugedata = GaugeData()
-            self.add_attribute('gaugedata',gaugedata)
-            self.datalist.append(gaugedata)
-
-        elif pkg.lower() in ['geoclaw']:
-            self.add_attribute('xclawcmd', 'xgeoclaw')
-
-            # Required data set for basic run parameters:
-            clawdata = AmrclawInputData(num_dim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
-            geodata = GeoclawInputData(num_dim)
-            self.add_attribute('geodata', geodata)
-            self.datalist.append(geodata)
-            regiondata = RegionData()
-            self.add_attribute('regiondata',regiondata)
-            self.datalist.append(regiondata)
-            gaugedata = GaugeData()
-            self.add_attribute('gaugedata',gaugedata)
-            self.datalist.append(gaugedata)
-
-        else:
-            raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
-
-
-    def new_UserData(self,name,fname):
-        r"""
-        Create a new attribute called name
-        for application specific data to be written
-        to the data file fname.
-        """
-        userdata = UserData(fname)
-        self.datalist.append(userdata)
-        self.add_attribute(name,userdata)
-        exec('self.%s = userdata' % name)
-        return userdata
-
-
-    def write(self):
-        for d in self.datalist:
-            d.write()
-
-class RegionData(ClawData):
-    r""""""
-
-    def __init__(self,regions=None):
-
-        super(RegionData,self).__init__()
-
-        if regions is None or not isinstance(regions,list):
-            self.add_attribute('regions',[])
-        else:
-            self.add_attribute('regions',regions)
-
-
-    def write(self,out_file='regions.data',data_source='setrun.py'):
-
-        self.open_data_file(out_file,data_source)
-
-        self.data_write(value=len(self.regions),alt_name='num_regions')
-        for regions in self.regions:
-            self._out_file.write(8*"%g  " % tuple(regions) +"\n")
-        self.close_data_file()
-
-
-
-class GaugeData(ClawData):
-    r""""""
-
-    def __init__(self):
-
-        # Some defaults are inherited from ClawInputData:
-        super(GaugeData,self).__init__()
-
-        self.add_attribute('gauges',[])
-
-
-    def write(self,out_file='gauges.data',data_source='setrun.py'):
-
-        self.open_data_file(out_file,data_source)
-
-        self.data_write(name='ngauges',value=len(self.gauges))
-
-        gauge_number_used = []
-        for gauge in self.gauges:
-            gauge_number = gauge[0]
-            if gauge_number == gauge_number_used:
-                print "*** Gauge number %s used more than once! " % gauge_number
-                raise Exception("Repeated gauge number")
-            else:
-                gauge_number_used.append(gauge_number)
-
-            self._out_file.write("%4i %19.10e  %17.10e  %13.6e  %13.6e\n" % tuple(gauge))
-
-        self.close_data_file()
-
-
-    def read(self,data_path='./',file_name='gauges.data'):
-        """
-        Read the info from gauges.data.
-        """
-        
-        # Reset gauge data     
-        self.gauges = []
-
-        # Open and read in gauge file
-        path = os.path.join(data_path, file_name)
-        if not os.path.isfile(path):
-            raise IOError("Cannot find gauge data file %s" % path)
-
-        gauge_file = open(path,'r')
-        lines = gauge_file.readlines()
-        gauge_file.close()
-
-        # Skip lines with comment character "#"
-        line_num = 0
-        ignore_line = True
-        while ignore_line:
-            line = lines[line_num] + "#"
-            if line.split()[0][0]=="#":
-                line_num = line_num+1
-            else:
-                ignore_line = False
-
-        # Determine number of gauges
-        try:
-            num_gauges = int(line.split()[0])
-        except:
-            raise Exception("Could not determine number of gauges.")
-        if num_gauges == 0:
-            return
-            
-        # Read data from each gauge
-        try:
-            sgno, x, y, t1, t2 = np.loadtxt(path, unpack=True, 
-                                            skiprows=line_num+1, 
-                                            usecols=range(5))
-            if num_gauges==1:
-                # loadtxt returns numbers rather than arrays in this case:
-                sgno = [sgno]; x = [x]; y = [y]; t1 = [t1]; t2 = [t2]
-
-        except:
-            raise IOError("Failed to read in gauge data.")
-
-        # gauge number, x, y, t1, t2
-        sgno = np.array(sgno, dtype=int)  # convert to int
-
-        for n in sgno:
-            nn = find(sgno==n)
-            if len(nn) > 1:
-                print "*** Warning: found more than one gauge numbered ",n
-
-            if len(nn) == 0:
-                print "*** Error: didn't find gauge number %s in %s" % (n,fname)
-            else:
-                self.gauges.append([n, x[nn[0]], y[nn[0]], t1[nn[0]], t2[nn[0]]])
-
-
-class UserData(ClawData):
-    r"""
-    Object that will be written out to user file such as setprob.data, as
-    determined by the fname attribute.
-    """
-
-    def __init__(self, fname):
-
-        super(UserData,self).__init__()
-
-        # Create attributes without adding to attributes list:
-
-        # file to be read by Fortran for this data:
-        object.__setattr__(self,'__fname__',fname)
-
-        # dictionary to hold descriptions:
-        object.__setattr__(self,'__descr__',{})
-
-    def add_param(self,name,value,descr=''):
-         self.add_attribute(name,value)
-         descr_dict = self.__descr__
-         descr_dict[name] = descr
-
-    def write(self,data_source='setrun.py'):
-        super(UserData,self).write(self.__fname__, data_source)
-
-
 class GeoclawInputData(ClawData):
     r"""
     Object that will be written out to the various GeoClaw data files.
+
+    Note that this data object will write out multiple files.
     """
     def __init__(self, num_dim):
         super(GeoclawInputData,self).__init__()
 
-        # Set default values:
+        # GeoClaw physics parameters
         self.add_attribute('gravity',9.8)
         self.add_attribute('earth_radius',6367500.0)
         self.add_attribute('coordinate_system',1)
         self.add_attribute('num_layers',1)
         self.add_attribute('rho',1.0)
-        self.add_attribute('eta_init',0.0)
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
         self.add_attribute('friction_forcing',1)
         self.add_attribute('manning_coefficient',0.025)
+
+        # GeoClaw algorithm parameters
         self.add_attribute('friction_depth',1.0e6)
+        self.add_attribute('eta_init',0.0)
         self.add_attribute('variable_dt_refinement_ratios',False)
 
         # Refinement controls
@@ -840,7 +712,7 @@ class GeoclawInputData(ClawData):
         self.add_attribute('deep_depth',1.0e2)
         self.add_attribute('max_level_deep',3)
         
-        # Multilayer data
+        # Multilayer algorithm parameters
         self.add_attribute('check_richardson',False)
         self.add_attribute('richardson_tolerance',0.95)
         self.add_attribute('eigen_method',2)
@@ -1009,3 +881,264 @@ class GeoclawInputData(ClawData):
             self._out_file.write(11*"%g  " % tuple(fixedgrid) +"\n")
         self.close_data_file()
 
+
+# Clawpack input data classes
+# ==============================================================================
+
+# ==============================================================================
+#  Region data object
+class RegionData(ClawData):
+    r""""""
+
+    def __init__(self,regions=None):
+
+        super(RegionData,self).__init__()
+
+        if regions is None or not isinstance(regions,list):
+            self.add_attribute('regions',[])
+        else:
+            self.add_attribute('regions',regions)
+
+
+    def write(self,out_file='regions.data',data_source='setrun.py'):
+
+        self.open_data_file(out_file,data_source)
+
+        self.data_write(value=len(self.regions),alt_name='num_regions')
+        for regions in self.regions:
+            self._out_file.write(8*"%g  " % tuple(regions) +"\n")
+        self.close_data_file()
+
+# ==============================================================================
+        
+# ==============================================================================
+#  Gauge data objects
+class Gauge(object):
+    r"""Object representing a single gauge"""
+
+    # Time properties
+    def t1():
+        doc = "(float) - Beginning of gauge recording time interval."
+        def fget(self):
+            if self.t is not None:
+                return np.min(self.t)
+            else:
+                return None
+        def fset(self, value):
+            if self.q is None:
+                if self.t is not None:
+                    self.t[0] = value
+                else:
+                    self.t = [value,np.infty]
+            else:
+                raise ValueError('Time interval already set.')
+        return locals()
+    t1 = property(**t1())
+
+    def t2():
+        doc = "(float) - End of gauge recording time interval."
+        def fget(self):
+            if self.t is not None:
+                return np.max(self.t)
+            else:
+                return None
+        def fset(self, value):
+            if self.q is None:
+                if self.t is not None:
+                    self.t[1] = value
+                else:
+                    self.t = [-np.infty,value]
+            else:
+                raise ValueError('Time interval already set.')
+        return locals()
+    t2 = property(**t2())
+
+    def location():
+        doc = "(tuple) - Location of this gauge."
+        def fget(self):
+            if self._location is None:
+                return "Unknown"
+            return self._location
+        def fset(self, value):
+            if isinstance(value,tuple) or isinstance(value,list):
+                self._location = value
+            else:
+                raise ValueError("Location information must be a list or tuple.")
+        return locals()
+    location = property(**location())
+
+    def __init__(self,number,location=None):
+        
+        # Gauge descriptors
+        self.number = number
+        self._location = None
+        if location is not None:
+            self.location = location
+
+        # Data written out (usually)
+        self.level = None
+        self.t = None
+        self.q = None
+
+    def __repr__(self):
+        # Make sure all necessary data has been set
+        if self._location is None or self.t1 is None or self.t2 is None:
+            output = None
+        else:
+            output = "%4i" % self.number
+            output = " ".join((output,"%19.10e" % self.location[0]))
+            output = " ".join((output,"%17.10e" % self.location[1]))
+            output = " ".join((output,"%13.6e" % self.t1))
+            output = " ".join((output,"%13.6e\n" % self.t2))
+        return output
+
+    def __str__(self):
+        return ("Gauge %s: location = %s, t = [%s,%s]" % 
+                                    (self.number,self.location,self.t1,self.t2))
+
+    def read(self,output_path='./',file_name='fort.gauge'):
+        r"""Read in the file at output_path/file_name and look for this gauge"""
+
+        file_path = os.path.join(output_path,file_name)
+        raw_data = np.loadtxt(file_path)
+
+        # Construct index array for this gauge
+        gauge_numbers = np.array([int(value) for value in raw_data[:,0]])
+        gauge_indices = np.nonzero(gauge_numbers == self.number)[0]
+        if len(gauge_indices) == 0:
+            raise Exception("Gauge number %s not found in %s" % 
+                                                        (self.number,file_path))
+
+        # Extract specific info for each time point
+        self.level = [int(value) for value in raw_data[gauge_indices,1]]
+        self.t = raw_data[gauge_indices,2]
+        self.q = raw_data[gauge_indices,2:].transpose()
+
+
+class GaugeData(ClawData):
+    r""""""
+
+    def gauges():
+        doc = "(list) - List of gauges in this data object."
+        def fget(self):
+            return self._gauges
+        def fset(self, value):
+            self.add_gauge(value)
+        return locals()
+    gauges = property(**gauges())
+
+    @property
+    def gauge_numbers(self):
+        return [gauge.number for gauge in self.gauges]
+
+    def __init__(self):
+
+        # Some defaults are inherited from ClawInputData:
+        super(GaugeData,self).__init__()
+
+        self._gauges = []
+
+    def add_gauge(self,gauge):
+        r"""Add gauge to gauges list"""
+
+        if isinstance(gauge,list) or isinstance(gauge,tuple) or \
+           isinstance(gauge,np.ndarray):
+            if int(gauge[0]) in self.gauge_numbers:
+                raise Exception("Gauge number already exists.")
+            new_gauge = Gauge(int(gauge[0]),
+                              location=[float(gauge[1]),float(gauge[2])])
+            new_gauge.t1 = float(gauge[3])
+            new_gauge.t2 = float(gauge[4])
+        elif isinstance(gauge,Gauge):
+            if gauge.number in self.gauge_numbers:
+                raise Exception("Gauge number already exists.")
+            new_gauge = gauge
+        else:
+            raise ValueError("New gauge must be of type list, tuple,"
+                             " ndarray or Gauge.")
+
+        self._gauges.append(new_gauge)
+
+
+    def write(self,out_file='gauges.data',data_source='setrun.py'):
+        r"""Write out gauge information data file."""
+        # Check to make sure we have only unique gauge numbers
+        if len(self.gauges) > 0:
+            if len(self.gauge_numbers) != len(set(self.gauge_numbers)):
+                raise Exception("Non unique gauge numbers specified.")
+
+        # Write out data file
+        self.open_data_file(out_file,data_source)
+        self.data_write(name='ngauges',value=len(self.gauges))
+        for gauge in self.gauges:
+            self._out_file.write(repr(gauge))
+        self.close_data_file()
+
+
+    def read(self,data_path='./',file_name='gauges.data'):
+        r"""
+        Read the info from gauges.data.
+        """
+        
+        # Reset gauge data
+        self._gauges = []
+
+        # Open and read in gauge file
+        path = os.path.join(data_path, file_name)
+        gauge_file = open(path,'r')
+        lines = gauge_file.readlines()
+        gauge_file.close()
+
+        # Skip lines with comment character "#"
+        line_num = 0
+        ignore_line = True
+        while ignore_line:
+            line = lines[line_num] + "#"
+            if line.split()[0][0]=="#":
+                line_num = line_num+1
+            else:
+                ignore_line = False
+
+        # Determine number of gauges
+        try:
+            num_gauges = int(line.split()[0])
+        except:
+            raise Exception("Could not determine number of gauges.")
+        if num_gauges == 0:
+            return
+            
+        # Add gauge for each remaining line in file
+        data = np.loadtxt(path, unpack=True, skiprows=line_num+1)
+        if len(data.shape) == 1:
+            data = [data]
+        for gauge_data in data:
+            self.add_gauge(gauge_data)
+
+#  Gauge data objects
+# ==============================================================================
+
+class UserData(ClawData):
+    r"""
+    Object that will be written out to user file such as setprob.data, as
+    determined by the fname attribute.
+    """
+
+    def __init__(self, fname):
+
+        super(UserData,self).__init__()
+
+        # Create attributes without adding to attributes list:
+
+        # file to be read by Fortran for this data:
+        object.__setattr__(self,'__fname__',fname)
+
+        # dictionary to hold descriptions:
+        object.__setattr__(self,'__descr__',{})
+
+    def add_param(self,name,value,descr=''):
+         self.add_attribute(name,value)
+         descr_dict = self.__descr__
+         descr_dict[name] = descr
+
+    def write(self,data_source='setrun.py'):
+        super(UserData,self).write(self.__fname__, data_source)
