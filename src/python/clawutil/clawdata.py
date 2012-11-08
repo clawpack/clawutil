@@ -697,8 +697,9 @@ class GeoclawInputData(ClawData):
         self.add_attribute('rho',1.0)
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
-        self.add_attribute('friction_forcing',1)
-        self.add_attribute('manning_coefficient',0.025)
+        self.add_attribute('friction_forcing',True)
+        self.add_attribute('wet_manning_coefficient',0.025)
+        self.add_attribute('dry_manning_coefficient',0.025)
 
         # GeoClaw algorithm parameters
         self.add_attribute('friction_depth',1.0e6)
@@ -766,10 +767,10 @@ class GeoclawInputData(ClawData):
 
         if self.coordinate_system == 1 and self.coriolis_forcing:
             self.data_write('theta_0')
-        self.data_write('friction_forcing')
-        if self.friction_forcing == 1:
-            self.data_write('manning_coefficient')
-            self.data_write('friction_depth')
+        self.data_write('friction_forcing')        
+        self.data_write('wet_manning_coefficient')
+        self.data_write('dry_manning_coefficient')
+        self.data_write('friction_depth')
         self.data_write()
         if not isinstance(self.dry_tolerance,list):
             self.dry_tolerance = [self.dry_tolerance for n in xrange(self.num_layers)]
