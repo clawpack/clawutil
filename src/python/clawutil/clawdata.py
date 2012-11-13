@@ -225,7 +225,31 @@ class ClawData(object):
                                         (padded_value, alt_name, description))
   
 
-    def _parse_value(value):
+    def read(self,path,force=False):
+        r"""Read and fill applicable data attributes.
+
+        Note that if the data attribute is not found an exception will be
+        raised unless the force argument is set to True in which case a new
+        attribute will be added.
+        """
+
+        data_file = open(os.path.abspath(path),'r')
+
+        for lineno,line in enumerate(data_file):
+            if "=:" not in line:
+                continue
+
+            value, tail = line.split("=:")
+            varname = tail.split()[0]
+            if self.has_attribute(varname) or force:
+                value = self._parse_value(value)
+                if not self.has_attribute(varname):
+                    self.add_attribute(varname,value)
+                else:
+                    getattr(self,varname,value)
+    
+
+    def _parse_value(self,value):
         r"""
         Attempt to make sense of a value string from a config file.  If the
         value is not obviously an integer, float, or boolean, it is returned as
@@ -243,7 +267,7 @@ class ClawData(object):
 
         # assume that values containing spaces are lists of values
         if len(value.split()) > 1:
-            return [_parse_value(vv) for vv in value.split()]
+            return [self._parse_value(vv) for vv in value.split()]
 
         try:
             # see if it's an integer
@@ -772,13 +796,11 @@ class GeoclawInputData(ClawData):
         # Write out wet/dry coefficient if provided, otherwise write out the 
         # generic version    
         if self.wet_manning_coefficient is None:
-            self.data_write('manning_coefficient')
-        else:
-            self.data_write('wet_manning_coefficient')    
+            self.wet_manning_coefficient = self.manning_coefficient
+        self.data_write('wet_manning_coefficient',description='(Manning coefficient used when initially wet)')    
         if self.dry_manning_coefficient is None:
-            self.data_write('manning_coefficient')
-        else:
-            self.data_write('dry_manning_coefficient')
+            self.dry_manning_coefficient = self.manning_coefficient    
+        self.data_write('dry_manning_coefficient',description='(Manning coefficient used when initially dry)')
         self.data_write('friction_depth')
         self.data_write()
         
@@ -1058,8 +1080,9 @@ class GaugeData(ClawData):
                 raise Exception("Gauge number already exists.")
             new_gauge = Gauge(int(gauge[0]),
                               location=[float(gauge[1]),float(gauge[2])])
-            new_gauge.t1 = float(gauge[3])
-            new_gauge.t2 = float(gauge[4])
+            if len(gauge) == 5:
+                new_gauge.t1 = float(gauge[3])
+                new_gauge.t2 = float(gauge[4])
         elif isinstance(gauge,Gauge):
             if gauge.number in self.gauge_numbers:
                 raise Exception("Gauge number already exists.")
