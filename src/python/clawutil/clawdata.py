@@ -1142,7 +1142,7 @@ class GaugeData(ClawData):
             return
             
         # Add gauge for each remaining line in file
-        data = np.loadtxt(path, unpack=True, skiprows=line_num+1)
+        data = np.loadtxt(path, skiprows=line_num+1)
         if len(data.shape) == 1:
             data = [data]
         for gauge_data in data:
