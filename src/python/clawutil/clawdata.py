@@ -1029,24 +1029,6 @@ class Gauge(object):
         return ("Gauge %s: location = %s, t = [%s,%s]" % 
                                     (self.number,self.location,self.t1,self.t2))
 
-    def read(self,output_path='./',file_name='fort.gauge'):
-        r"""Read in the file at output_path/file_name and look for this gauge"""
-
-        file_path = os.path.join(output_path,file_name)
-        raw_data = np.loadtxt(file_path)
-
-        # Construct index array for this gauge
-        gauge_numbers = np.array([int(value) for value in raw_data[:,0]])
-        gauge_indices = np.nonzero(gauge_numbers == self.number)[0]
-        if len(gauge_indices) == 0:
-            raise Exception("Gauge number %s not found in %s" % 
-                                                        (self.number,file_path))
-
-        # Extract specific info for each time point
-        self.level = [int(value) for value in raw_data[gauge_indices,1]]
-        self.t = raw_data[gauge_indices,2]
-        self.q = raw_data[gauge_indices,2:].transpose()
-
 
 class GaugeData(ClawData):
     r""""""
@@ -1109,44 +1091,74 @@ class GaugeData(ClawData):
         self.close_data_file()
 
 
-    def read(self,data_path='./',file_name='gauges.data'):
-        r"""
-        Read the info from gauges.data.
-        """
-        
-        # Reset gauge data
-        self._gauges = []
+    def read(self,data_path="./",file_name='gauges.data',
+             read_header_only=False,requested_gauges='all'):
+        r""""""
 
         # Open and read in gauge file
         path = os.path.join(data_path, file_name)
         gauge_file = open(path,'r')
-        lines = gauge_file.readlines()
-        gauge_file.close()
-
-        # Skip lines with comment character "#"
-        line_num = 0
+        
+        # Read past coment and blank lines
+        header_lines = 0
         ignore_line = True
         while ignore_line:
-            line = lines[line_num] + "#"
-            if line.split()[0][0]=="#":
-                line_num = line_num+1
+            line = gauge_file.readline()
+            if line[0] == "#" or len(line.strip()) == 0:
+                header_lines += 1
             else:
-                ignore_line = False
+                break
 
-        # Determine number of gauges
-        try:
-            num_gauges = int(line.split()[0])
-        except:
-            raise Exception("Could not determine number of gauges.")
-        if num_gauges == 0:
-            return
-            
-        # Add gauge for each remaining line in file
-        data = np.loadtxt(path, skiprows=line_num+1)
-        if len(data.shape) == 1:
-            data = [data]
-        for gauge_data in data:
-            self.add_gauge(gauge_data)
+        # Read number of gauges, should be line that was last read in
+        num_gauges = int(line.split()[0])
+        header_lines += 2 + num_gauges
+
+        # Read in header gauge descriptions
+        for n in xrange(num_gauges):
+            line = gauge_file.readline()
+            print line.split()
+            self.add_gauge(line.split())
+
+        # Close file
+        gauge_file.close()
+
+        if not read_header_only:
+            # Construct requested gauge list
+            if requested_gauges == 'all':
+                requested_gauges = self.gauge_numbers
+            else:
+                if (not isinstance(requested_gauges,list) or
+                    not isinstance(requested_gauges,tuple)):
+
+                    requested_gauges = list(requested_gauges)
+                
+                # Check that the data object thinks that the requested gauge is
+                # in the data file
+                for gauge_number in requested_gauges:
+                    if gauge_number not in self.gauge_numbers:
+                        raise Exception("Requested gauge number %s not present."
+                                                                 % gauge_number)
+
+            # Use loadtxt to open file for gauge time series reading
+            raw_data = np.loadtxt(path,skiprows=header_lines)
+            data_gauge_numbers = np.array([int(value) for value in raw_data[:,0]])
+
+            for gauge in self.gauges:
+                if gauge.number in requested_gauges:
+
+                    # Construct index array for this gauge
+                    gauge_indices = np.nonzero(data_gauge_numbers == gauge.number)[0]
+
+                    if len(gauge_indices) == 0:
+                        raise Exception("Gauge number %s not found in %s" % 
+                                                        (self.number,file_path))
+
+                    # Extract specific info for each time point
+                    gauge.level = [int(value) for value in raw_data[gauge_indices,1]]
+                    gauge.t = raw_data[gauge_indices,2]
+                    gauge.q = raw_data[gauge_indices,3:].transpose()
+
+
 
 #  Gauge data objects
 # ==============================================================================
