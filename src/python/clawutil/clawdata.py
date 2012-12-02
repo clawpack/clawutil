@@ -990,7 +990,7 @@ class Gauge(object):
         doc = "(tuple) - Location of this gauge."
         def fget(self):
             if self._location is None:
-                return "Unknown"
+                return ("Unknown","Unknown")
             return self._location
         def fset(self, value):
             if isinstance(value,tuple) or isinstance(value,list):
@@ -1045,7 +1045,7 @@ class Gauge(object):
         # Extract specific info for each time point
         self.level = [int(value) for value in raw_data[gauge_indices,1]]
         self.t = raw_data[gauge_indices,2]
-        self.q = raw_data[gauge_indices,2:].transpose()
+        self.q = raw_data[gauge_indices,3:].transpose()
 
 
 class GaugeData(ClawData):
