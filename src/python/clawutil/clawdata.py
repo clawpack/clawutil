@@ -182,7 +182,7 @@ class ClawData(object):
         r"""
         Write out value to data file, in the form ::
 
-           value    # alt_name  [description]
+           value =: name   # [description]
 
         Remove brackets and commas from lists, and replace booleans by T/F.
 
@@ -220,9 +220,14 @@ class ClawData(object):
                     string_value = 'F'
             else:
                 string_value = repr(value)
-            padded_value = string.ljust(string_value, 40)
-            self._out_file.write('%s # %s  %s\n' % 
-                                        (padded_value, alt_name, description))
+            padded_value = string.ljust(string_value, 20)
+            padded_name = string.ljust(alt_name,20)
+            if description != '':
+                self._out_file.write('%s =: %s # %s \n' % 
+                                        (padded_value, padded_name, description))
+            else:
+                self._out_file.write('%s =: %s\n' % 
+                                    (padded_value, padded_name))
   
 
     def read(self,path,force=False):
@@ -241,12 +246,14 @@ class ClawData(object):
 
             value, tail = line.split("=:")
             varname = tail.split()[0]
+
+            # Set this parameter
             if self.has_attribute(varname) or force:
                 value = self._parse_value(value)
                 if not self.has_attribute(varname):
                     self.add_attribute(varname,value)
                 else:
-                    getattr(self,varname,value)
+                    setattr(self,varname,value)
     
 
     def _parse_value(self,value):
