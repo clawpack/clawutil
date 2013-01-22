@@ -401,7 +401,7 @@ class ClawInputData(ClawData):
         self.add_attribute('limiter',[4])
         self.add_attribute('t0',0.)
         self.add_attribute('num_ghost',2)
-        self.add_attribute('fwave',False)
+        self.add_attribute('use_fwaves',False)
         self.add_attribute('restart',False)
         self.add_attribute('restart_file','')
 
@@ -547,7 +547,7 @@ class ClawInputData(ClawData):
         self.data_write('capa_index')
         if self.num_aux > 0:
             self.data_write(file, self.aux_type, 'aux_type')
-        self.data_write('fwave')
+        self.data_write('use_fwaves')
         self.data_write()
 
         for i in range(len(self.limiter)):
