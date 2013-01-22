@@ -738,7 +738,7 @@ class GeoclawInputData(ClawData):
         self.add_attribute('max_level_deep',3)
         
         # Topography data
-        self.add_attribute('topo_type',0)
+        self.add_attribute('test_topography',0)
         self.add_attribute('topofiles',[])
         
         self.add_attribute('topo_location',-50e3)
@@ -803,8 +803,8 @@ class GeoclawInputData(ClawData):
 
         # Topography data
         self.open_data_file('topo.data',data_source)
-        self.data_write(name='topo_type',description='(Type topography specification)')
-        if self.topo_type == 0:
+        self.data_write(name='test_topography',description='(Type topography specification)')
+        if self.test_topography == 0:
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
@@ -815,11 +815,11 @@ class GeoclawInputData(ClawData):
                     raise MissingFile("file not found")
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
-        elif self.topo_type == 1:
+        elif self.test_topography == 1:
             self.data_write(name='topo_location',description='(Bathymetry jump location)')
             self.data_write(name='topo_left',description='(Depth to left of bathy_location)')
             self.data_write(name='topo_right',description='(Depth to right of bathy_location)')
-        elif self.topo_type == 2 or self.topo_type == 3: 
+        elif self.test_topography == 2 or self.test_topography == 3: 
             self.data_write(name='x0',description='(Location of basin end)')
             self.data_write(name='x1',description='(Location of shelf slope end)')
             self.data_write(name='x2',description='(Location of beach slope)')
@@ -827,7 +827,7 @@ class GeoclawInputData(ClawData):
             self.data_write(name='shelf_depth',description='(Depth of shelf)')
             self.data_write(name='beach_slope',description='(Slope of beach)')
         else:
-            raise NotImplemented("Topography type %s has not been implemented." % topo_type)    
+            raise NotImplemented("Test topography type %s has not been implemented." % test_topography)    
         self.close_data_file()
 
         # Moving topography settings
