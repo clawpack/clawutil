@@ -929,7 +929,7 @@ class GaugeData(ClawData):
         if len(self.gauges) == 1:
             return [self.gauges[0][0]]
         else:
-            return self.gauges[:][0]
+            return [gauge[0] for gauge in self.gauges]
 
     def __init__(self):
         super(GaugeData,self).__init__()
