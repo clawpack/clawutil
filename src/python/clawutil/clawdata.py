@@ -776,20 +776,15 @@ class GeoclawInputData(ClawData):
         self.data_write('coordinate_system')
         self.data_write('sea_level')
         self.data_write()
-        self.data_write('coriolis_forcing')
 
+        # Forcing terms
+        self.data_write('coriolis_forcing')
         if self.coordinate_system == 1 and self.coriolis_forcing:
             self.data_write('theta_0')
-        self.data_write('friction_forcing')    
-        # Write out wet/dry coefficient if provided, otherwise write out the 
-        # generic version    
-        if self.wet_manning_coefficient is None:
-            self.wet_manning_coefficient = self.manning_coefficient
-        self.data_write('wet_manning_coefficient',description='(Manning coefficient used when initially wet)')    
-        if self.dry_manning_coefficient is None:
-            self.dry_manning_coefficient = self.manning_coefficient    
-        self.data_write('dry_manning_coefficient',description='(Manning coefficient used when initially dry)')
-        self.data_write('friction_depth')
+        self.data_write('friction_forcing')
+        if self.friction_forcing:
+            self.data_write('manning_coefficient')
+            self.data_write('friction_depth')
         self.data_write()
         
         self.data_write('dry_tolerance')
