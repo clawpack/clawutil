@@ -729,8 +729,6 @@ class GeoclawInputData(ClawData):
         self.add_attribute('theta_0',45.0)
         self.add_attribute('friction_forcing',True)
         self.add_attribute('manning_coefficient',0.025)
-        self.add_attribute('wet_manning_coefficient',None)
-        self.add_attribute('dry_manning_coefficient',None)
 
         # GeoClaw algorithm parameters
         self.add_attribute('friction_depth',1.0e6)
@@ -797,7 +795,6 @@ class GeoclawInputData(ClawData):
         self.data_write('wave_tolerance')
         if not isinstance(self.speed_tolerance,list):
             self.speed_tolerance = [self.speed_tolerance]
-            print "Warning: Need len(speed_tolerance) >= mxnest"
         self.data_write('speed_tolerance')
         self.data_write('deep_depth')
         self.data_write('max_level_deep')
@@ -814,7 +811,7 @@ class GeoclawInputData(ClawData):
                     fname = os.path.abspath(tfile[-1])
                 except:
                     print "*** Error: file not found: ",tfile[-1]
-                    raise MissingFile("file not found")
+                    raise ("file not found")
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
         elif self.test_topography == 1:
@@ -829,7 +826,8 @@ class GeoclawInputData(ClawData):
             self.data_write(name='shelf_depth',description='(Depth of shelf)')
             self.data_write(name='beach_slope',description='(Slope of beach)')
         else:
-            raise NotImplemented("Test topography type %s has not been implemented." % test_topography)    
+            raise NotImplementedError("Test topography type %s has not been"
+                                        " implemented." % self.test_topography)    
         self.close_data_file()
 
         # Moving topography settings
@@ -842,7 +840,7 @@ class GeoclawInputData(ClawData):
                 fname = "'%s'" % os.path.abspath(tfile[-1])
             except:
                 # print "*** Error: file not found: ",tfile[-1]
-                raise MissingFile("file not found")
+                raise IOError("file not found")
             self._out_file.write("\n%s \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
         self.close_data_file()
