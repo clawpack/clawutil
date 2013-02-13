@@ -12,6 +12,7 @@ import os
 import sys
 import glob
 import shutil
+from claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False, 
             rundir=None):
@@ -121,6 +122,8 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
             raise
             return
     
+        make_git_status_file()
+
         fortfiles = glob.glob(os.path.join(outdir,'fort.*'))
         if (overwrite and (not restart)):
             # remove any old versions:
