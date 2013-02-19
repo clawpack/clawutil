@@ -43,7 +43,7 @@ def make_git_status_file(outdir='.'):
             f.close()
             os.system('git log -1 --oneline >> %s' % fname)
             f = open(fname,'a')
-            f.write("\n--- status ---\n")
+            f.write("\n--- branch and status ---\n")
             f.close()
             os.system('git status -b -s --untracked-files=no >> %s' % fname)
         except:
