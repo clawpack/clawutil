@@ -477,6 +477,8 @@ class ClawInputData(ClawData):
             self.output_format = 1
         elif self.output_format in [2,'netcdf']:
             self.output_format = 2
+        elif self.output_format in [3,'binary']:
+            self.output_format = 3
         else:
             raise ValueError("*** Error in data parameter: " + \
                   "output_format unrecognized: ",clawdata.output_format)
