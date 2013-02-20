@@ -1,6 +1,7 @@
 
 import os,sys, time
 
+
 def make_git_status_file(outdir='.'):
 
     try:
@@ -13,11 +14,24 @@ def make_git_status_file(outdir='.'):
     outdir = os.path.abspath(outdir)
     fname = outdir + '/claw_git_status.txt' 
     print "Will save to ",fname
+
     f = open(fname,'w')
     f.write("Clawpack Git Status \n\n")
     f.close()
-    #fname = os.path.abspath(fname)
-    os.system("date >> %s" % fname)
+
+    def fwrite(s):
+        f = open(fname,'a')
+        f.write(s + "\n")
+        f.close()
+
+    os.system("date >> %s\n\n" % fname)
+    fwrite("$CLAW = %s \n" % CLAW)
+    try:
+        FC = os.environ['FC']
+        fwrite("$FC = %s " % FC)
+        os.system("%s --version | head -1 >> %s" % (FC,fname))
+    except:
+        fwrite("$FC not set")
 
     claw_repositories = \
         ['classic','amrclaw','clawutil','visclaw','riemann','geoclaw']
@@ -26,30 +40,20 @@ def make_git_status_file(outdir='.'):
 
     for repos in claw_repositories:
         
-        f = open(fname,'a')
-        f.write("\n\n===========\n%s\n===========\n" % repos)
-        f.close()
+        fwrite("\n\n===========\n%s\n===========" % repos)
 
         try:
             os.chdir(repos)
             os.system('pwd >> %s' % fname)
             if 0:
-                f = open(fname,'a')
-                f.write("\n--- branches ---\n")
-                f.close()
+                fwrite("\n--- branches ---")
                 os.system('git branch >> %s' % fname)
-            f = open(fname,'a')
-            f.write("\n--- last commit ---\n")
-            f.close()
+            fwrite("\n--- last commit ---")
             os.system('git log -1 --oneline >> %s' % fname)
-            f = open(fname,'a')
-            f.write("\n--- branch and status ---\n")
-            f.close()
+            fwrite("\n--- branch and status ---")
             os.system('git status -b -s --untracked-files=no >> %s' % fname)
         except:
-            f = open(fname,'a')
-            f.write("*** git repository not found ***")
-            f.close()
+            fwrite("*** git repository not found ***")
         os.chdir(topdir)
 
 if __name__=="__main__":
