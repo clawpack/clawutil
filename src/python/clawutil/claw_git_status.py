@@ -1,8 +1,21 @@
+"""
+Print status of all clawpack git repositories.
+"""
 
 import os,sys, time
 
 
 def make_git_status_file(outdir='.'):
+    """
+    Print status of all clawpack git repositories.
+    Creates 2 files:
+         outdir + '/claw_git_status.txt'
+            contains list of last commits, what branch is checked out, and
+            a short version of git status.
+         outdir + '/claw_git_diffs.txt'
+            contains all diffs between current working state and last commits.
+        
+    """
 
     try:
         CLAW = os.environ['CLAW']
@@ -15,12 +28,20 @@ def make_git_status_file(outdir='.'):
     fname = outdir + '/claw_git_status.txt' 
     print "Will save to ",fname
 
+    diff_file = 'claw_git_diffs.txt'
     f = open(fname,'w')
-    f.write("Clawpack Git Status \n\n")
+    f.write("Clawpack Git Status \n")
+    f.write("Diffs can be found in %s\n\n" % diff_file)
     f.close()
 
-    def fwrite(s):
-        f = open(fname,'a')
+    diff_file = os.path.join(outdir, diff_file)
+    f = open(diff_file,'w')
+    f.write("Clawpack git diffs...")
+    f.close()
+
+
+    def fwrite(s,file=fname):
+        f = open(file,'a')
         f.write(s + "\n")
         f.close()
 
@@ -52,6 +73,11 @@ def make_git_status_file(outdir='.'):
             os.system('git log -1 --oneline >> %s' % fname)
             fwrite("\n--- branch and status ---")
             os.system('git status -b -s --untracked-files=no >> %s' % fname)
+
+            fwrite("\n\n===========\n%s\n===========" % repos, diff_file)
+            os.system('git diff --no-ext-diff >> %s' % diff_file)
+            os.system('git diff --cached --no-ext-diff >> %s' % diff_file)
+
         except:
             fwrite("*** git repository not found ***")
         os.chdir(topdir)

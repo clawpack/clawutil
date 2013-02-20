@@ -15,7 +15,7 @@ import shutil
 from claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False, 
-            rundir=None):
+            rundir=None, print_git_status=False):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
     typically set to 'xclaw', 'xamr', etc.
@@ -122,7 +122,8 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
             raise
             return
     
-        make_git_status_file()
+        if print_git_status not in [False,'False']:
+            make_git_status_file()
 
         fortfiles = glob.glob(os.path.join(outdir,'fort.*'))
         if (overwrite and (not restart)):
