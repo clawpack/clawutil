@@ -389,7 +389,7 @@ class ClawInputData(ClawData):
         self.add_attribute('tfinal',None)
         self.add_attribute('output_format',1)
         self.add_attribute('output_q_components','all')
-        self.add_attribute('output_aux_components',[])
+        self.add_attribute('output_aux_components','none')
         self.add_attribute('output_aux_onlyonce',True)
         
         self.add_attribute('dt_initial',1.e-5)
@@ -490,7 +490,11 @@ class ClawInputData(ClawData):
         elif self.output_q_components == 'none':
             iout_q = self.num_eqn * [0]
         else:
-            iout_q = np.where(self.output_q_components, 1, 0)
+            #iout_q = np.where(self.output_q_components, 1, 0)
+            print "*** WARNING: Selective output_q_components not implemented"
+            print "***          Will output all components of q"
+            iout_q = self.num_eqn * [1]
+    
 
         # Write out local value of iout_q rather than a data member
         self.data_write('', value=iout_q, alt_name='iout_q')
@@ -502,6 +506,9 @@ class ClawInputData(ClawData):
                 iout_aux = self.num_aux * [0]
             else:
                 iout_aux = np.where(self.output_aux_components, 1, 0)
+                print "*** WARNING: Selective output_aux_components not implemented"
+                print "***          Will output all components of aux"
+                iout_aux = self.num_eqn * [1]
             self.data_write(name='', value=iout_aux, alt_name='iout_aux')
             self.data_write('output_aux_onlyonce')
 
