@@ -182,7 +182,7 @@ class ClawData(object):
         r"""
         Write out value to data file, in the form ::
 
-           value    # alt_name  [description]
+           value =: name   # [description]
 
         Remove brackets and commas from lists, and replace booleans by T/F.
 
@@ -220,9 +220,14 @@ class ClawData(object):
                     string_value = 'F'
             else:
                 string_value = repr(value)
-            padded_value = string.ljust(string_value, 40)
-            self._out_file.write('%s # %s  %s\n' % 
-                                        (padded_value, alt_name, description))
+            padded_value = string.ljust(string_value, 20)
+            padded_name = string.ljust(alt_name,20)
+            if description != '':
+                self._out_file.write('%s =: %s # %s \n' % 
+                                        (padded_value, padded_name, description))
+            else:
+                self._out_file.write('%s =: %s\n' % 
+                                    (padded_value, padded_name))
   
 
     def read(self,path,force=False):
@@ -241,12 +246,14 @@ class ClawData(object):
 
             value, tail = line.split("=:")
             varname = tail.split()[0]
+
+            # Set this parameter
             if self.has_attribute(varname) or force:
                 value = self._parse_value(value)
                 if not self.has_attribute(varname):
                     self.add_attribute(varname,value)
                 else:
-                    getattr(self,varname,value)
+                    setattr(self,varname,value)
     
 
     def _parse_value(self,value):
@@ -328,6 +335,7 @@ class ClawRunData(ClawData):
             self.add_data(GeoclawInputData(num_dim),'geodata')
             self.add_data(RegionData(),'regiondata')
             self.add_data(GaugeData(),'gaugedata')
+            self.add_data(QinitData(),'qinitdata')
 
         else:
             raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
@@ -381,7 +389,7 @@ class ClawInputData(ClawData):
         self.add_attribute('tfinal',None)
         self.add_attribute('output_format',1)
         self.add_attribute('output_q_components','all')
-        self.add_attribute('output_aux_components',[])
+        self.add_attribute('output_aux_components','none')
         self.add_attribute('output_aux_onlyonce',True)
         
         self.add_attribute('dt_initial',1.e-5)
@@ -400,10 +408,8 @@ class ClawInputData(ClawData):
         self.add_attribute('limiter',[4])
         self.add_attribute('t0',0.)
         self.add_attribute('num_ghost',2)
-        self.add_attribute('fwave',False)
-        self.add_attribute('restart',False)
-        self.add_attribute('restart_file','')
-
+        self.add_attribute('use_fwaves',False)
+        
         if num_dim == 1:
             self.add_attribute('lower',[0.])
             self.add_attribute('upper',[1.])
@@ -424,6 +430,13 @@ class ClawInputData(ClawData):
             self.add_attribute('bc_upper',[0,0,0])
         else:
             raise ValueError("Only num_dim=1, 2, or 3 supported ")
+
+        self.add_attribute('restart',False)
+        self.add_attribute('restart_file','')
+        self.add_attribute('checkpt_style',0)
+        self.add_attribute('checkpt_interval',1000)
+        self.add_attribute('checkpt_time_interval',1000.)
+        self.add_attribute('checkpt_times',[1000.])
 
 
     def write(self, out_file='claw.data', data_source='setrun.py'):
@@ -462,16 +475,17 @@ class ClawInputData(ClawData):
         else:
             raise AttributeError("*** Unrecognized output_style: %s"\
                   % self.output_style)
-            
 
         self.data_write()
         if self.output_format in [1,'ascii']:
             self.output_format = 1
         elif self.output_format in [2,'netcdf']:
             self.output_format = 2
+        elif self.output_format in [3,'binary']:
+            self.output_format = 3
         else:
             raise ValueError("*** Error in data parameter: " + \
-                  "output_format unrecognized: ",clawdata.output_format)
+                  "output_format unrecognized: ",self.output_format)
             
         self.data_write('output_format')
 
@@ -480,7 +494,11 @@ class ClawInputData(ClawData):
         elif self.output_q_components == 'none':
             iout_q = self.num_eqn * [0]
         else:
-            iout_q = np.where(self.output_q_components, 1, 0)
+            #iout_q = np.where(self.output_q_components, 1, 0)
+            print "*** WARNING: Selective output_q_components not implemented"
+            print "***          Will output all components of q"
+            iout_q = self.num_eqn * [1]
+    
 
         # Write out local value of iout_q rather than a data member
         self.data_write('', value=iout_q, alt_name='iout_q')
@@ -492,6 +510,9 @@ class ClawInputData(ClawData):
                 iout_aux = self.num_aux * [0]
             else:
                 iout_aux = np.where(self.output_aux_components, 1, 0)
+                print "*** WARNING: Selective output_aux_components not implemented"
+                print "***          Will output all components of aux"
+                iout_aux = self.num_eqn * [1]
             self.data_write(name='', value=iout_aux, alt_name='iout_aux')
             self.data_write('output_aux_onlyonce')
 
@@ -546,7 +567,7 @@ class ClawInputData(ClawData):
         self.data_write('capa_index')
         if self.num_aux > 0:
             self.data_write(file, self.aux_type, 'aux_type')
-        self.data_write('fwave')
+        self.data_write('use_fwaves')
         self.data_write()
 
         for i in range(len(self.limiter)):
@@ -587,6 +608,7 @@ class ClawInputData(ClawData):
         self.data_write('restart')
         self.data_write('restart_file')
         self.data_write('checkpt_style')
+
         if self.checkpt_style==2:
             num_checkpt_times = len(self.checkpt_times)
             self.data_write(name='', value=num_checkpt_times, alt_name='num_checkpt_times')
@@ -623,11 +645,6 @@ class AmrclawInputData(ClawInputData):
 
         self.add_attribute('refinement_ratios_t',[1])
         self.add_attribute('aux_type',[])
-
-        self.add_attribute('checkpt_style',1)
-        self.add_attribute('checkpt_interval',1000)
-        self.add_attribute('checkpt_time_interval',1000.)
-        self.add_attribute('checkpt_times',[1000.])
         
         self.add_attribute('flag_richardson',False)
         self.add_attribute('flag_richardson_tol',1.0)
@@ -717,18 +734,14 @@ class GeoclawInputData(ClawData):
         self.add_attribute('gravity',9.8)
         self.add_attribute('earth_radius',6367500.0)
         self.add_attribute('coordinate_system',1)
-        self.add_attribute('num_layers',1)
-        self.add_attribute('rho',1.0)
         self.add_attribute('coriolis_forcing',True)
         self.add_attribute('theta_0',45.0)
         self.add_attribute('friction_forcing',True)
         self.add_attribute('manning_coefficient',0.025)
-        self.add_attribute('wet_manning_coefficient',None)
-        self.add_attribute('dry_manning_coefficient',None)
 
         # GeoClaw algorithm parameters
         self.add_attribute('friction_depth',1.0e6)
-        self.add_attribute('eta_init',0.0)
+        self.add_attribute('sea_level',0.0)
         self.add_attribute('variable_dt_refinement_ratios',False)
 
         # Refinement controls
@@ -738,14 +751,8 @@ class GeoclawInputData(ClawData):
         self.add_attribute('deep_depth',1.0e2)
         self.add_attribute('max_level_deep',3)
         
-        # Multilayer algorithm parameters
-        self.add_attribute('check_richardson',False)
-        self.add_attribute('richardson_tolerance',0.95)
-        self.add_attribute('eigen_method',2)
-        self.add_attribute('inundation_method',2)
-        
         # Topography data
-        self.add_attribute('topo_type',0)
+        self.add_attribute('test_topography',0)
         self.add_attribute('topofiles',[])
         
         self.add_attribute('topo_location',-50e3)
@@ -763,70 +770,40 @@ class GeoclawInputData(ClawData):
         # Moving topograhpy
         self.add_attribute('dtopofiles',[])
         
-        # Qinit data
-        self.add_attribute('qinit_type',0)
-        self.add_attribute('qinitfiles',[])    
-        self.add_attribute('init_location',[300e3,0.0])
-        self.add_attribute('wave_family',4)
-        self.add_attribute('epsilon',0.4)
-        self.add_attribute('sigma',25e3)
-        self.add_attribute('theta',0.0)
-        
         # Fixed Grids
         self.add_attribute('fixedgrids',[])
 
 
     def write(self,data_source='setrun.py'):
 
-        self.open_data_file('physics.data',data_source)
+        self.open_data_file('geoclaw.data',data_source)
 
         self.data_write('gravity')
         self.data_write('earth_radius')
         self.data_write('coordinate_system')
+        self.data_write('sea_level')
         self.data_write()
-        self.data_write('num_layers')
-        self.data_write('rho')
-        self.data_write('eta_init')
-        self.data_write()
-        self.data_write('coriolis_forcing')
 
+        # Forcing terms
+        self.data_write('coriolis_forcing')
         if self.coordinate_system == 1 and self.coriolis_forcing:
             self.data_write('theta_0')
-        self.data_write('friction_forcing')    
-        # Write out wet/dry coefficient if provided, otherwise write out the 
-        # generic version    
-        if self.wet_manning_coefficient is None:
-            self.wet_manning_coefficient = self.manning_coefficient
-        self.data_write('wet_manning_coefficient',description='(Manning coefficient used when initially wet)')    
-        if self.dry_manning_coefficient is None:
-            self.dry_manning_coefficient = self.manning_coefficient    
-        self.data_write('dry_manning_coefficient',description='(Manning coefficient used when initially dry)')
-        self.data_write('friction_depth')
+        self.data_write('friction_forcing')
+        if self.friction_forcing:
+            self.data_write('manning_coefficient')
+            self.data_write('friction_depth')
         self.data_write()
         
-        if not isinstance(self.dry_tolerance,list):
-            self.dry_tolerance = [self.dry_tolerance for n in xrange(self.num_layers)]
         self.data_write('dry_tolerance')
         self.data_write('variable_dt_refinement_ratios')
 
         self.close_data_file()
         
-        if self.num_layers > 1:
-            self.open_data_file('multilayer.data',data_source)
-            self.data_write(name='check_richardson',description='(Whether to check discrete Richardson Number)')
-            self.data_write(name='richardson_tolerance',description='(Richardson number limit)')
-            self.data_write(name='eigen_method',description='(Eigen method for wet multilayer)')
-            self.data_write(name='inundation_method',description='(Inundation eigen method for multilayer)')
-            self.close_data_file()
-        
         # Refinement controls
         self.open_data_file('refinement.data',data_source)
-        if not isinstance(self.wave_tolerance,list):
-            self.wave_tolerance = [self.wave_tolerance for n in xrange(self.num_layers)]
         self.data_write('wave_tolerance')
         if not isinstance(self.speed_tolerance,list):
             self.speed_tolerance = [self.speed_tolerance]
-            print "Warning: Need len(speed_tolerance) >= mxnest"
         self.data_write('speed_tolerance')
         self.data_write('deep_depth')
         self.data_write('max_level_deep')
@@ -834,8 +811,8 @@ class GeoclawInputData(ClawData):
 
         # Topography data
         self.open_data_file('topo.data',data_source)
-        self.data_write(name='topo_type',description='(Type topography specification)')
-        if self.topo_type == 0:
+        self.data_write(name='test_topography',description='(Type topography specification)')
+        if self.test_topography == 0:
             ntopofiles = len(self.topofiles)
             self.data_write(value=ntopofiles,alt_name='ntopofiles')
             for tfile in self.topofiles:
@@ -843,14 +820,14 @@ class GeoclawInputData(ClawData):
                     fname = os.path.abspath(tfile[-1])
                 except:
                     print "*** Error: file not found: ",tfile[-1]
-                    raise MissingFile("file not found")
+                    raise ("file not found")
                 self._out_file.write("\n'%s' \n " % fname)
                 self._out_file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
-        elif self.topo_type == 1:
+        elif self.test_topography == 1:
             self.data_write(name='topo_location',description='(Bathymetry jump location)')
             self.data_write(name='topo_left',description='(Depth to left of bathy_location)')
             self.data_write(name='topo_right',description='(Depth to right of bathy_location)')
-        elif self.topo_type == 2 or self.topo_type == 3: 
+        elif self.test_topography == 2 or self.test_topography == 3: 
             self.data_write(name='x0',description='(Location of basin end)')
             self.data_write(name='x1',description='(Location of shelf slope end)')
             self.data_write(name='x2',description='(Location of beach slope)')
@@ -858,7 +835,8 @@ class GeoclawInputData(ClawData):
             self.data_write(name='shelf_depth',description='(Depth of shelf)')
             self.data_write(name='beach_slope',description='(Slope of beach)')
         else:
-            raise NotImplemented("Topography type %s has not been implemented." % topo_type)    
+            raise NotImplementedError("Test topography type %s has not been"
+                                        " implemented." % self.test_topography)    
         self.close_data_file()
 
         # Moving topography settings
@@ -871,38 +849,9 @@ class GeoclawInputData(ClawData):
                 fname = "'%s'" % os.path.abspath(tfile[-1])
             except:
                 # print "*** Error: file not found: ",tfile[-1]
-                raise MissingFile("file not found")
+                raise IOError("file not found")
             self._out_file.write("\n%s \n" % fname)
             self._out_file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
-        self.close_data_file()
-
-        # Initial perturbation
-        self.open_data_file('qinit.data',data_source)
-        self.data_write('qinit_type')
-        # Single-layer perturbation requested
-        if self.num_layers == 1:
-            self.data_write()
-            for tfile in self.qinitfiles:
-                try:
-                    fname = "'%s'" % os.path.abspath(tfile[-1])
-                except:
-                    raise MissingFile("file not found")
-                self._out_file.write("\n%s  \n" % fname)
-                self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
-        # Analytical initialization, good for 2 layers
-        elif self.num_layers == 2:
-            self.data_write(name='epsilon',description='(Perturbation strength)')
-            if self.qinit_type <= 2 or self.qinit_type == 5:
-                self.data_write(name='init_location',description='(Location for perturbation)')
-                self.data_write(name='wave_family',description='(Wave family of the perturbation)')
-                if 2 == self.qinit_type or self.qinit_type == 5:
-                    self.data_write(name='angle',description='(Angle of direction of travel from x-axis)')
-                    self.data_write(name='sigma',description='(Gaussian width')
-            elif self.qinit_type == 3:
-                self.data_write(name='init_location',description='(Location for perturbation)')
-                self.data_write(name='sigma',description='(Gaussian width')
-            else:
-                raise NotImplemented("Initialization type %s not implemented." % qinit_type)
         self.close_data_file()
 
         # Fixed grid settings
@@ -912,6 +861,34 @@ class GeoclawInputData(ClawData):
         self.data_write()
         for fixedgrid in self.fixedgrids:
             self._out_file.write(11*"%g  " % tuple(fixedgrid) +"\n")
+        self.close_data_file()
+
+
+class QinitData(ClawData):
+
+    def __init__(self):
+
+        super(QinitData,self).__init__()
+        
+        # Qinit data
+        self.add_attribute('qinit_type',0)
+        self.add_attribute('qinitfiles',[])    
+
+    def write(self,data_source='setrun.py'):
+        # Initial perturbation
+        self.open_data_file('qinit.data',data_source)
+        self.data_write('qinit_type')
+
+        # Perturbation requested
+        self.data_write()
+        # Check to see if each qinit file is present and then write the data
+        for tfile in self.qinitfiles:
+            try:
+                fname = "'%s'" % os.path.abspath(tfile[-1])
+            except:
+                raise MissingFile("file not found")
+            self._out_file.write("\n%s  \n" % fname)
+            self._out_file.write("%3i %3i \n" % tuple(tfile[:-1]))
         self.close_data_file()
 
 
@@ -945,208 +922,71 @@ class RegionData(ClawData):
 # ==============================================================================
         
 # ==============================================================================
-#  Gauge data objects
-class Gauge(object):
-    r"""Object representing a single gauge"""
-
-    # Time properties
-    def t1():
-        doc = "(float) - Beginning of gauge recording time interval."
-        def fget(self):
-            if self.t is not None:
-                return np.min(self.t)
-            else:
-                return None
-        def fset(self, value):
-            if self.q is None:
-                if self.t is not None:
-                    self.t[0] = value
-                else:
-                    self.t = [value,np.infty]
-            else:
-                raise ValueError('Time interval already set.')
-        return locals()
-    t1 = property(**t1())
-
-    def t2():
-        doc = "(float) - End of gauge recording time interval."
-        def fget(self):
-            if self.t is not None:
-                return np.max(self.t)
-            else:
-                return None
-        def fset(self, value):
-            if self.q is None:
-                if self.t is not None:
-                    self.t[1] = value
-                else:
-                    self.t = [-np.infty,value]
-            else:
-                raise ValueError('Time interval already set.')
-        return locals()
-    t2 = property(**t2())
-
-    def location():
-        doc = "(tuple) - Location of this gauge."
-        def fget(self):
-            if self._location is None:
-                return "Unknown"
-            return self._location
-        def fset(self, value):
-            if isinstance(value,tuple) or isinstance(value,list):
-                self._location = value
-            else:
-                raise ValueError("Location information must be a list or tuple.")
-        return locals()
-    location = property(**location())
-
-    def __init__(self,number,location=None):
-        
-        # Gauge descriptors
-        self.number = number
-        self._location = None
-        if location is not None:
-            self.location = location
-
-        # Data written out (usually)
-        self.level = None
-        self.t = None
-        self.q = None
-
-    def __repr__(self):
-        # Make sure all necessary data has been set
-        if self._location is None or self.t1 is None or self.t2 is None:
-            output = None
-        else:
-            output = "%4i" % self.number
-            output = " ".join((output,"%19.10e" % self.location[0]))
-            output = " ".join((output,"%17.10e" % self.location[1]))
-            output = " ".join((output,"%13.6e" % self.t1))
-            output = " ".join((output,"%13.6e\n" % self.t2))
-        return output
-
-    def __str__(self):
-        return ("Gauge %s: location = %s, t = [%s,%s]" % 
-                                    (self.number,self.location,self.t1,self.t2))
-
-    def read(self,output_path='./',file_name='fort.gauge'):
-        r"""Read in the file at output_path/file_name and look for this gauge"""
-
-        file_path = os.path.join(output_path,file_name)
-        raw_data = np.loadtxt(file_path)
-
-        # Construct index array for this gauge
-        gauge_numbers = np.array([int(value) for value in raw_data[:,0]])
-        gauge_indices = np.nonzero(gauge_numbers == self.number)[0]
-        if len(gauge_indices) == 0:
-            raise Exception("Gauge number %s not found in %s" % 
-                                                        (self.number,file_path))
-
-        # Extract specific info for each time point
-        self.level = [int(value) for value in raw_data[gauge_indices,1]]
-        self.t = raw_data[gauge_indices,2]
-        self.q = raw_data[gauge_indices,2:].transpose()
-
-
+#  Gauge data object
 class GaugeData(ClawData):
     r""""""
 
-    def gauges():
-        doc = "(list) - List of gauges in this data object."
-        def fget(self):
-            return self._gauges
-        def fset(self, value):
-            self.add_gauge(value)
-        return locals()
-    gauges = property(**gauges())
-
     @property
     def gauge_numbers(self):
-        return [gauge.number for gauge in self.gauges]
+        if len(self.gauges) == 1:
+            return [self.gauges[0][0]]
+        else:
+            return [gauge[0] for gauge in self.gauges]
 
     def __init__(self):
-
-        # Some defaults are inherited from ClawInputData:
         super(GaugeData,self).__init__()
 
-        self._gauges = []
+        self.add_attribute('gauges',[])
 
-    def add_gauge(self,gauge):
-        r"""Add gauge to gauges list"""
-
-        if isinstance(gauge,list) or isinstance(gauge,tuple) or \
-           isinstance(gauge,np.ndarray):
-            if int(gauge[0]) in self.gauge_numbers:
-                raise Exception("Gauge number already exists.")
-            new_gauge = Gauge(int(gauge[0]),
-                              location=[float(gauge[1]),float(gauge[2])])
-            if len(gauge) == 5:
-                new_gauge.t1 = float(gauge[3])
-                new_gauge.t2 = float(gauge[4])
-        elif isinstance(gauge,Gauge):
-            if gauge.number in self.gauge_numbers:
-                raise Exception("Gauge number already exists.")
-            new_gauge = gauge
-        else:
-            raise ValueError("New gauge must be of type list, tuple,"
-                             " ndarray or Gauge.")
-
-        self._gauges.append(new_gauge)
-
+    def __str__(self):
+        output = "Gauges: %s\n" % len(self.gauges)
+        for gauge in self.gauges:
+            output = "\t".join((output,"%4i:" % gauge[0]))
+            output = " ".join((output,"%19.10e" % gauge[1]))
+            output = " ".join((output,"%17.10e" % gauge[2]))
+            output = " ".join((output,"%13.6e" % gauge[3]))
+            output = " ".join((output,"%13.6e\n" % gauge[4]))
+        return output
 
     def write(self,out_file='gauges.data',data_source='setrun.py'):
-        r"""Write out gauge information data file."""
-        # Check to make sure we have only unique gauge numbers
+        r"""Write out gague information data file."""
+
+        # Check to make sure we have only unique gauge numebrs
         if len(self.gauges) > 0:
             if len(self.gauge_numbers) != len(set(self.gauge_numbers)):
                 raise Exception("Non unique gauge numbers specified.")
 
-        # Write out data file
+        # Write out gauge data file
         self.open_data_file(out_file,data_source)
         self.data_write(name='ngauges',value=len(self.gauges))
         for gauge in self.gauges:
-            self._out_file.write(repr(gauge))
+            self._out_file.write("%4i %19.10e  %17.10e  %13.6e  %13.6e\n" % tuple(gauge))
         self.close_data_file()
 
-
-    def read(self,data_path='./',file_name='gauges.data'):
-        r"""
-        Read the info from gauges.data.
-        """
-        
-        # Reset gauge data
-        self._gauges = []
-
-        # Open and read in gauge file
+    def read(self,data_path="./",file_name='gauges.data'):
+        r"""Read gauge data file"""
         path = os.path.join(data_path, file_name)
         gauge_file = open(path,'r')
-        lines = gauge_file.readlines()
-        gauge_file.close()
 
-        # Skip lines with comment character "#"
-        line_num = 0
-        ignore_line = True
-        while ignore_line:
-            line = lines[line_num] + "#"
-            if line.split()[0][0]=="#":
-                line_num = line_num+1
+        # Read past comments and blank lines
+        header_lines = 0
+        ignore_lines = True
+        while ignore_lines:
+            line = gauge_file.readline()
+            if line[0] == "#" or len(line.strip()) == 0:
+                header_lines += 1
             else:
-                ignore_line = False
+                break
 
-        # Determine number of gauges
-        try:
-            num_gauges = int(line.split()[0])
-        except:
-            raise Exception("Could not determine number of gauges.")
-        if num_gauges == 0:
-            return
-            
-        # Add gauge for each remaining line in file
-        data = np.loadtxt(path, skiprows=line_num+1)
-        if len(data.shape) == 1:
-            data = [data]
-        for gauge_data in data:
-            self.add_gauge(gauge_data)
+        # Read number of gauges, should be line that was last read in
+        num_gauges = int(line.split()[0])
+
+        # Read in each gauge line
+        for n in xrange(num_gauges):
+            line = gauge_file.readline().split()
+            self.gauges.append([int(line[0]),float(line[1]),float(line[2]),
+                                             float(line[3]),float(line[4])])
+
 
 #  Gauge data objects
 # ==============================================================================

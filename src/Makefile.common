@@ -31,6 +31,7 @@ PLOTDIR ?= _plots
 LIB_PATHS ?= $(CURDIR)/
 OVERWRITE ?= True
 RESTART ?= False
+GIT_STATUS ?= False
 SETRUN_FILE ?= ./setrun.py
 SETPLOT_FILE ?= ./setplot.py
 
@@ -179,7 +180,7 @@ data: $(MAKEFILE_LIST);
 output: $(MAKEFILE_LIST);
 	-rm -f .output
 	$(CLAW_PYTHON) $(CLAWUTIL)/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
-	$(OVERWRITE) $(RESTART)
+	$(OVERWRITE) $(RESTART) . $(GIT_STATUS)
 	@echo $(OUTDIR) > .output
 
 #----------------------------------------------------------------------------

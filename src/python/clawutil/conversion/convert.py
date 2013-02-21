@@ -119,8 +119,8 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
             if line.strip()[0] != '#':
                 print "*** Warning: call to new_UserData detected..."
                 print line
-                print "*** User data lines from %s have NOT been copied to %s"\
-                        % (setrun_file, new_setrun_file)
+                print "*** User data lines from %s have NOT been copied "\
+                        % setrun_file
 
 
     os.system("mv %s original_%s" % (setrun_file,setrun_file))
