@@ -504,10 +504,13 @@ class ClawInputData(ClawData):
         self.data_write('', value=iout_q, alt_name='iout_q')
 
         if self.num_aux > 0:
-            if self.output_aux_components == 'all':
-                iout_aux = self.num_aux * [1]
-            elif self.output_aux_components == 'none':
-                iout_aux = self.num_aux * [0]
+            if isinstance(self.output_aux_components,basestring):
+                if self.output_aux_components.lower() == 'all':
+                    iout_aux = self.num_aux * [1]
+                elif self.output_aux_components.lower() == 'none':
+                    iout_aux = self.num_aux * [0]
+                else:
+                    raise ValueError("Invalid aux array component option.")
             else:
                 iout_aux = np.where(self.output_aux_components, 1, 0)
                 print "*** WARNING: Selective output_aux_components not implemented"
