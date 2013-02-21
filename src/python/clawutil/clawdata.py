@@ -409,9 +409,7 @@ class ClawInputData(ClawData):
         self.add_attribute('t0',0.)
         self.add_attribute('num_ghost',2)
         self.add_attribute('use_fwaves',False)
-        self.add_attribute('restart',False)
-        self.add_attribute('restart_file','')
-
+        
         if num_dim == 1:
             self.add_attribute('lower',[0.])
             self.add_attribute('upper',[1.])
@@ -432,6 +430,13 @@ class ClawInputData(ClawData):
             self.add_attribute('bc_upper',[0,0,0])
         else:
             raise ValueError("Only num_dim=1, 2, or 3 supported ")
+
+        self.add_attribute('restart',False)
+        self.add_attribute('restart_file','')
+        self.add_attribute('checkpt_style',0)
+        self.add_attribute('checkpt_interval',1000)
+        self.add_attribute('checkpt_time_interval',1000.)
+        self.add_attribute('checkpt_times',[1000.])
 
 
     def write(self, out_file='claw.data', data_source='setrun.py'):
@@ -470,7 +475,6 @@ class ClawInputData(ClawData):
         else:
             raise AttributeError("*** Unrecognized output_style: %s"\
                   % self.output_style)
-            
 
         self.data_write()
         if self.output_format in [1,'ascii']:
@@ -481,7 +485,7 @@ class ClawInputData(ClawData):
             self.output_format = 3
         else:
             raise ValueError("*** Error in data parameter: " + \
-                  "output_format unrecognized: ",clawdata.output_format)
+                  "output_format unrecognized: ",self.output_format)
             
         self.data_write('output_format')
 
@@ -604,6 +608,7 @@ class ClawInputData(ClawData):
         self.data_write('restart')
         self.data_write('restart_file')
         self.data_write('checkpt_style')
+
         if self.checkpt_style==2:
             num_checkpt_times = len(self.checkpt_times)
             self.data_write(name='', value=num_checkpt_times, alt_name='num_checkpt_times')
@@ -640,11 +645,6 @@ class AmrclawInputData(ClawInputData):
 
         self.add_attribute('refinement_ratios_t',[1])
         self.add_attribute('aux_type',[])
-
-        self.add_attribute('checkpt_style',1)
-        self.add_attribute('checkpt_interval',1000)
-        self.add_attribute('checkpt_time_interval',1000.)
-        self.add_attribute('checkpt_times',[1000.])
         
         self.add_attribute('flag_richardson',False)
         self.add_attribute('flag_richardson_tol',1.0)
