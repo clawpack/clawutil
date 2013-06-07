@@ -326,7 +326,7 @@ class ClawRunData(ClawData):
 
             self.xclawcmd = 'xamr'
             self.add_data(ClawInputData(num_dim),'clawdata')
-            self.add_data(amrclaw.AmrclawInputData(num_dim),'amrdata')
+            self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
             self.add_data(amrclaw.RegionData(),'regiondata')
             self.add_data(amrclaw.GaugeData(),'gaugedata')
 
@@ -338,7 +338,7 @@ class ClawRunData(ClawData):
             self.xclawcmd = 'xgeoclaw'
 
             # Required data set for basic run parameters:
-            self.add_data(amrclaw.AmrclawInputData(),'amrdata')
+            self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
             self.add_data(amrclaw.RegionData(),'regiondata')
             self.add_data(amrclaw.GaugeData(),'gaugedata')
             self.add_data(geoclaw.GeoClawData(),('geo_data'))
@@ -580,8 +580,6 @@ class ClawInputData(ClawData):
         self.data_write('source_split')
 
         self.data_write('capa_index')
-        if self.num_aux > 0:
-            self.data_write(file, self.aux_type, 'aux_type')
         self.data_write('use_fwaves')
         self.data_write()
 
