@@ -11,5 +11,6 @@ ln -sf $GITDIR/pyclaw/src/pyclaw pyclaw
 ln -sf $GITDIR/visclaw/src/python/visclaw visclaw
 ln -sf $GITDIR/riemann/src/python/riemann riemann
 ln -sf $GITDIR/clawutil/src/python/clawutil clawutil
+ln -sf $GITDIR/clawutil/src/python/clawutil amrclaw
 ln -sf $GITDIR/clawutil/src/python/geoclaw geoclaw
 cd $GITDIR
