@@ -55,7 +55,7 @@ def make_git_status_file(outdir='.'):
         fwrite("$FC not set")
 
     claw_repositories = \
-        ['classic','amrclaw','clawutil','visclaw','riemann','geoclaw']
+        ['classic','amrclaw','clawutil','pyclaw','visclaw','riemann','geoclaw']
 
     os.chdir(topdir)
 

@@ -1,3 +1,5 @@
+## THIS IS OUT OF DATE!  The latest AMRClaw code has many new or refactored
+## routines.  Need to update once latest changes are merged.
 
 # Makefile for Clawpack code in this directory.
 # This version only sets the local files and frequently changed
@@ -36,10 +38,10 @@ MODULES = \
 
 SOURCES = \
   qinit.f \
-  setprob.f \
   $(RIEMANN)/src/rpn2_advection.f \
   $(RIEMANN)/src/rpt2_advection.f \
   $(AMRCLAW)/src/2d/amr2.f \
+  $(AMRCLAW)/src/2d/setprob.f \
   $(AMRCLAW)/src/2d/setaux.f \
   $(AMRCLAW)/src/2d/bc2amr.f \
   $(AMRCLAW)/src/2d/b4step2.f \
