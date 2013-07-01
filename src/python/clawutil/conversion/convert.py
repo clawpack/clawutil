@@ -53,10 +53,12 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
     except:
         gauges = []
 
-    try:
-        regions = c.regions
-    except:
-        regions = []
+    # AMRClaw didn't have regions before...
+    regions = []
+    # try:
+    #     regions = rundata.regiondata.regions
+    # except:
+    #     regions = []
 
 
     # -------------------------------------------------
