@@ -189,7 +189,8 @@ def chardiff_file(fname1, fname2, print_all_lines=True, hfile1='', \
 # -----------------------------------------------------------------
     
 
-def chardiff_dir(dir1, dir2, file_pattern='all', dir3="_char_diff", 
+def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all', 
+                    regression_test_files='all',
                     overwrite=False, print_all_lines=True, verbose=True):
     """
     Run chardiff_file on all common files between dir1 and dir2 that match the patterns in the
@@ -241,7 +242,6 @@ def chardiff_dir(dir1, dir2, file_pattern='all', dir3="_char_diff",
     testfiles = [f in checkfiles.same_files for f in files]
     if alltrue(testfiles) and verbose:
         print "Files matching pattern in the two directories are equal"
-
 
     
     #f_equal, f_diff, f_other = filecmp.cmpfiles(dir1,dir2,files,False)
@@ -310,8 +310,23 @@ def chardiff_dir(dir1, dir2, file_pattern='all', dir3="_char_diff",
 
     hfile.write("</ul>\n</html>\n")
              
+    # Test regression files for return value:
+    if regression_test_files=='all':
+        rfiles1 = os.listdir(dir1)
+        rfiles2 = os.listdir(dir2)
+        regression_test_files = rfiles1 + rfiles2
+    regression_ok = alltrue([f in checkfiles.same_files for f in \
+                                regression_test_files])
+    if verbose and regression_ok:
+        print "Regression files all match"
+    elif verbose:
+        print "*** Regression files are not all identical"
+
     dir3 = os.path.abspath(dir3)
     print "To view diffs, open the file ",dir3+'/_DiffIndex.html\n'
+
+    return regression_ok
+
     
     
 # -----------------------------------------------------------------

@@ -19,7 +19,7 @@ help_message = __doc__
 
 import os, sys, getopt, shutil
 
-def imagediff_file(fname1, fname2, verbose):
+def imagediff_file(fname1, fname2, verbose=True):
     
     fname3 = make_imagediff(fname1,fname2,verbose=verbose)
     
@@ -64,9 +64,11 @@ def make_imagediff(fname1,fname2,fname3='', verbose=False):
     
     
 def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
+                  regression_test_files='all',  \
                   relocatable=False, overwrite=False, verbose=False):
     
     import filecmp,glob
+    from numpy import alltrue
     
     if dir1[-1] == '/': dir1 = dir1[:-1]
     if dir2[-1] == '/': dir2 = dir2[:-1]
@@ -188,10 +190,24 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
               <td><a href="%s"><img src="%s" width=350 border="1"></a></td>  </tr>
               </table><p>""" \
                 % (f,f,fhtml1,fname1,fhtml2,fname2,fname3,fname3))
+
+    # Test regression files for return value:
+    if regression_test_files=='all':
+        rfiles1 = os.listdir(dir1)
+        rfiles2 = os.listdir(dir2)
+        regression_test_files = rfiles1 + rfiles2
+    regression_ok = alltrue([f in f_equal for f in \
+                                regression_test_files])
+    if verbose and regression_ok:
+        print "Regression files all match"
+    elif verbose:
+        print "*** Regression files are not all identical"
         
     os.chdir(startdir)
     dir3 = os.path.abspath(dir3)
     print "To view diffs, open the file ",os.path.join(dir3,hname)
+
+    return regression_ok
     
 
 class Usage(Exception):
