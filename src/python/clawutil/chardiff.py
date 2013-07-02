@@ -200,7 +200,7 @@ def chardiff_dir(dir1, dir2, file_pattern='all', dir3="_char_diff",
     
     ignored_extensions = ['.o','.pdf','.ps','.chk','']
     
-    print "Comparing files in the  directory: ", dir1
+    print "\nComparing files in the  directory: ", dir1
     print "               with the directory: ", dir2
     
     
@@ -310,7 +310,8 @@ def chardiff_dir(dir1, dir2, file_pattern='all', dir3="_char_diff",
 
     hfile.write("</ul>\n</html>\n")
              
-    print "To view diffs, open the file ",dir3+'/_DiffIndex.html'
+    dir3 = os.path.abspath(dir3)
+    print "To view diffs, open the file ",dir3+'/_DiffIndex.html\n'
     
     
 # -----------------------------------------------------------------

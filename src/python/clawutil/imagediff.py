@@ -190,6 +190,7 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
                 % (f,f,fhtml1,fname1,fhtml2,fname2,fname3,fname3))
         
     os.chdir(startdir)
+    dir3 = os.path.abspath(dir3)
     print "To view diffs, open the file ",os.path.join(dir3,hname)
     
 
