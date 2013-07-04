@@ -23,7 +23,7 @@ def fetch_regression_data(target_dir):
                  % clawdir)
 
     tarfile = thisdir.replace('/','-') + '-' + target_dir + '.tar.gz'
-    regdir = target_dir + '-regression_data'
+    regdir = target_dir + '_archived_results'
 
     url = "http://www.clawpack.org/regression_data"
 

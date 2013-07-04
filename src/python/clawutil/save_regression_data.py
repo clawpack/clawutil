@@ -10,12 +10,13 @@ def send_outdir(outdir="_output"):
                  % clawdir)
 
     tarfile = thisdir.replace('/','-') + '-' + outdir + '.tar'
-    regdir = outdir + '-regression_data'
+    regdir = outdir + '_archived_results'
     if os.path.exists(regdir):
         raise Exception("Directory %s already exists" % regdir)
 
     os.system("ln -sf %s  %s" % (outdir, regdir))
     os.system("tar -cHf %s %s" % (tarfile, regdir))
+    os.system("rm %s" % regdir)  # remove sym link
     os.system("gzip %s" % tarfile)
     tarfile = tarfile + '.gz'
 
