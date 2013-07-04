@@ -4,7 +4,7 @@
 Generic code for running the fortran version of Clawpack and sending the
 results to subdirectory output of the directory from which this is executed.
 Execute via
-    $ python $CLAW/python/pyclaw/runclaw.py
+    $ python $CLAWUTIL/src/python/clawutil/runclaw.py
 from a directory that contains a claw.data file and a Clawpack executable.
 """
 
@@ -189,7 +189,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
 
     if returncode != 0:
         print '==> runclaw: *** fortran returncode = ', returncode, '   aborting'
-    print '==> runclaw: Done executing %s via pyclaw.runclaw.py' % xclawcmd
+    print '==> runclaw: Done executing %s via clawutil.runclaw.py' % xclawcmd
     print '==> runclaw: Output is in ', outdir
     
 

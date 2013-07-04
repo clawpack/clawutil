@@ -633,6 +633,7 @@ class ClawInputData(ClawData):
                   % self.checkpt_style)
 
         self.data_write()
+        self.close_data_file()
 
 
 class UserData(ClawData):
@@ -660,3 +661,4 @@ class UserData(ClawData):
 
     def write(self,data_source='setrun.py'):
         super(UserData,self).write(self.__fname__, data_source)
+        self.close_data_file()
