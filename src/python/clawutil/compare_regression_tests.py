@@ -13,7 +13,7 @@ from numpy import alltrue
 def compare_regression_tests(regression_dir="_regression_tests", \
                 regression_output_files = 'all', \
                 regression_plot_files = 'all', \
-                verbose=False):
+                relocatable=False, verbose=False):
 
     try:
         archived_dir, tar_file = fetch_regression_data(regression_dir)
@@ -96,7 +96,7 @@ def compare_regression_tests(regression_dir="_regression_tests", \
             diffdir = "_imagediffs" + plotdir
             regression_ok = imagediff_dir(plotdir_archived, plotdir, dir3=diffdir, \
                         regression_test_files=regression_plot_files, \
-                        verbose=verbose)
+                        relocatable=relocatable, verbose=verbose)
             plot_ok_dirs.append(regression_ok)
             hfile.write('<li> <a href="%s/_ImageDiffIndex.html">%s</a>' % (diffdir,plotdir))
             if regression_ok:   
