@@ -162,13 +162,13 @@ class ClawData(object):
 
 
     def close_data_file(self):
-        r""""""
+        r"""Close output data file"""
         self._out_file.close()
         self._out_file = None
 
 
     def write(self,out_file,data_source='setrun.py'):
-        r""""""
+        r"""Write out all data files in this ClawData object"""
 
         # Open data file
         self.open_data_file(out_file,data_source)
@@ -410,7 +410,6 @@ class ClawInputData(ClawData):
         self.add_attribute('cfl_max',1.0)
         self.add_attribute('steps_max',50000)
         self.add_attribute('order',2)
-        self.add_attribute('transverse_waves',2)
         self.add_attribute('dimensional_split',0)
         self.add_attribute('verbosity',0)
         self.add_attribute('verbosity_regrid',0)
@@ -427,18 +426,21 @@ class ClawInputData(ClawData):
             self.add_attribute('num_cells',[100])
             self.add_attribute('bc_lower',[0])
             self.add_attribute('bc_upper',[0])
+            self.add_attribute('transverse_waves',0)
         elif num_dim == 2:
             self.add_attribute('lower',[0.,0.])
             self.add_attribute('upper',[1.,1.])
             self.add_attribute('num_cells',[100,100])
             self.add_attribute('bc_lower',[0,0])
             self.add_attribute('bc_upper',[0,0])
+            self.add_attribute('transverse_waves',2)
         elif num_dim == 3:
             self.add_attribute('lower',[0.,0.,0.])
             self.add_attribute('upper',[1.,1.,1.])
             self.add_attribute('num_cells',[100,100,100])
             self.add_attribute('bc_lower',[0,0,0])
             self.add_attribute('bc_upper',[0,0,0])
+            self.add_attribute('transverse_waves',22)
         else:
             raise ValueError("Only num_dim=1, 2, or 3 supported ")
 
@@ -452,7 +454,7 @@ class ClawInputData(ClawData):
 
 
     def write(self, out_file='claw.data', data_source='setrun.py'):
-        r""""""
+        r"""Write input data to a file"""
         self.open_data_file(out_file,data_source)
 
         self.data_write('num_dim')
@@ -544,15 +546,22 @@ class ClawInputData(ClawData):
         if self.num_dim == 1:
             pass
         else:
-            if self.transverse_waves in [0,'none']:  
-                self.transverse_waves = 0
-            elif self.transverse_waves in [1,'increment']:  
-                self.transverse_waves = 1
-            elif self.transverse_waves in [2,'all']:  
-                self.transverse_waves = 2
-            else:
-                raise AttributeError("Unrecognized transverse_waves: %s" \
-                      % self.transverse_waves)
+            # Transverse options different in 2D and 3D
+            if self.num_dim == 2:
+                if self.transverse_waves in [0,'none']:  
+                    self.transverse_waves = 0
+                elif self.transverse_waves in [1,'increment']:  
+                    self.transverse_waves = 1
+                elif self.transverse_waves in [2,'all']:  
+                    self.transverse_waves = 2
+                else:
+                    raise AttributeError("Unrecognized transverse_waves: %s" \
+                                             % self.transverse_waves)
+            else:    # 3D
+                # Add textual names later
+                if not (self.transverse_waves in [0, 10, 11, 20, 21, 22]):
+                    raise AttributeError("Unrecognized transverse_waves: %s" \
+                                             % self.transverse_waves)
             self.data_write(file, self.transverse_waves, 'transverse_waves')
 
             if self.dimensional_split in [0,'unsplit']:  
