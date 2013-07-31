@@ -11,8 +11,14 @@ INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA ?= $(INSTALL) -m 644
 
 # Fortran compiler:  FC may be set as an environment variable or in make
-# file that 'includes' this one.
+# file that 'includes' this one.  Otherwise assume gfortran.
 FC ?= gfortran
+ifeq ($(FC),f77)
+	# make sometimes sets FC=f77 if it is not set as environment variable
+	# reset to gfortran since f77 will not work.  
+	FC = gfortran
+endif
+
 CLAW_FC ?= $(FC)
 LINK ?= $(CLAW_FC)
 
@@ -128,7 +134,7 @@ debug:
 #----------------------------------------------------------------------------
 
 # Command to create *.html files from *.f etc:
-CC2HTML = $(CLAW_PYTHON) $(CLAWUTIL)/src/python/clawutil/clawcode2html.py --force 
+CC2HTML = $(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/clawcode2html.py --force 
 
 # make list of html files to be created by 'make .htmls':
 HTML = \
@@ -179,7 +185,7 @@ data: $(MAKEFILE_LIST);
 # Run the code without checking dependencies:
 output: $(MAKEFILE_LIST);
 	-rm -f .output
-	$(CLAW_PYTHON) $(CLAWUTIL)/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
+	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
 	$(OVERWRITE) $(RESTART) . $(GIT_STATUS)
 	@echo $(OUTDIR) > .output
 
@@ -189,7 +195,7 @@ output: $(MAKEFILE_LIST);
 
 # (Removed Cygwin stuff...)
 # Plotting command
-PLOTCMD ?= $(CLAW_PYTHON) $(VISCLAW)/src/python/visclaw/plotclaw.py
+PLOTCMD ?= $(CLAW_PYTHON) $(CLAW)/visclaw/src/python/visclaw/plotclaw.py
 
 # Rule to make the plots into subdirectory specified by PLOTDIR,
 # using data in subdirectory specified by OUTDIR and the plotting
