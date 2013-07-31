@@ -4,7 +4,7 @@
 Generic code for running the fortran version of Clawpack and sending the
 results to subdirectory output of the directory from which this is executed.
 Execute via
-    $ python $CLAWUTIL/src/python/clawutil/runclaw.py
+    $ python $CLAW/clawutil/src/python/clawutil/runclaw.py
 from a directory that contains a claw.data file and a Clawpack executable.
 """
 
