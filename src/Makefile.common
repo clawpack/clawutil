@@ -11,8 +11,14 @@ INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA ?= $(INSTALL) -m 644
 
 # Fortran compiler:  FC may be set as an environment variable or in make
-# file that 'includes' this one.
+# file that 'includes' this one.  Otherwise assume gfortran.
 FC ?= gfortran
+ifeq ($(FC),f77)
+	# make sometimes sets FC=f77 if it is not set as environment variable
+	# reset to gfortran since f77 will not work.  
+	FC = gfortran
+endif
+
 CLAW_FC ?= $(FC)
 LINK ?= $(CLAW_FC)
 
