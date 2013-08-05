@@ -1,136 +1,78 @@
-#!/usr/bin/env python
-# encoding: utf-8
 r"""
 Data Module
 
 Contains the general class definition and the subclasses of the Clawpack data
 objects.
 
-:Authors:
-    Kyle T. Mandli and Randall J. LeVeque (2008-08-07) Initial version
+Changes in 5.0:
+ Stripped down version of Data object, no longer keeps track of "owners".
+ Data classes are now subclasses of ClawData, which checks if attributes
+   already exist before setting.
 
-    Randall J. LeVeque (2008-08-07) Plotting data objects
-
-    Alan McIntyre (2009-01-01) Speed ups and rebuilding of Data
-
-    Kyle T. Mandli (2009-04-01) Stripped down and improved version
 """
-# ============================================================================
-#      Copyright (C) 2008 Kyle T. Mandli <mandli@amath.washington.edu>
-#      Copyright (C) 2008 Randall J. LeVeque <rjl@amath.washington.edu>
-#      Copyright (C) 2009 Alan McIntyre <amcin001@amath.washington.edu>
-#
-#  Distributed under the terms of the Berkeley Software Distribution (BSD)
-#  license
-#                     http://www.opensource.org/licenses/
-# ============================================================================
 
-import shutil
 import os
-import copy
-import re
-import logging
+import string
 
-# ========== Parse Value Utility Function ====================================
-def _parse_value(value):
+import numpy as np
+
+# ==============================================================================
+#  Base data class for Clawpack data objects
+class ClawData(object):
     r"""
-    Attempt to make sense of a value string from a config file.  If the
-    value is not obviously an integer, float, or boolean, it is returned as
-    a string stripped of leading and trailing whitespace.
+    Class to be subclassed when defining data objects that should have
+    a limited set of allowed attributes.  Useful to guard against
+    typos or misrembering the names of expected attributes.
 
-    :Input:
-        - *value* - (string) Value string to be parsed
+    Resetting values of existing attributes is allowed as usual,
+    but new attributes can only be added using the method add_attribute.
 
-    :Output:
-        - (id) - Appropriate object based on *value*
-    """
-    value = value.strip()
-    if not value:
-        return None
-
-    # assume that values containing spaces are lists of values
-    if len(value.split()) > 1:
-        return [_parse_value(vv) for vv in value.split()]
-
-    try:
-        # see if it's an integer
-        value = int(value)
-    except ValueError:
-        try:
-            # see if it's a float
-            value = float(value)
-        except ValueError:
-            # see if it's a bool
-            if value[0] == 'T':
-                value = True
-            elif value[0] == 'F':
-                value = False
-
-    return value
-
-
-# ============================================================================
-#  General Data Class
-# ============================================================================
-class Data(object):
-    r"""
-    Generalized clawpack data object
-
-    Generalized class for Clawpack data.  Contains generic methods for reading
-    and writing data to and from a data file.
-
-    :Initialization:
-        Input:
-         - *data_files* - (List of strings) Paths to data files to be read in,
-           an empty data object can be created by providing no data files.
-         - *attributes* - (List of strings) List of required attribute names
-           which will be initialized to None.
-
-    :Version: 1.2 (2009-04-01)
+    Trying to set a nonexistent attribute will raise an AttributeError
+    exception, except for those starting with '_'.   
     """
 
-    __name__ = 'Data'
 
-    def __init__(self, data_files=[], attributes=None):
-        """
-        Initialize a Data object
+    def __init__(self, attributes=None):
+        
+        # Attribute to store a list of the allowed attributes, 
+        # appended to when add_attribute is used: 
+        object.__setattr__(self,'_attributes',[])
 
-        See :class:`Data` for more info.
-        """
-
-        # Internal bookkeeping variables
-        self.__attributes = []
-        self.__owners = {}
-
-        # Setup data logger
-        self.logger = logging.getLogger('data')
+        # Output file handle
+        object.__setattr__(self,'_out_file',None)
 
         # Initialize from attribute list provided
         if attributes:
             for attr in attributes:
-                self.add_attribute(attr,None,None)
+                self.add_attribute(attr,None)
 
-        # Read data files from data_files list
-        if isinstance(data_files, basestring):
-            data_files = [data_files]
-        elif not isinstance(data_files, list):
-            raise Exception("data_files must be a list of strings")
 
-        if len(data_files) > 0:
-            self.read(data_files)
+    def __setattr__(self,name,value):
+        r"""
+        Check that attribute exists before setting it.
+        If not, raise an AttributeError.
+        Exception: attributes starting with '_' are ok to set.
+        """
 
-    # ========== Return string representation of this Data Object ========
+        if (not name in self._attributes) and (name[0] != '_'):
+            print "*** Unrecognized attribute: ",name
+            print "*** Perhaps a typo?"
+            print "*** Add new attributes using add_attribute method"
+            raise AttributeError("Unrecognized attribute: %s" % name)
+        
+        # attribute exists, ok to set:
+        object.__setattr__(self,name,value)
+
+
     def __str__(self):
-        output = "%s%s%s\n" % ("Name".ljust(25),"Value".ljust(12),
-                                    "Owner".ljust(12))
+        r"""Returns string representation of this object"""
+        output = "%s%s\n" % ("Name".ljust(25),"Value".ljust(12))
         for (k,v) in self.iteritems():
-            output += "%s%s%s\n" % (str(k).ljust(25),
-                                    str(v).ljust(12),
-                                    str(self.__owners[k]).ljust(12))
+            output += "%s%s\n" % (str(k).ljust(25),str(v).ljust(12))
         return output
 
-    # ========== Access Methods ==============================================
-    def add_attribute(self, name, value=None, owner=None):
+
+    def add_attribute(self, name, value=None, add_to_list=True):
         r"""
         Adds an attribute called name to the data object
 
@@ -140,12 +82,19 @@ class Data(object):
         :Input:
          - *name* - (string) Name of the data attribute
          - *value* - (id) Value to set *name* to, defaults to None
-         - *owner* - (id) Owner of this particular attribute
         """
-        setattr(self,name,value)
-        self.__owners[name] = owner
-        if name not in self.__attributes:
-            self.__attributes.append(name)
+        if (name not in self._attributes) and add_to_list:
+            self._attributes.append(name)
+        object.__setattr__(self,name,value)
+
+
+    def add_attributes(self, arg_list, value=None):
+        r"""
+        Add a list of attributes, each initialized to *value*.
+        """
+        for name in arg_list:
+            self.add_attribute(name, value)
+
 
     def remove_attributes(self, arg_list):
         r"""
@@ -157,14 +106,14 @@ class Data(object):
             arg_list = [arg_list]
 
         for arg in arg_list:
-            self.__owners.pop(arg)
-            self.__attributes.remove(arg)
+            self._attributes.remove(arg)
             delattr(self,arg)
 
-    def attributes():
-        def fget(self): return self.__attributes
-        return locals()
-    attributes = property(**attributes())
+
+    def attributes(self):
+        r"""Returns tuple of attribute names"""
+        return tuple(self._attributes)
+
 
     def has_attribute(self,name):
         r"""
@@ -176,1032 +125,238 @@ class Data(object):
         :Output:
          - (bool) - True if data object contains a data attribute name
         """
-        return name in self.__attributes
+        return name in self._attributes
 
-    def set_owner(self,name,owner):
-        r"""
-        Sets the owner of the given data
-
-        :Input:
-         - *name* - (string) Name of attribute
-         - *owner* - (id) Owner of the attribute
-        """
-        if name not in self.__attributes:
-            raise KeyError("No attribute named %s" % name)
-        self.__owners[name] = owner
-
-    def get_owner(self,name):
-        r"""
-        Returns the owner of the data attribute name
-
-        :Input:
-         - *name* - (string) Name of attribute
-
-        :Output:
-         - (id) - Owner of attribute
-        """
-        return self.__owners[name]
-
-    def get_owners(self,supplementary_file=None):
-        r"""
-        Returns a list of owners excluding the owner None
-
-        If supplementary_file is provided, None is replace by that owner.
-
-        :Input:
-         - *supplementary_file* - (string) Supplementary file, defaults to
-           None.
-
-        :Output:
-         - (list) - Returns a list of owners
-        """
-        owners = []
-        for (key,owner) in self.__owners.iteritems():
-            if owner is None:
-                self.__owners[key] = supplementary_file
-            # This simultaneously finds one instance of an owner and tests
-            # to see if the supplementary_file is not None
-            owner = self.__owners[key]
-            if owner not in owners and owner is not None:
-                owners.append(owner)
-        return owners
-
+        
     def iteritems(self):
         r"""
-        Returns an iterator of keys and values from this object
+        Returns an iterator of attributes and values from this object
 
         :Output:
-         - (Iterator) Iterator over keys and values
+         - (Iterator) Iterator over attributes and values
         """
-        return [(k,getattr(self,k)) for k in self.__attributes]
+        return [(k,getattr(self,k)) for k in self._attributes]
 
-    # ========== Read in a collection of data files ==========================
-    def read(self,data_paths):
+
+    def open_data_file(self, name, datasource='setrun.py'):
+        """
+        Open a data file and write a warning header.
+        Warning header starts with '#' character.  These lines are skipped if
+        data file is opened using the library routine opendatafile.
+
+        :Input:
+         - *name* - (string) Name of data file
+         - *datasource* - (string) Source for the data
+
+        :Output:
+         - (file) - file object
+        """
+
+        source = string.ljust(datasource,25)
+        self._out_file = open(name, 'w')
+        self._out_file.write('########################################################\n')
+        self._out_file.write('### DO NOT EDIT THIS FILE:  GENERATED AUTOMATICALLY ####\n')
+        self._out_file.write('### To modify data, edit  %s ####\n' % source)
+        self._out_file.write('###    and then "make .data"                        ####\n')
+        self._out_file.write('########################################################\n\n')
+
+
+    def close_data_file(self):
+        r"""Close output data file"""
+        self._out_file.close()
+        self._out_file = None
+
+
+    def write(self,out_file,data_source='setrun.py'):
+        r"""Write out all data files in this ClawData object"""
+
+        # Open data file
+        self.open_data_file(out_file,data_source)
+
+        # Write out list of attributes
+        for (name,value) in self.iteritems():
+            self.data_write(name)
+
+
+    def data_write(self, name=None, value=None, alt_name=None, description=''):
         r"""
-        Read data in from a clawpack style data file.
+        Write out value to data file, in the form ::
 
-        Any lines of the form::
+           value =: name   # [description]
 
-           values  =:  name
+        Remove brackets and commas from lists, and replace booleans by T/F.
 
-        is used to set an attribute of self.
-
-        INPUT
-
-        data_paths : Path to a data file to be read in, can also be a list
-                    of files to be read in.
+        :Input:
+         - *name* - (string) normally a string defining the variable,
+           ``if name==None``, write a blank line.
+         - *description* - (string) optional description
         """
-        if isinstance(data_paths, basestring):
-            data_paths = [data_paths]
+        if self._out_file is None:
+            raise Exception("No file currently open for output.")
 
-        for filename in data_paths:
-            filename = os.path.abspath(filename)
-            if not os.path.exists(filename):
-                raise Exception("No such data file: %s" % filename)
+        # Defaults to the name of the variable requested
+        if alt_name is None:
+            alt_name = name
 
-            # self.logger.info("Reading from %s" % filename)
-
-            for lineno, line in enumerate(file(filename)):
-                if '=:' not in line:
-                    continue
-
-                value, tail = line.split('=:')
-                varname = tail.split()[0]
-
-                oldval = getattr(self, varname, None)
-                newval = _parse_value(value)
-                if oldval is not None:
-                    vals = "(old=%r,new=%r)" % (oldval, newval)
-                    # self.logger.debug("Overwriting %s %s" % (varname, vals))
-
-                # if newval is None:
-                    # self.logger.warning("Empty value for %s" % varname)
-
-                self.add_attribute(varname, newval, filename)
-
-    # ========== Write out the data from this object =========================
-    def write(self,data_files=None,supplementary_file=None):
-        r"""
-        Write out the contents of the data object
-
-        This method writes out the current required attributes of the data
-        object to a file or list of files.  The format for the output will be
-        in the form::
-
-            values =: name
-
-        The order is either retained from the files in the data list or
-        written in the order they are in the list of attributes
-
-        The behavior is determined by the arguments passed into the routine:
-
-        No arguments:
-
-            The contents of the object will be written out to the files listed
-            in data_files only if each attribute is contained in the file.
-            This implies that if an attribute is not located in any of the
-            files in data_files then it will not be written out to file.
-
-        If data_files is provided and data_files is a valid owner:
-
-            Write out the attributes appropriate to that file
-
-        If data_files is provided and not(data_files in owner):
-
-            Write all attributes to the data_file given
-
-        If supplementary_file is provided:
-
-            Write out any attributes without an owner to this file, all owned
-            attributes will be written out to the approriate files
-        """
-
-        # Expand supplementary_file if it is not None
-        if supplementary_file is not None:
-            supplementary_file = os.path.abspath(supplementary_file)
-
-        # Create list of owners
-        owners = self.get_owners(supplementary_file=supplementary_file)
-
-        #print 'in write: data_files = ',data_files
-        # Write to the entire owner list
-        if data_files is None:
-            file_list = owners
-        elif isinstance(data_files,str):
-            #print '<p>in write'; import sys; sys.exit(0)
-            path = os.path.abspath(data_files)
-            if path not in owners:
-                # Create temporary data file to store all data in the object
-                try:
-                    temp_file = open(path,'w')
-                    for key in self.__attributes:
-                        temp_file.write("1 =: %s\n" % key)
-                    temp_file.close()
-                except IOError, (errno, strerror):
-                    print "I/O error(%s): %s" % (errno, strerror)
-                    raise
-                except:
-                    raise
-            # Add the path to the file_list
-            file_list = [path]
-        # Check to make sure all the paths are in the owner list
-        elif isinstance(data_files,list):
-            for path in data_files:
-                path = os.path.abspath(path)
-                if not(path in owners):
-                    print "%s is not a registered owner!"
-                    return
-            file_list = data_files
+        if name is None and value is None:
+            # Write out a blank line
+            self._out_file.write('\n')
         else:
-            raise Exception("Invalid argument list given to write().")
+            # Use the value passed in instead of fetching from the data object
+            if value is None:
+                value = self.__getattribute__(name)
 
-        # Create temporary supplementary file if requested
-        if supplementary_file is not None:
-            try:
-                sup_file = open(supplementary_file,'w')
-                for attr in self.__attributes:
-                    if self.__owners[attr] is supplementary_file:
-                        sup_file.write("-1 =: %s\n" % attr)
-                        self.__owners[attr] = supplementary_file
-                sup_file.close()
-            except:
-                raise
-
-
-        # Regular expression for searching each file
-        regexp = re.compile(r"(?P<values>.*)=:(?P<name>.*)")
-        # Loop over each file
-        for data_path in file_list:
-            # Open the data file and temporary file
-            try:
-                data_file = open(data_path,'r')
-            except(IOError):
-                raise
-            try:
-                temp_path = os.path.join(os.path.dirname(data_path), \
-                    'temp.' + os.path.basename(data_path))
-                temp_file = open(temp_path,'w')
-            except(IOError):
-                print "IOERROR"
-                raise
-
-            try:
-                for line in data_file:
-                    result = regexp.search(line)
-                    if result:
-                        name = re.split(r'\s+', result.group('name').strip())[0]
-                        values = re.split(r'\s+', result.group('values').strip())
-
-                        if len(values) == 0:
-                            line = ''
-                        elif self.__owners[name] == data_path or \
-                                data_path not in self.__owners:
-                            newvalues = getattr(self,name)
-
-                            # Convert newvalues to an appropriate string repr
-                            if isinstance(newvalues,tuple) \
-                                | isinstance(newvalues,list):
-                                # Remove [], (), and ','
-                                newstring = repr(newvalues)[1:-1]
-                                newstring = newstring.replace(',','')
-                            elif isinstance(newvalues,bool):
-                                if newvalues:
-                                    newstring = 'T'
-                                else:
-                                    newstring = 'F'
-                            else:
-                                newstring = repr(newvalues)
-
-                            newstart = str.ljust(newstring,25)
-                            line = line.replace(result.group('values') + "=:", \
-                                newstart + " =:")
-                        else:
-                            print "Error writing out %s" % name
-                            raise AttributeError, name
-
-                    # Write the new line
-                    temp_file.write(line)
-            except:
-                raise
-
-            # Close files
-            data_file.close()
-            temp_file.close()
-
-            # Rename the temporary file to the data_path name
-            try:
-                shutil.move(temp_path,data_path)
-            except:
-                raise
-
-
-#-----------------------------------------------------------------------
-
-# New classes and functions for dealing with data in setrun function.
-
-class ClawInputData(Data):
-    r"""
-    Object that will be written out to claw.data.
-    """
-    def __init__(self, ndim):
-        super(ClawInputData,self).__init__()
-        self.add_attribute('ndim',ndim)
-
-        # Set default values:
-        if ndim == 1:
-            self.add_attribute('mx',100)
-            self.add_attribute('nout',5)
-            self.add_attribute('outstyle',1)
-            self.add_attribute('tfinal',1.0)
-            self.add_attribute('dt_initial',1.e-5)
-            self.add_attribute('dt_max',1.e99)
-            self.add_attribute('cfl_desired',0.9)
-            self.add_attribute('cfl_max',1.0)
-            self.add_attribute('max_steps',5000)
-            self.add_attribute('dt_variable',1)
-            self.add_attribute('order',2)
-            self.add_attribute('order_trans',0)
-            self.add_attribute('verbosity',0)
-            self.add_attribute('src_split',0)
-            self.add_attribute('mcapa',0)
-            self.add_attribute('maux',0)
-            self.add_attribute('meqn',1)
-            self.add_attribute('mwaves',1)
-            self.add_attribute('mthlim',[4])
-            self.add_attribute('t0',0.)
-            self.add_attribute('xlower',0.)
-            self.add_attribute('xupper',1.)
-            self.add_attribute('mbc',2)
-            self.add_attribute('mthbc_xlower',1)
-            self.add_attribute('mthbc_xupper',1)
-            self.add_attribute('restart',0)
-            self.add_attribute('N_restart',0)
-
-
-        elif ndim == 2:
-            self.add_attribute('mx',100)
-            self.add_attribute('my',100)
-            self.add_attribute('nout',5)
-            self.add_attribute('outstyle',1)
-            self.add_attribute('tfinal',1.0)
-            self.add_attribute('dt_initial',1.e-5)
-            self.add_attribute('dt_max',1.e99)
-            self.add_attribute('cfl_desired',0.9)
-            self.add_attribute('cfl_max',1.0)
-            self.add_attribute('max_steps',5000)
-            self.add_attribute('dt_variable',1)
-            self.add_attribute('order',2)
-            self.add_attribute('order_trans',2)
-            self.add_attribute('verbosity',0)
-            self.add_attribute('src_split',0)
-            self.add_attribute('mcapa',0)
-            self.add_attribute('maux',0)
-            self.add_attribute('meqn',1)
-            self.add_attribute('mwaves',1)
-            self.add_attribute('mthlim',[4])
-            self.add_attribute('t0',0.)
-            self.add_attribute('xlower',0.)
-            self.add_attribute('xupper',1.)
-            self.add_attribute('ylower',0.)
-            self.add_attribute('yupper',1.)
-            self.add_attribute('mbc',2)
-            self.add_attribute('mthbc_xlower',1)
-            self.add_attribute('mthbc_xupper',1)
-            self.add_attribute('mthbc_ylower',1)
-            self.add_attribute('mthbc_yupper',1)
-            self.add_attribute('restart',0)
-            self.add_attribute('N_restart',0)
-
-        else:
-            raise AttributeError("Only ndim=1 or 2 supported so far")
-
-    def write(self):
-        print 'Creating data file claw.data for use with xclaw'
-        make_clawdatafile(self)
-
-
-
-class AmrclawInputData(Data):
-    r"""
-    Object that will be written out to amr2ez.data.
-    """
-    def __init__(self, ndim):
-        super(AmrclawInputData,self).__init__()
-        self.add_attribute('ndim',ndim)
-
-        # Set default values:
-        if ndim == 1:
-            self.add_attribute('mx',100)
-            self.add_attribute('nout',5)
-            self.add_attribute('outstyle',1)
-            self.add_attribute('tfinal',1.0)
-            self.add_attribute('dt_initial',1.e-5)
-            self.add_attribute('dt_max',1.e99)
-            self.add_attribute('cfl_desired',0.9)
-            self.add_attribute('cfl_max',1.0)
-            self.add_attribute('max_steps',5000)
-            self.add_attribute('dt_variable',1)
-            self.add_attribute('order',2)
-            self.add_attribute('order_trans',0)
-            self.add_attribute('verbosity',0)
-            self.add_attribute('src_split',0)
-            self.add_attribute('mcapa',0)
-            self.add_attribute('maux',0)
-            self.add_attribute('meqn',1)
-            self.add_attribute('mwaves',1)
-            self.add_attribute('mthlim',[4])
-            self.add_attribute('t0',0.)
-            self.add_attribute('xlower',0.)
-            self.add_attribute('xupper',1.)
-            self.add_attribute('mbc',2)
-            self.add_attribute('mthbc_xlower',1)
-            self.add_attribute('mthbc_xupper',1)
-            self.add_attribute('restart',0)
-            self.add_attribute('N_restart',0)
-
-            # attributes need only since AMR is done using 2d amrclaw:
-            self.add_attribute('my',1)
-            self.add_attribute('ylower',0.)
-            self.add_attribute('yupper',1.)
-            self.add_attribute('mthbc_ylower',1)
-            self.add_attribute('mthbc_yupper',1)
-            self.add_attribute('inraty',[1,1,1,1,1,1])
-
-        elif ndim == 2:
-            self.add_attribute('mx',100)
-            self.add_attribute('my',100)
-            self.add_attribute('nout',5)
-            self.add_attribute('outstyle',1)
-            self.add_attribute('tfinal',1.0)
-            self.add_attribute('dt_initial',1.e-5)
-            self.add_attribute('dt_max',1.e99)
-            self.add_attribute('cfl_desired',0.9)
-            self.add_attribute('cfl_max',1.0)
-            self.add_attribute('max_steps',5000)
-            self.add_attribute('dt_variable',1)
-            self.add_attribute('order',2)
-            self.add_attribute('order_trans',2)
-            self.add_attribute('verbosity',0)
-            self.add_attribute('src_split',0)
-            self.add_attribute('mcapa',0)
-            self.add_attribute('maux',0)
-            self.add_attribute('meqn',1)
-            self.add_attribute('mwaves',1)
-            self.add_attribute('mthlim',[4])
-            self.add_attribute('t0',0.)
-            self.add_attribute('xlower',0.)
-            self.add_attribute('xupper',1.)
-            self.add_attribute('ylower',0.)
-            self.add_attribute('yupper',1.)
-            self.add_attribute('mbc',2)
-            self.add_attribute('mthbc_xlower',1)
-            self.add_attribute('mthbc_xupper',1)
-            self.add_attribute('mthbc_ylower',1)
-            self.add_attribute('mthbc_yupper',1)
-            self.add_attribute('restart',0)
-            self.add_attribute('N_restart',0)
-            self.add_attribute('inraty',[1])
-
-        if ndim <= 2:
-            # AMR parameters:
-            self.add_attribute('mxnest',-1)
-            self.add_attribute('inratx',[1])
-            self.add_attribute('inratt',[1])
-            self.add_attribute('auxtype',[])
-            self.add_attribute('restart',False)
-            self.add_attribute('checkpt_iousr',1000)
-            self.add_attribute('tchk',[])
-            self.add_attribute('tol',-1.0)
-            self.add_attribute('tolsp',0.05)
-            self.add_attribute('kcheck',2)
-            self.add_attribute('ibuff',3)
-            self.add_attribute('cutoff',0.7)
-            self.add_attribute('PRINT',False)
-            self.add_attribute('NCAR',False)
-            self.add_attribute('fortq',True)
-            self.add_attribute('dprint',False)
-            self.add_attribute('eprint',False)
-            self.add_attribute('edebug',False)
-            self.add_attribute('gprint',False)
-            self.add_attribute('nprint',False)
-            self.add_attribute('pprint',False)
-            self.add_attribute('rprint',False)
-            self.add_attribute('sprint',False)
-            self.add_attribute('tprint',False)
-            self.add_attribute('uprint',False)
-        else:
-            print '*** Error: only ndim=1 or 2 supported so far ***'
-            raise AttributeError("Only ndim=1 or 2 supported so far")
-
-    def write(self):
-        print 'Creating data file amr2ez.data for use with xamr'
-        make_amrclawdatafile(self)
-        make_setgauges_datafile(self)
-
-
-class SharpclawInputData(Data):
-    r"""
-    Object that will be written out to claw.data.
-    """
-    def __init__(self, ndim):
-        super(SharpclawInputData,self).__init__()
-        self.add_attribute('ndim',ndim)
-
-        # Set default values:
-        if ndim == 1:
-            self.add_attribute('mx',100)
-            self.add_attribute('nout',5)
-            self.add_attribute('outstyle',1)
-            self.add_attribute('tfinal',1.0)
-            self.add_attribute('dt_initial',1.e-5)
-            self.add_attribute('dt_max',1.e99)
-            self.add_attribute('cfl_desired',0.9)
-            self.add_attribute('cfl_max',1.0)
-            self.add_attribute('max_steps',5000)
-            self.add_attribute('dt_variable',1)
-            self.add_attribute('verbosity',0)
-            self.add_attribute('mcapa',0)
-            self.add_attribute('maux',0)
-            self.add_attribute('meqn',1)
-            self.add_attribute('mwaves',1)
-            self.add_attribute('mthlim',[5])
-            self.add_attribute('t0',0.)
-            self.add_attribute('xlower',0.)
-            self.add_attribute('xupper',1.)
-            self.add_attribute('mbc',3)
-            self.add_attribute('mthbc_xlower',1)
-            self.add_attribute('mthbc_xupper',1)
-            self.add_attribute('restart',0)
-            self.add_attribute('N_restart',0)
-            self.add_attribute('time_integrator',2)
-            self.add_attribute('tfluct_solver',0)
-            self.add_attribute('char_decomp',0)
-            self.add_attribute('lim_type',2)
-            self.add_attribute('src_term',0)
-
-
-        elif ndim == 2:
-            self.add_attribute('mx',100)
-            self.add_attribute('my',100)
-            self.add_attribute('nout',5)
-            self.add_attribute('outstyle',1)
-            self.add_attribute('tfinal',1.0)
-            self.add_attribute('dt_initial',1.e-5)
-            self.add_attribute('dt_max',1.e99)
-            self.add_attribute('cfl_desired',0.9)
-            self.add_attribute('cfl_max',1.0)
-            self.add_attribute('max_steps',5000)
-            self.add_attribute('dt_variable',1)
-            self.add_attribute('verbosity',0)
-            self.add_attribute('mcapa',0)
-            self.add_attribute('maux',0)
-            self.add_attribute('meqn',1)
-            self.add_attribute('mwaves',1)
-            self.add_attribute('mthlim',[5])
-            self.add_attribute('t0',0.)
-            self.add_attribute('xlower',0.)
-            self.add_attribute('xupper',1.)
-            self.add_attribute('ylower',0.)
-            self.add_attribute('yupper',1.)
-            self.add_attribute('mbc',3)
-            self.add_attribute('mthbc_xlower',1)
-            self.add_attribute('mthbc_xupper',1)
-            self.add_attribute('mthbc_ylower',1)
-            self.add_attribute('mthbc_yupper',1)
-            self.add_attribute('restart',0)
-            self.add_attribute('N_restart',0)
-            self.add_attribute('time_integrator',2)
-            self.add_attribute('tfluct_solver',0)
-            self.add_attribute('char_decomp',0)
-            self.add_attribute('lim_type',2)
-            self.add_attribute('src_term',0)
-
-        else:
-            raise AttributeError("Only ndim=1 or 2 supported so far")
-
-    def write(self):
-        print 'Creating data file sharpclaw.data for use with xsclaw'
-        make_sharpclawdatafile(self)
-
-
-
-
-def open_datafile(name, datasource='setrun.py'):
-    """
-    Open a data file and write a warning header.
-    Warning header starts with '#' character.  These lines are skipped if
-    data file is opened using the library routine opendatafile.
-
-    :Input:
-     - *name* - (string) Name of data file
-     - *datasource* - (string) Source for the data
-
-    :Output:
-     - (file) - file object
-    """
-
-    import string
-
-    source = string.ljust(datasource,25)
-    file = open(name, 'w')
-    file.write('########################################################\n')
-    file.write('### DO NOT EDIT THIS FILE:  GENERATED AUTOMATICALLY ####\n')
-    file.write('### To modify data, edit  %s ####\n' % source)
-    file.write('###    and then "make .data"                        ####\n')
-    file.write('########################################################\n\n')
-
-    return file
-
-
-def data_write(file, dataobj, name=None, descr=''):
-    r"""
-    Write out value to data file, in the form ::
-
-       value =: name  descr
-
-    Remove brackets and commas from lists, and replace booleans by T/F.
-    Also convert numpy array to a list first.
-
-    :Input:
-     - *name* - (string) normally a string defining the variable,
-       ``if name==None``, write a blank line.
-     - *descr* - (string) A short description to appear on the line
-    """
-
-    import string
-    if name is None:
-        file.write('\n')
-    else:
-        try:
-            value = getattr(dataobj, name)
-        except:
-            print "Variable missing: ",name
-            print "  from dataobj = ", dataobj
-            raise
-        # Convert value to an appropriate string repr
-        import numpy 
-        if isinstance(value,numpy.ndarray):
-            value = list(value)
-        if isinstance(value,tuple) | isinstance(value,list):
-            # Remove [], (), and ','
-            string_value = repr(value)[1:-1]
-            string_value = string_value.replace(',','')
-        elif isinstance(value,bool):
-            if value:
-                string_value = 'T'
+            # Convert value to an appropriate string repr
+            if isinstance(value,np.ndarray):
+                value = list(value)
+            if isinstance(value,tuple) | isinstance(value,list):
+                # Remove [], (), and ','
+                string_value = repr(value)[1:-1]
+                string_value = string_value.replace(',','')
+            elif isinstance(value,bool):
+                if value:
+                    string_value = 'T'
+                else:
+                    string_value = 'F'
             else:
-                string_value = 'F'
-        else:
-            string_value = repr(value)
-        padded_value = string.ljust(string_value, 25)
-        padded_name = string.ljust(name, 12)
-        file.write('%s =: %s %s\n' % (padded_value, padded_name, descr))
+                string_value = repr(value)
+            padded_value = string.ljust(string_value, 20)
+            padded_name = string.ljust(alt_name,20)
+            if description != '':
+                self._out_file.write('%s =: %s # %s \n' % 
+                                        (padded_value, padded_name, description))
+            else:
+                self._out_file.write('%s =: %s\n' % 
+                                    (padded_value, padded_name))
+  
+
+    def read(self,path,force=False):
+        r"""Read and fill applicable data attributes.
+
+        Note that if the data attribute is not found an exception will be
+        raised unless the force argument is set to True in which case a new
+        attribute will be added.
+        """
+
+        data_file = open(os.path.abspath(path),'r')
+
+        for lineno,line in enumerate(data_file):
+            if "=:" not in line:
+                continue
+
+            value, tail = line.split("=:")
+            varname = tail.split()[0]
+
+            # Set this parameter
+            if self.has_attribute(varname) or force:
+                value = self._parse_value(value)
+                if not self.has_attribute(varname):
+                    self.add_attribute(varname,value)
+                else:
+                    setattr(self,varname,value)
+    
+
+    def _parse_value(self,value):
+        r"""
+        Attempt to make sense of a value string from a config file.  If the
+        value is not obviously an integer, float, or boolean, it is returned as
+        a string stripped of leading and trailing whitespace.
+
+        :Input:
+            - *value* - (string) Value string to be parsed
+
+        :Output:
+            - (id) - Appropriate object based on *value*
+        """
+        value = value.strip()
+        if not value:
+            return None
+
+        # assume that values containing spaces are lists of values
+        if len(value.split()) > 1:
+            return [self._parse_value(vv) for vv in value.split()]
+
+        try:
+            # see if it's an integer
+            value = int(value)
+        except ValueError:
+            try:
+                # see if it's a float
+                value = float(value)
+            except ValueError:
+                # see if it's a bool
+                if value[0] == 'T':
+                    value = True
+                elif value[0] == 'F':
+                    value = False
+
+        return value
+
+#  Base data class for Clawpack data objects
+# ==============================================================================
 
 
-def make_clawdatafile(clawdata):
+# ==============================================================================
+# Clawpack input data classes
+class ClawRunData(ClawData):
     r"""
-    Take the data specified in clawdata and write it to claw.data in the
-    form required by the Fortran code lib/main.f95.
+    Object that contains all data objects that need to written out.
+
+    Depending on the package type, this object contains the necessary data
+    objects that need to eventually be written out to files.
     """
 
-
-    # open file and write a warning header:
-    file = open_datafile('claw.data')
-
-    ndim = clawdata.ndim
-    data_write(file, clawdata, 'ndim', '(number of dimensions)')
-    data_write(file, clawdata, 'mx', '(cells in x direction)')
-    if ndim > 1:
-        data_write(file, clawdata, 'my', '(cells in y direction)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mz', '(cells in z direction)')
-    data_write(file, clawdata, None)  # writes blank line
-
-    data_write(file, clawdata, 'nout', '(number of output times)')
-    data_write(file, clawdata, 'outstyle', '(style of specifying output times)')
-    if clawdata.outstyle == 1:
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    elif clawdata.outstyle == 2:
-        data_write(file, clawdata, 'tout', '(output times)')
-    elif clawdata.outstyle == 3:
-        data_write(file, clawdata, 'iout', '(output every iout steps)')
-    elif clawdata.outstyle == 4:
-        data_write(file, clawdata, 'output_time_interval', '(between outputs)')
-        data_write(file, clawdata, 'tfinal', '(final time)')
-
-    else:
-        print '*** Error: unrecognized outstyle'
-        raise
-        return
-
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_initial', '(initial time step dt)')
-    data_write(file, clawdata, 'dt_max', '(max allowable dt)')
-    data_write(file, clawdata, 'cfl_max', '(max allowable Courant number)')
-    data_write(file, clawdata, 'cfl_desired', '(desired Courant number)')
-    data_write(file, clawdata, 'max_steps', '(max time steps per call to claw)')
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_variable', '(1 for variable dt, 0 for fixed)')
-    data_write(file, clawdata, 'order', '(1 or 2)')
-    if ndim == 1:
-        data_write(file, clawdata, 'order_trans', '(not used in 1d)')
-    else:
-        data_write(file, clawdata, 'order_trans', '(transverse order)')
-    data_write(file, clawdata, 'verbosity', '(verbosity of output)')
-    data_write(file, clawdata, 'src_split', '(source term splitting)')
-    data_write(file, clawdata, 'mcapa', '(aux index for capacity fcn)')
-    data_write(file, clawdata, 'maux', '(number of aux variables)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'meqn', '(number of equations)')
-    data_write(file, clawdata, 'mwaves', '(number of waves)')
-    data_write(file, clawdata, 'mthlim', '(limiter choice for each wave)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 't0', '(initial time)')
-    data_write(file, clawdata, 'xlower', '(xlower)')
-    data_write(file, clawdata, 'xupper', '(xupper)')
-    if ndim > 1:
-        data_write(file, clawdata, 'ylower', '(ylower)')
-        data_write(file, clawdata, 'yupper', '(yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'zlower', '(zlower)')
-        data_write(file, clawdata, 'zupper', '(zupper)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'mbc', '(number of ghost cells)')
-    data_write(file, clawdata, 'mthbc_xlower', '(type of BC at xlower)')
-    data_write(file, clawdata, 'mthbc_xupper', '(type of BC at xupper)')
-    if ndim > 1:
-        data_write(file, clawdata, 'mthbc_ylower', '(type of BC at ylower)')
-        data_write(file, clawdata, 'mthbc_yupper', '(type of BC at yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mthbc_zlower', '(type of BC at zlower)')
-        data_write(file, clawdata, 'mthbc_zupper', '(type of BC at zupper)')
-
-    data_write(file, clawdata, 'restart', '(1 to restart from a past run)')
-    data_write(file, clawdata, 'N_restart', '(which frame to restart from)')
-    data_write(file, clawdata, None)
-
-    file.close()
-
-def make_amrclawdatafile(clawdata):
-    r"""
-    Take the data specified in clawdata and write it to claw.data in the
-    form required by the Fortran code lib/main.f95.
-    """
-
-
-    # open file and write a warning header:
-    file = open_datafile('amr2ez.data')
-
-    ndim = clawdata.ndim
-    #data_write(file, clawdata, 'ndim', '(number of dimensions)')
-    data_write(file, clawdata, 'mx', '(cells in x direction)')
-    data_write(file, clawdata, 'my', '(cells in y direction)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mz', '(cells in z direction)')
-
-    data_write(file, clawdata, 'mxnest', '(max number of grid levels)')
-    if len(clawdata.inratx) < max(abs(clawdata.mxnest)-1, 1):
-	raise ValueError("*** Error in data parameter: " + \
-              "require len(inratx) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
-    data_write(file, clawdata, 'inratx', '(refinement ratios)')
-    if clawdata.mxnest < 0:
-	# negative mxnest indicates anisotropic refinement
-	if len(clawdata.inraty) < max(abs(clawdata.mxnest)-1, 1):
-	    raise ValueError("*** Error in data parameter: " + \
-              "require len(inraty) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
-        data_write(file, clawdata, 'inraty', '(refinement ratios)')
-	if ndim == 3:
-	    if len(clawdata.inratz) < max(abs(clawdata.mxnest)-1, 1):
-	        raise ValueError("*** Error in data parameter: " + \
-		  "require len(inratz) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
-	    data_write(file, clawdata, 'inratz', '(refinement ratios)')
-	if len(clawdata.inratt) < max(abs(clawdata.mxnest)-1, 1):
-	    raise ValueError("*** Error in data parameter: " + \
-		  "require len(inratt) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
-	data_write(file, clawdata, 'inratt', '(refinement ratios)')
-
-    data_write(file, clawdata, None)  # writes blank line
-
-    data_write(file, clawdata, 'nout', '(number of output times)')
-    data_write(file, clawdata, 'outstyle', '(style of specifying output times)')
-    if clawdata.outstyle == 1:
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    elif clawdata.outstyle == 2:
-        data_write(file, clawdata, 'tout', '(output times)')
-    elif clawdata.outstyle == 3:
-        data_write(file, clawdata, 'iout', '(output every iout steps)')
-    elif clawdata.outstyle == 4:
-        data_write(file, clawdata, 'output_time_interval', '(between outputs)')
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    else:
-        print '*** Error: unrecognized outstyle'
-        raise
-        return
-
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_initial', '(initial time step dt)')
-    data_write(file, clawdata, 'dt_max', '(max allowable dt)')
-    data_write(file, clawdata, 'cfl_max', '(max allowable Courant number)')
-    data_write(file, clawdata, 'cfl_desired', '(desired Courant number)')
-    data_write(file, clawdata, 'max_steps', '(max time steps per call to claw)')
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_variable', '(1 for variable dt, 0 for fixed)')
-    data_write(file, clawdata, 'order', '(1 or 2)')
-    if ndim == 1:
-        data_write(file, clawdata, 'order_trans', '(not used in 1d)')
-    else:
-        data_write(file, clawdata, 'order_trans', '(transverse order)')
-    data_write(file, clawdata, 'verbosity', '(verbosity of output)')
-    data_write(file, clawdata, 'src_split', '(source term splitting)')
-    data_write(file, clawdata, 'mcapa', '(aux index for capacity fcn)')
-    data_write(file, clawdata, 'maux', '(number of aux variables)')
-    if len(clawdata.auxtype) != clawdata.maux:
-        file.close()
-        print "*** Error: An auxtype array must be specified of length maux"
-        raise AttributeError, "require len(clawdata.auxtype) == clawdata.maux"
-    for i in range(clawdata.maux):
-        file.write("'%s'\n" % clawdata.auxtype[i])
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'meqn', '(number of equations)')
-    data_write(file, clawdata, 'mwaves', '(number of waves)')
-    data_write(file, clawdata, 'mthlim', '(limiter choice for each wave)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 't0', '(initial time)')
-    data_write(file, clawdata, 'xlower', '(xlower)')
-    data_write(file, clawdata, 'xupper', '(xupper)')
-    data_write(file, clawdata, 'ylower', '(ylower)')
-    data_write(file, clawdata, 'yupper', '(yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'zlower', '(zlower)')
-        data_write(file, clawdata, 'zupper', '(zupper)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'mbc', '(number of ghost cells)')
-    data_write(file, clawdata, 'mthbc_xlower', '(type of BC at xlower)')
-    data_write(file, clawdata, 'mthbc_xupper', '(type of BC at xupper)')
-    data_write(file, clawdata, 'mthbc_ylower', '(type of BC at ylower)')
-    data_write(file, clawdata, 'mthbc_yupper', '(type of BC at yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mthbc_zlower', '(type of BC at zlower)')
-        data_write(file, clawdata, 'mthbc_zupper', '(type of BC at zupper)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'restart', '(1 to restart from a past run)')
-    data_write(file, clawdata, 'checkpt_iousr', '(how often to checkpoint)')
-    if clawdata.checkpt_iousr < 0:
-        data_write(file, clawdata, 'tchk', '(checkpoint times)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'tol', '(tolerance for Richardson extrap)')
-    data_write(file, clawdata, 'tolsp', '(tolerance used in flag2refine)')
-    data_write(file, clawdata, 'kcheck', '(how often to regrid)')
-    data_write(file, clawdata, 'ibuff', '(buffer zone around flagged pts)')
-    data_write(file, clawdata, 'cutoff', '(efficiency cutoff for grid gen.)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'PRINT', '(print to fort.amr)')
-    data_write(file, clawdata, 'NCAR', '(obsolete!)')
-    data_write(file, clawdata, 'fortq', '(Output to fort.q* files)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'dprint', '(print domain flags)')
-    data_write(file, clawdata, 'eprint', '(print err est flags)')
-    data_write(file, clawdata, 'edebug', '(even more err est flags)')
-    data_write(file, clawdata, 'gprint', '(grid bisection/clustering)')
-    data_write(file, clawdata, 'nprint', '(proper nesting output)')
-    data_write(file, clawdata, 'pprint', '(proj. of tagged points)')
-    data_write(file, clawdata, 'rprint', '(print regridding summary)')
-    data_write(file, clawdata, 'sprint', '(space/memory output)')
-    data_write(file, clawdata, 'tprint', '(time step reporting each level)')
-    data_write(file, clawdata, 'uprint', '(update/upbnd reporting)')
-
-    file.close()
-
-
-def make_sharpclawdatafile(clawdata):
-    r"""
-    Take the data specified in clawdata and write it to sharpclaw.data in the
-    form required by the Fortran code lib/main.f95.
-    """
-
-
-    # open file and write a warning header:
-    file = open_datafile('sharpclaw.data')
-
-    ndim = clawdata.ndim
-    data_write(file, clawdata, 'ndim', '(number of dimensions)')
-    data_write(file, clawdata, 'mx', '(cells in x direction)')
-    if ndim > 1:
-        data_write(file, clawdata, 'my', '(cells in y direction)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mz', '(cells in z direction)')
-    data_write(file, clawdata, None)  # writes blank line
-
-    data_write(file, clawdata, 'nout', '(number of output times)')
-    data_write(file, clawdata, 'outstyle', '(style of specifying output times)')
-    if clawdata.outstyle == 1:
-        data_write(file, clawdata, 'tfinal', '(final time)')
-    elif clawdata.outstyle == 2:
-        data_write(file, clawdata, 'tout', '(output times)')
-    elif clawdata.outstyle == 3:
-        data_write(file, clawdata, 'iout', '(output every iout steps)')
-    else:
-        print '*** Error: unrecognized outstyle'
-        raise
-        return
-
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_initial', '(initial time step dt)')
-    data_write(file, clawdata, 'dt_max', '(max allowable dt)')
-    data_write(file, clawdata, 'cfl_max', '(max allowable Courant number)')
-    data_write(file, clawdata, 'cfl_desired', '(desired Courant number)')
-    data_write(file, clawdata, 'max_steps', '(max time steps per call to claw)')
-    data_write(file, clawdata, None)
-    data_write(file, clawdata, 'dt_variable', '(1 for variable dt, 0 for fixed)')
-    data_write(file, clawdata, 'time_integrator', '(time stepping scheme)')
-    data_write(file, clawdata, 'verbosity', '(verbosity of output)')
-    data_write(file, clawdata, 'src_term', '(source term present)')
-    data_write(file, clawdata, 'mcapa', '(aux index for capacity fcn)')
-    data_write(file, clawdata, 'maux', '(number of aux variables)')
-    data_write(file, clawdata, 'tfluct_solver', '(total fluctuation solver)')
-    data_write(file, clawdata, 'char_decomp', '(characteristic decomposition)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'meqn', '(number of equations)')
-    data_write(file, clawdata, 'mwaves', '(number of waves)')
-    data_write(file, clawdata, 'lim_type', '(0=None, 1=TVD, 2=WENO)')
-    data_write(file, clawdata, 'mthlim', '(limiter choice for each wave)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 't0', '(initial time)')
-    data_write(file, clawdata, 'xlower', '(xlower)')
-    data_write(file, clawdata, 'xupper', '(xupper)')
-    if ndim > 1:
-        data_write(file, clawdata, 'ylower', '(ylower)')
-        data_write(file, clawdata, 'yupper', '(yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'zlower', '(zlower)')
-        data_write(file, clawdata, 'zupper', '(zupper)')
-    data_write(file, clawdata, None)
-
-    data_write(file, clawdata, 'mbc', '(number of ghost cells)')
-    data_write(file, clawdata, 'mthbc_xlower', '(type of BC at xlower)')
-    data_write(file, clawdata, 'mthbc_xupper', '(type of BC at xupper)')
-    if ndim > 1:
-        data_write(file, clawdata, 'mthbc_ylower', '(type of BC at ylower)')
-        data_write(file, clawdata, 'mthbc_yupper', '(type of BC at yupper)')
-    if ndim == 3:
-        data_write(file, clawdata, 'mthbc_zlower', '(type of BC at zlower)')
-        data_write(file, clawdata, 'mthbc_zupper', '(type of BC at zupper)')
-
-    data_write(file, clawdata, 'restart', '(1 to restart from a past run)')
-    data_write(file, clawdata, 'N_restart', '(which frame to restart from)')
-    data_write(file, clawdata, None)
-
-    file.close()
-
-
-def make_userdatafile(userdata):
-    r"""
-    Create the data file using the parameters in userdata.
-    The parameters will be written to this file in the same order they were
-    specified using userdata.add_attribute.
-    Presumably the user will read these in using a Fortran routine, such as
-    setprob.f95, and the order is important.
-    """
-
-    # open file and write a warning header:
-    file = open_datafile(userdata._UserData__fname)
-
-    # write all the parameters:
-    for param in userdata.attributes:
-        data_write(file, userdata, param, \
-                   userdata._UserData__descr[param])
-
-    file.close()
-
-def make_setgauges_datafile(clawdata):
-    """
-    Create setgauges.data using gauges attribute of clawdata.
-    """
-    gauges = getattr(clawdata,'gauges',[])
-    ngauges = len(gauges)
-
-    print 'Creating data file setgauges.data'
-    # open file and write a warning header:
-    file = open_datafile('setgauges.data')
-    file.write("%4i   =: ngauges\n" % ngauges)
-    gaugeno_used = []
-    for gauge in gauges:
-        gaugeno = gauge[0]
-        if gaugeno in gaugeno_used:
-            print "*** Gauge number %s used more than once! " % gaugeno
-            raise Exception("Repeated gauge number")
-        else:
-            gaugeno_used.append(gauge[0])
-        file.write("%4i %19.10e  %17.10e  %13.6e  %13.6e\n" % tuple(gauge))
-        # or use this variant with =:
-        #gauge.append(gaugeno)
-        #file.write("%4i %19.10e  %17.10e  %13.6e  %13.6e  =: gauge%s\n" % tuple(gauge))
-    file.close()
-
-
-#-----------------------------------------------------
-# New version 6/30/09
-
-class ClawRunData(Data):
-    r"""
-    Object that will be written out to claw.data.
-    """
-    def __init__(self, pkg, ndim):
+    def __init__(self, pkg, num_dim):
         super(ClawRunData,self).__init__()
         self.add_attribute('pkg',pkg)
-        self.add_attribute('ndim',ndim)
-        self.add_attribute('datalist',[])
+        self.add_attribute('num_dim',num_dim)
+        self.add_attribute('data_list',[])
+        self.add_attribute('xclawcmd',None)
 
+        # Always need the basic clawpack data object
+        self.add_data(ClawInputData(num_dim),'clawdata')
 
+        # Add package specific data objects
         if pkg.lower() in ['classic', 'classicclaw']:
-            self.add_attribute('xclawcmd', 'xclaw')
-
-            # Required data set for basic run parameters:
-            clawdata = ClawInputData(ndim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
+            self.xclawcmd = 'xclaw'
 
         elif pkg.lower() in ['amrclaw', 'amr']:
-            self.add_attribute('xclawcmd', 'xamr')
 
-            # Required data set for basic run parameters:
-            clawdata = AmrclawInputData(ndim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
+            import clawpack.amrclaw.data as amrclaw
+
+            self.xclawcmd = 'xamr'
+            self.add_data(ClawInputData(num_dim),'clawdata')
+            self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
+            self.add_data(amrclaw.RegionData(),'regiondata')
+            self.add_data(amrclaw.GaugeData(),'gaugedata')
 
         elif pkg.lower() in ['geoclaw']:
-            self.add_attribute('xclawcmd', 'xgeoclaw')
+
+            import clawpack.amrclaw.data as amrclaw
+            import clawpack.geoclaw.data as geoclaw
+
+            self.xclawcmd = 'xgeoclaw'
 
             # Required data set for basic run parameters:
-            clawdata = AmrclawInputData(ndim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
-            geodata = GeoclawInputData(ndim)
-            self.add_attribute('geodata', geodata)
-            self.datalist.append(geodata)
-
-        elif pkg.lower() in ['sharpclaw']:
-            self.add_attribute('xclawcmd', 'xsclaw')
-
-            # Required data set for basic run parameters:
-            clawdata = SharpclawInputData(ndim)
-            self.add_attribute('clawdata', clawdata)
-            self.datalist.append(clawdata)
+            self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
+            self.add_data(amrclaw.RegionData(),'regiondata')
+            self.add_data(amrclaw.GaugeData(),'gaugedata')
+            self.add_data(geoclaw.GeoClawData(),('geo_data'))
+            self.add_data(geoclaw.TopographyData(),'topo_data')
+            self.add_data(geoclaw.DTopoData(),'dtopo_data')
+            self.add_data(geoclaw.RefinementData(),'refinement_data')
+            self.add_data(geoclaw.FixedGridData(),'fixed_grid_data')
+            self.add_data(geoclaw.QinitData(),'qinit_data')
 
         else:
             raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
+
+
+    def add_data(self,data,name,file_name=None):
+        r"""Add data object named *name* and written to *file_name*."""
+        self.add_attribute(name,data)
+        self.data_list.append(data)
+
 
     def new_UserData(self,name,fname):
         r"""
@@ -1209,221 +364,310 @@ class ClawRunData(Data):
         for application specific data to be written
         to the data file fname.
         """
-        userdata = UserData(fname)
-        self.datalist.append(userdata)
-        exec('self.%s = userdata' % name)
-        return userdata
+        data = UserData(fname)
+        self.add_data(data,name,fname)
+        return data
 
-    def add_GaugeData(self):
-        r"""
-        Create a gaugedata attribute for writing to gauges.data.
-        """
-        gaugedata = GaugeData(self.ndim)
-        self.datalist.append(gaugedata)
-        self.gaugedata = gaugedata
-        return gaugedata
 
     def write(self):
-        for d in self.datalist:
-            d.write()
+        r"""Write out each data objects in datalist """
+        for data_object in self.data_list:
+            data_object.write()
 
-class UserData(Data):
+
+
+class ClawInputData(ClawData):
+    r"""
+    Object containing basic Clawpack input data, usually written to 'claw.data'.
+
+
+    """
+
+    def __init__(self, num_dim):
+        super(ClawInputData,self).__init__()
+
+        # Set default values:
+        self.add_attribute('num_dim',num_dim)
+        self.add_attribute('num_eqn',1)
+        self.add_attribute('num_waves',1)
+        self.add_attribute('num_aux',0)
+        self.add_attribute('output_style',1)
+        self.add_attribute('output_times',[])
+        self.add_attribute('num_output_times',None)
+        self.add_attribute('output_t0',True)
+        self.add_attribute('output_step_interval',None)
+        self.add_attribute('total_steps',None)
+        self.add_attribute('tfinal',None)
+        self.add_attribute('output_format',1)
+        self.add_attribute('output_q_components','all')
+        self.add_attribute('output_aux_components','none')
+        self.add_attribute('output_aux_onlyonce',True)
+        
+        self.add_attribute('dt_initial',1.e-5)
+        self.add_attribute('dt_max',1.e99)
+        self.add_attribute('dt_variable',1)
+        self.add_attribute('cfl_desired',0.9)
+        self.add_attribute('cfl_max',1.0)
+        self.add_attribute('steps_max',50000)
+        self.add_attribute('order',2)
+        self.add_attribute('dimensional_split',0)
+        self.add_attribute('verbosity',0)
+        self.add_attribute('verbosity_regrid',0)
+        self.add_attribute('source_split',0)
+        self.add_attribute('capa_index',0)
+        self.add_attribute('limiter',[4])
+        self.add_attribute('t0',0.)
+        self.add_attribute('num_ghost',2)
+        self.add_attribute('use_fwaves',False)
+        
+        if num_dim == 1:
+            self.add_attribute('lower',[0.])
+            self.add_attribute('upper',[1.])
+            self.add_attribute('num_cells',[100])
+            self.add_attribute('bc_lower',[0])
+            self.add_attribute('bc_upper',[0])
+            self.add_attribute('transverse_waves',0)
+        elif num_dim == 2:
+            self.add_attribute('lower',[0.,0.])
+            self.add_attribute('upper',[1.,1.])
+            self.add_attribute('num_cells',[100,100])
+            self.add_attribute('bc_lower',[0,0])
+            self.add_attribute('bc_upper',[0,0])
+            self.add_attribute('transverse_waves',2)
+        elif num_dim == 3:
+            self.add_attribute('lower',[0.,0.,0.])
+            self.add_attribute('upper',[1.,1.,1.])
+            self.add_attribute('num_cells',[100,100,100])
+            self.add_attribute('bc_lower',[0,0,0])
+            self.add_attribute('bc_upper',[0,0,0])
+            self.add_attribute('transverse_waves',22)
+        else:
+            raise ValueError("Only num_dim=1, 2, or 3 supported ")
+
+        # Restart capability, not all Clawpack packages handles this yet.
+        self.add_attribute('restart',False)
+        self.add_attribute('restart_file','')
+        self.add_attribute('checkpt_style',0)
+        self.add_attribute('checkpt_interval',1000)
+        self.add_attribute('checkpt_time_interval',1000.)
+        self.add_attribute('checkpt_times',[1000.])
+
+
+    def write(self, out_file='claw.data', data_source='setrun.py'):
+        r"""Write input data to a file"""
+        self.open_data_file(out_file,data_source)
+
+        self.data_write('num_dim')
+        self.data_write('lower')
+        self.data_write('upper')
+        self.data_write('num_cells')
+        self.data_write()  # writes blank line
+        self.data_write('num_eqn')
+        self.data_write('num_waves')
+        self.data_write('num_aux')
+        self.data_write()  # writes blank line
+
+        self.data_write('t0')
+        self.data_write()
+        self.data_write('output_style')
+
+        if self.output_style == 1:
+            self.data_write('num_output_times')
+            self.data_write('tfinal')
+            self.data_write('output_t0')
+        elif self.output_style == 2:
+            if len(self.output_times) == 0:
+                raise AttributeError("*** output_style==2 requires nonempty list" \
+                        + " of output times")
+            self.num_output_times = len(self.output_times)
+            self.data_write('num_output_times')
+            self.data_write('output_times')
+        elif self.output_style==3:
+            self.data_write('output_step_interval')
+            self.data_write('total_steps')
+            self.data_write('output_t0')
+        else:
+            raise AttributeError("*** Unrecognized output_style: %s"\
+                  % self.output_style)
+
+        self.data_write()
+        if self.output_format in [1,'ascii']:
+            self.output_format = 1
+        elif self.output_format in [2,'netcdf']:
+            self.output_format = 2
+        elif self.output_format in [3,'binary']:
+            self.output_format = 3
+        else:
+            raise ValueError("*** Error in data parameter: " + \
+                  "output_format unrecognized: ",self.output_format)
+            
+        self.data_write('output_format')
+
+        if self.output_q_components == 'all':
+            iout_q = self.num_eqn * [1]
+        elif self.output_q_components == 'none':
+            iout_q = self.num_eqn * [0]
+        else:
+            #iout_q = np.where(self.output_q_components, 1, 0)
+            print "*** WARNING: Selective output_q_components not implemented"
+            print "***          Will output all components of q"
+            iout_q = self.num_eqn * [1]
+    
+
+        # Write out local value of iout_q rather than a data member
+        self.data_write('', value=iout_q, alt_name='iout_q')
+
+        if self.num_aux > 0:
+            if isinstance(self.output_aux_components,basestring):
+                if self.output_aux_components.lower() == 'all':
+                    iout_aux = self.num_aux * [1]
+                elif self.output_aux_components.lower() == 'none':
+                    iout_aux = self.num_aux * [0]
+                else:
+                    raise ValueError("Invalid aux array component option.")
+            else:
+                iout_aux = np.where(self.output_aux_components, 1, 0)
+                print "*** WARNING: Selective output_aux_components not implemented"
+                print "***          Will output all components of aux"
+                iout_aux = self.num_eqn * [1]
+            self.data_write(name='', value=iout_aux, alt_name='iout_aux')
+            self.data_write('output_aux_onlyonce')
+
+        self.data_write()
+        self.data_write('dt_initial')
+        self.data_write('dt_max')
+        self.data_write('cfl_max')
+        self.data_write('cfl_desired')
+        self.data_write('steps_max')
+        self.data_write()
+        self.data_write('dt_variable')
+        self.data_write('order')
+
+        if self.num_dim == 1:
+            pass
+        else:
+            # Transverse options different in 2D and 3D
+            if self.num_dim == 2:
+                if self.transverse_waves in [0,'none']:  
+                    self.transverse_waves = 0
+                elif self.transverse_waves in [1,'increment']:  
+                    self.transverse_waves = 1
+                elif self.transverse_waves in [2,'all']:  
+                    self.transverse_waves = 2
+                else:
+                    raise AttributeError("Unrecognized transverse_waves: %s" \
+                                             % self.transverse_waves)
+            else:    # 3D
+                # Add textual names later
+                if not (self.transverse_waves in [0, 10, 11, 20, 21, 22]):
+                    raise AttributeError("Unrecognized transverse_waves: %s" \
+                                             % self.transverse_waves)
+            self.data_write(file, self.transverse_waves, 'transverse_waves')
+
+            if self.dimensional_split in [0,'unsplit']:  
+                self.dimensional_split = 0
+            elif self.dimensional_split in [1,'godunov']:  
+                self.dimensional_split = 1
+            elif self.dimensional_split in [2,'strang']:  
+                self.dimensional_split = 2
+            else:
+                raise AttributeError("Unrecognized dimensional_split: %s" \
+                      % self.dimensional_split)
+            self.data_write('dimensional_split')
+            
+        self.data_write('verbosity')
+
+        if self.source_split in [0,'none']:  
+            self.source_split = 0
+        elif self.source_split in [1,'godunov']:  
+            self.source_split = 1
+        elif self.source_split in [2,'strang']:  
+            self.source_split = 2
+        else:
+            raise AttributeError("Unrecognized source_split: %s" \
+                  % self.source_split)
+        self.data_write('source_split')
+
+        self.data_write('capa_index')
+        self.data_write('use_fwaves')
+        self.data_write()
+
+        for i in range(len(self.limiter)):
+            if self.limiter[i] in [0,'none']:        self.limiter[i] = 0
+            elif self.limiter[i] in [1,'minmod']:    self.limiter[i] = 1
+            elif self.limiter[i] in [2,'superbee']:  self.limiter[i] = 2
+            elif self.limiter[i] in [3,'mc']:        self.limiter[i] = 3
+            elif self.limiter[i] in [4,'vanleer']:   self.limiter[i] = 4
+            else:
+                raise AttributeError("Unrecognized limiter: %s" \
+                      % self.limiter[i])
+        self.data_write('limiter')
+
+        self.data_write()
+
+        self.data_write('num_ghost')
+        for i in range(self.num_dim):
+            if self.bc_lower[i] in [0,'user']:       self.bc_lower[i] = 0
+            elif self.bc_lower[i] in [1,'extrap']:   self.bc_lower[i] = 1
+            elif self.bc_lower[i] in [2,'periodic']: self.bc_lower[i] = 2
+            elif self.bc_lower[i] in [3,'wall']:     self.bc_lower[i] = 3
+            else:
+                raise AttributeError("Unrecognized bc_lower: %s" \
+                      % self.bc_lower[i])
+        self.data_write('bc_lower')
+
+        for i in range(self.num_dim):
+            if self.bc_upper[i] in [0,'user']:       self.bc_upper[i] = 0
+            elif self.bc_upper[i] in [1,'extrap']:   self.bc_upper[i] = 1
+            elif self.bc_upper[i] in [2,'periodic']: self.bc_upper[i] = 2
+            elif self.bc_upper[i] in [3,'wall']:     self.bc_upper[i] = 3
+            else:
+                raise AttributeError("Unrecognized bc_upper: %s" \
+                      % self.bc_upper[i])
+        self.data_write('bc_upper')
+
+        self.data_write()
+        self.data_write('restart')
+        self.data_write('restart_file')
+        self.data_write('checkpt_style')
+
+        if self.checkpt_style==2:
+            num_checkpt_times = len(self.checkpt_times)
+            self.data_write(name='', value=num_checkpt_times, alt_name='num_checkpt_times')
+            self.data_write('checkpt_times')
+        elif self.checkpt_style==3:
+            self.data_write('checkpt_interval')
+        elif self.checkpt_style not in [0,1]:
+            raise AttributeError("*** Unrecognized checkpt_style: %s"\
+                  % self.checkpt_style)
+
+        self.data_write()
+        self.close_data_file()
+
+
+class UserData(ClawData):
     r"""
     Object that will be written out to user file such as setprob.data, as
     determined by the fname attribute.
     """
+
     def __init__(self, fname):
+
         super(UserData,self).__init__()
-        self.__fname = fname  # file to be read by Fortran for this data
-        self.__descr = {}     # dictionary to hold descriptions
+
+        # Create attributes without adding to attributes list:
+
+        # file to be read by Fortran for this data:
+        object.__setattr__(self,'__fname__',fname)
+
+        # dictionary to hold descriptions:
+        object.__setattr__(self,'__descr__',{})
 
     def add_param(self,name,value,descr=''):
          self.add_attribute(name,value)
-         self.__descr[name] = descr
+         descr_dict = self.__descr__
+         descr_dict[name] = descr
 
-    def write(self):
-         print 'Creating data file %s' % self.__fname
-         make_userdatafile(self)
-
-class GaugeData(Data):
-    r"""
-    Data to be written out to gauge.data specifying gauges.
-    DEPRECATED:  Use GeoclawInputData  instead.
-    """
-    def __init__(self, ndim):
-        super(GaugeData,self).__init__()
-        self.add_attribute('ndim',ndim)
-        self.add_attribute('ngauges',0)
-        self.__gauge_dict = {}
-
-    def add_gauge(self,gaugeno,location,time_interval):
-        self.__gauge_dict[gaugeno] = (gaugeno, location, time_interval)
-        self.ngauges = len(self.__gauge_dict)
-
-    def write(self):
-        print 'Creating data file gauges.data'
-
-        # open file and write a warning header:
-        file = open_datafile('gauges.data')
-
-        data_write(file, self, 'ngauges', 'Number of gauges')
-        data_write(file, self, None)
-
-        ndim = self.ndim
-
-        # write a line for each gauge:
-        for (gaugeno, gdata) in self.__gauge_dict.iteritems():
-            tmin = gdata[2][0]
-            tmax = gdata[2][1]
-            if isinstance(gdata[1],(list,tuple)):
-                xyz = gdata[1]
-                x = xyz[0]
-                if ndim>1:
-                    y = xyz[1]
-                if ndim>2:
-                    z = xyz[2]
-            else:
-                x = gdata[1]
-
-            if ndim==1:
-                file.write('%i   %e   %e   %e' % (gdata[0],x,tmin,tmax))
-            elif ndim==2:
-                file.write('%i   %e   %e   %e   %e' % (gdata[0],x,y,tmin,tmax))
-            elif ndim==3:
-                file.write('%i   %e   %e   %e   %e   %e' % (gdata[0],x,y,z,tmin,tmax))
-
-        printxyz = {1: 'x  ', 2: 'x  y  ', 3: 'x  y  z'}
-        file.write('\n\n# Format of each line: \n#   gaugeno  %s tmin tmax'\
-                     % printxyz[ndim])
-        file.close()
-
-class GeoclawInputData(Data):
-    r"""
-    Object that will be written out to the various GeoClaw data files.
-    """
-    def __init__(self, ndim):
-        super(GeoclawInputData,self).__init__()
-
-        # Set default values:
-        self.add_attribute('igravity',1)
-        self.add_attribute('iqinit',0)
-        self.add_attribute('icoriolis',1)
-        self.add_attribute('Rearth',6367500.0)
-        self.add_attribute('variable_dt_refinement_ratios',False)
-        # NEED TO CONTINUE!
-
-    def write(self):
-
-        print 'Creating data file setgeo.data'
-        # open file and write a warning header:
-        file = open_datafile('setgeo.data')
-        data_write(file, self, 'igravity')
-        data_write(file, self, 'gravity')
-        data_write(file, self, 'icoordsys')
-        data_write(file, self, 'icoriolis')
-        data_write(file, self, 'Rearth')
-        data_write(file, self, 'variable_dt_refinement_ratios')
-        file.close()
-
-        print 'Creating data file settsunami.data'
-        # open file and write a warning header:
-        file = open_datafile('settsunami.data')
-        data_write(file, self, 'sealevel')
-        data_write(file, self, 'drytolerance')
-        data_write(file, self, 'wavetolerance')
-        data_write(file, self, 'depthdeep')
-        data_write(file, self, 'maxleveldeep')
-        data_write(file, self, 'ifriction')
-        data_write(file, self, 'coeffmanning')
-        data_write(file, self, 'frictiondepth')
-        file.close()
-
-        print 'Creating data file settopo.data'
-        # open file and write a warning header:
-        file = open_datafile('settopo.data')
-        self.ntopofiles = len(self.topofiles)
-        data_write(file, self, 'ntopofiles')
-        for tfile in self.topofiles:
-            try:
-                fname = os.path.abspath(tfile[-1])
-            except:
-                print "*** Error: file not found: ",tfile[-1]
-                raise MissingFile("file not found")
-            file.write("\n'%s' \n " % fname)
-            file.write("%3i %3i %3i %20.10e %20.10e \n" % tuple(tfile[:-1]))
-        file.close()
-
-        print 'Creating data file setdtopo.data'
-        # open file and write a warning header:
-        file = open_datafile('setdtopo.data')
-        self.mdtopofiles = len(self.dtopofiles)
-        data_write(file, self, 'mdtopofiles')
-        data_write(file, self, None)
-        for tfile in self.dtopofiles:
-            try:
-                fname = "'%s'" % os.path.abspath(tfile[-1])
-            except:
-                print "*** Error: file not found: ",tfile[-1]
-                raise MissingFile("file not found")
-            file.write("\n%s \n" % fname)
-            file.write("%3i %3i %3i\n" % tuple(tfile[:-1]))
-        file.close()
-
-        print 'Creating data file setqinit.data'
-        # open file and write a warning header:
-        file = open_datafile('setqinit.data')
-        # self.iqinit tells which component of q is perturbed!
-        data_write(file, self, 'iqinit')
-        data_write(file, self, None)
-        for tfile in self.qinitfiles:
-            try:
-                fname = "'%s'" % os.path.abspath(tfile[-1])
-            except:
-                print "*** Error: file not found: ",tfile[-1]
-                raise MissingFile("file not found")
-            file.write("\n%s  \n" % fname)
-            file.write("%3i %3i \n" % tuple(tfile[:-1]))
-        file.close()
-
-        make_setgauges_datafile(self)
-
-#        print 'Creating data file setgauges.data'
-#        # open file and write a warning header:
-#        file = open_datafile('setgauges.data')
-#        self.ngauges = len(self.gauges)
-#        data_write(file, self, 'ngauges')
-#        data_write(file, self, None)
-#        gaugeno_used = []
-#        for gauge in self.gauges:
-#            gaugeno = gauge[0]
-#            if gaugeno in gaugeno_used:
-#                print "*** Gauge number %s used more than once! " % gaugeno
-#                raise Exception("Repeated gauge number")
-#            else:
-#                gaugeno_used.append(gauge[0])
-#            gauge.append(gaugeno)
-#            file.write("%3i %19.10e  %19.10e  %15.6e  %15.6e  =: gauge%s\n" % tuple(gauge))
-#        file.close()
-
-
-        print 'Creating data file setfixedgrids.data'
-        # open file and write a warning header:
-        file = open_datafile('setfixedgrids.data')
-        self.nfixedgrids = len(self.fixedgrids)
-        data_write(file, self, 'nfixedgrids')
-        data_write(file, self, None)
-        for fixedgrid in self.fixedgrids:
-            file.write(11*"%g  " % tuple(fixedgrid) +"\n")
-        file.close()
-
-
-        print 'Creating data file setregions.data'
-        # open file and write a warning header:
-        file = open_datafile('setregions.data')
-        self.nregions = len(self.regions)
-        data_write(file, self, 'nregions')
-        data_write(file, self, None)
-        for regions in self.regions:
-            file.write(8*"%g  " % tuple(regions) +"\n")
-        file.close()
-
+    def write(self,data_source='setrun.py'):
+        super(UserData,self).write(self.__fname__, data_source)
+        self.close_data_file()
