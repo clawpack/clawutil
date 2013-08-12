@@ -529,7 +529,7 @@ class ClawInputData(ClawData):
                 iout_aux = np.where(self.output_aux_components, 1, 0)
                 print "*** WARNING: Selective output_aux_components not implemented"
                 print "***          Will output all components of aux"
-                iout_aux = self.num_eqn * [1]
+                iout_aux = self.num_aux * [1]
             self.data_write(name='', value=iout_aux, alt_name='iout_aux')
             self.data_write('output_aux_onlyonce')
 
