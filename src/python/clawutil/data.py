@@ -569,7 +569,10 @@ class ClawInputData(ClawData):
             elif self.dimensional_split in [1,'godunov']:  
                 self.dimensional_split = 1
             elif self.dimensional_split in [2,'strang']:  
-                self.dimensional_split = 2
+                if self.num_dim == 3:
+                    raise AttributeError("Strang dimensional splitting not supported in 3D")
+                else:
+                    self.dimensional_split = 2
             else:
                 raise AttributeError("Unrecognized dimensional_split: %s" \
                       % self.dimensional_split)
