@@ -599,8 +599,8 @@ class ClawInputData(ClawData):
             if self.limiter[i] in [0,'none']:        self.limiter[i] = 0
             elif self.limiter[i] in [1,'minmod']:    self.limiter[i] = 1
             elif self.limiter[i] in [2,'superbee']:  self.limiter[i] = 2
-            elif self.limiter[i] in [3,'mc']:        self.limiter[i] = 3
-            elif self.limiter[i] in [4,'vanleer']:   self.limiter[i] = 4
+            elif self.limiter[i] in [3,'vanleer']:        self.limiter[i] = 3
+            elif self.limiter[i] in [4,'mc']:   self.limiter[i] = 4
             else:
                 raise AttributeError("Unrecognized limiter: %s" \
                       % self.limiter[i])
