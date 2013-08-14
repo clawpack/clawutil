@@ -1,18 +1,21 @@
 """
-Conversion module for 2d amrclaw setrun.py file from 4.6 to 5.0 format.
+Conversion module for 2d classic or amrclaw setrun.py file 
+from 4.6 to 5.0 format.
 """
     
 
 import os,sys
 
-clawutil = os.environ['CLAWUTIL'] + '/src/python/clawutil'
-template_amrclaw_2d = open(clawutil \
-             + '/conversion/setrun_template_amrclaw_2d.py').read()
+try:
+    clawutil = os.path.join(os.environ['CLAW'], 'clawutil/src/python/clawutil')
+except:
+    raise Exception("*** Environment variable CLAW must be set")
+
 
 sys.path.insert(0,os.getcwd())
 sys.path.append(os.getcwd() + '/pyclaw')
 
-def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
+def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
 
     setrun_text = open(setrun_file).readlines()
     if claw_pkg is None:
@@ -25,8 +28,19 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
                 elif 'geoclaw' in line:
                     claw_pkg = 'geoclaw'
 
+    if ndim is None:
+        for line in setrun_text:
+            if 'ndim' in line:
+                if '1' in line: ndim = 1
+                elif '2' in line: ndim = 2
+                elif '3' in line: ndim = 3
+
     if claw_pkg is None:
         raise ValueError("*** Could not determine claw_pkg from %s" \
+                                % setrun_file)
+        
+    if ndim is None:
+        raise ValueError("*** Could not determine ndim from %s" \
                                 % setrun_file)
         
 
@@ -55,22 +69,17 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
 
     # AMRClaw didn't have regions before...
     regions = []
-    # try:
-    #     regions = rundata.regiondata.regions
-    # except:
-    #     regions = []
 
 
     # -------------------------------------------------
     # Mapping from old setrun variables to new ones:
 
+    # all packages and dimensions have these parameters:
+
     mapping = {
         'xlower': c.xlower,
         'xupper': c.xupper,
-        'ylower': c.ylower,
-        'yupper': c.yupper,
         'mx': c.mx,
-        'my': c.my,
         'num_eqn': c.meqn,
         'num_aux': c.maux,
         'capa_index': c.mcapa,
@@ -91,29 +100,58 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
         'num_ghost': c.mbc,
         'mthbc_xlower': mthbc_xlower,
         'mthbc_xupper': mthbc_xupper,
-        'mthbc_ylower': mthbc_ylower,
-        'mthbc_yupper': mthbc_yupper,
-        'amr_levels_max': abs(c.mxnest),
-        'refinement_ratios_x': str(c.inratx),
-        'refinement_ratios_y': str(c.inraty),
-        'refinement_ratios_t': str(c.inratt),
-        'aux_type': str(c.auxtype),
-        'flag_richardson': str(c.tol > 0.),
-        'flag_richardson_tol': abs(c.tol),
-        'flag2refine': str(c.tolsp > 0.),
-        'flag2refine_tol': c.tolsp,
-        'regrid_interval': c.kcheck,
-        'regrid_buffer_width': c.ibuff,
-        'clustering_cutoff': c.cutoff,
-        'gauges': gauges,
-        'regions': regions,
-        }
+        'gauges' : gauges}
+
+    # add more for various cases:
+
+    if ndim >= 2:
+        mapping['ylower'] = c.ylower
+        mapping['yupper'] = c.yupper
+        mapping['my'] = c.my
+        mapping['mthbc_ylower'] = mthbc_ylower
+        mapping['mthbc_yupper'] = mthbc_yupper
+
+    if ndim == 3:
+        mapping['zlower'] = c.zlower
+        mapping['zupper'] = c.zupper
+        mapping['mz'] = c.mz
+        mapping['mthbc_zlower'] = mthbc_zlower
+        mapping['mthbc_zupper'] = mthbc_zupper
 
     if claw_pkg == 'amrclaw':
-        newtext = template_amrclaw_2d.format(**mapping)
+        mapping['amr_levels_max'] =  abs(c.mxnest)
+        mapping['refinement_ratios_x'] =  str(c.inratx)
+        mapping['refinement_ratios_y'] =  str(c.inraty)
+        mapping['refinement_ratios_t'] =  str(c.inratt)
+        mapping['aux_type'] =  str(c.auxtype)
+        mapping['flag_richardson'] =  str(c.tol > 0.)
+        mapping['flag_richardson_tol'] =  abs(c.tol)
+        mapping['flag2refine'] =  str(c.tolsp > 0.)
+        mapping['flag2refine_tol'] =  c.tolsp
+        mapping['regrid_interval'] =  c.kcheck
+        mapping['regrid_buffer_width'] =  c.ibuff
+        mapping['clustering_cutoff'] =  c.cutoff
+        mapping['regions'] =  regions
+
+    if claw_pkg == 'amrclaw' and ndim == 3:
+        mapping['refinement_ratios_z'] =  str(c.inratz)
+
+    # Use mapping to convert setrun file:
+
+    if claw_pkg == 'classic' and ndim==2:
+        template = open(clawutil \
+                 + '/conversion/setrun_template_classic_2d.py').read()
+        newtext = template.format(**mapping)
+
+    elif claw_pkg == 'amrclaw' and ndim==2:
+        template = open(clawutil \
+                 + '/conversion/setrun_template_amrclaw_2d.py').read()
+        newtext = template.format(**mapping)
+
     else:
-        raise ValueError("*** convert not yet implemented for claw_pkg = %s" \
-                    % claw_pkg)
+        raise ValueError("*** convert not yet implemented " + \
+                    "for claw_pkg = %s, ndim = %s" \
+                    % (claw_pkg, ndim))
 
     setrun_text = open(setrun_file).readlines()
     for line in setrun_text:
@@ -125,31 +163,39 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
                         % setrun_file
 
 
-    os.system("mv %s original_%s" % (setrun_file,setrun_file))
-    print 'Moved %s to original_%s ' % (setrun_file,setrun_file)
+    os.system("mv %s %s_4.x" % (setrun_file,setrun_file))
+    print 'Moved %s to %s_4.x ' % (setrun_file,setrun_file)
     open(setrun_file,'w').write(newtext)
-    print 'Created ', setrun_file
-    return claw_pkg
+    print '===> Created ', setrun_file
+    return claw_pkg, ndim
 
 
-def copy_Makefile(claw_pkg):
-    if claw_pkg == 'amrclaw':
+def copy_Makefile(claw_pkg, ndim):
+    if claw_pkg == 'classic' and ndim==2:
         try:
-            os.system("mv Makefile original_Makefile")
+            os.system("mv Makefile Makefile_4.x")
+            os.system("cp %s/conversion/Makefile_classic_2d Makefile" \
+                    % clawutil)
+        except:
+            raise Exception("*** Error copying Makefile")
+    elif claw_pkg == 'amrclaw' and ndim==2:
+        try:
+            os.system("mv Makefile Makefile_4.x")
             os.system("cp %s/conversion/Makefile_amrclaw_2d Makefile" \
                     % clawutil)
         except:
             raise Exception("*** Error copying Makefile")
     else:
-        raise ValueError("*** convert not yet implemented for claw_pkg = %s" \
-                    % claw_pkg)
+        raise ValueError("*** copy_Makefile not yet implemented " + \
+                    "for claw_pkg = %s, ndim = %s" \
+                    % (claw_pkg, ndim))
 
-    print "Moved Makefile to original_Makefile"
-    print "Created new Makefile template -- must be customized!"
-    print "*** Edit Makefile based on original_Makefile, e.g. point to"
-    print "*** any local files, correct Riemann solver, etc."
+    print "Moved Makefile to Makefile_4.x"
+    print "===> Created new Makefile template -- must be customized!"
+    print "*** Edit Makefile based on Makefile_4.x, e.g. point to"
+    print "*** any local files, correct Riemann solver, etc.\n"
     print "*** You might have to make other modifications to local fortran"
-    print "*** files -- in particular indices have been reordered!"
+    print "*** files -- in particular indices must be reordered in qinit!"
 
 
 def convert_setplot(setplot_file='setplot.py'):
@@ -160,13 +206,16 @@ def convert_setplot(setplot_file='setplot.py'):
     setplot_text = setplot_text.replace('gridedges','patchedges')
     setplot_text = setplot_text.replace('gridlines','celledges')
 
-    os.system("mv %s original_%s" % (setplot_file,setplot_file))
-    print 'Moved %s to original_%s ' % (setplot_file,setplot_file)
+    os.system("mv %s %s_4.x" % (setplot_file,setplot_file))
+    print 'Moved %s to %s_4.x ' % (setplot_file,setplot_file)
     open(setplot_file,'w').write(setplot_text)
-    print 'Created ', setplot_file
+    print '===> Created ', setplot_file
 
 
 if __name__ == "__main__":
-    claw_pkg = convert_setrun()
-    copy_Makefile(claw_pkg)
+    claw_pkg, ndim = convert_setrun()
+    copy_Makefile(claw_pkg, ndim)
     convert_setplot()
+    print "*** WARNING -- this only did a first pass at conversion"
+    print "*** WARNING -- see hints above for what else needs to be done"
+    print "*** WARNING -- and check all files for correctness"
