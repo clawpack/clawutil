@@ -36,7 +36,7 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None):
     rundata = setrun()
     c = rundata.clawdata
 
-    limiter_map = {0:'none',1:'minmod',2:'superbee',3:'mc',4:'vanleer'}
+    limiter_map = {0:'none',1:'minmod',2:'superbee',3:'vanleer',4:'mc'}
     limiter = [limiter_map.get(i,i) for i in c.mthlim]
 
 
