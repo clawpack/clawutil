@@ -3,8 +3,8 @@ Conversion module for 2d classic or amrclaw setrun.py file
 from 4.6 to 5.0 format.
 """
     
-
 import os,sys
+from permute import permute_file
 
 try:
     clawutil = os.path.join(os.environ['CLAW'], 'clawutil/src/python/clawutil')
@@ -194,8 +194,7 @@ def copy_Makefile(claw_pkg, ndim):
     print "===> Created new Makefile template -- must be customized!"
     print "*** Edit Makefile based on Makefile_4.x, e.g. point to"
     print "*** any local files, correct Riemann solver, etc.\n"
-    print "*** You might have to make other modifications to local fortran"
-    print "*** files -- in particular indices must be reordered in qinit!"
+    print "*** You might have to make other modifications to local fortran files"
 
 
 def convert_setplot(setplot_file='setplot.py'):
@@ -211,11 +210,42 @@ def convert_setplot(setplot_file='setplot.py'):
     open(setplot_file,'w').write(setplot_text)
     print '===> Created ', setplot_file
 
+def fix_fortran(claw_pkg, ndim):
+    
+    import glob
+    if claw_pkg=='classic':
+        os.system("mv driver.f driver.f_4.x")
+        print "Moved driver.f to driver.f_4.x (no longer needed)"
+
+    ffiles = glob.glob('*.f*')
+
+    # Order to permute indices:
+    if ndim==1:
+        plist = [('q',     [2,1]), ('aux',   [2,1])]
+    elif ndim==2:
+        plist = [('q',     [3,1,2]), ('aux',   [3,1,2])]
+    elif ndim==3:
+        plist = [('q',     [4,1,2,3]), ('aux',   [4,1,2,3])]
+
+    for f in ffiles:
+        if f[:1] == 'rp':
+            print "*** not reordering Riemann solver ",f
+            print "*** switch to library routine from $CLAW/riemann if possible"
+        else:
+            f4x = f + "_4.x"
+            os.system("mv %s %s" % (f,f4x))
+            permute_file(f4x, f, plist, write_header=False)
+            print "===> Tried to reorder indices in ",f
+            print "Moved original to ",f4x
+    
 
 if __name__ == "__main__":
     claw_pkg, ndim = convert_setrun()
     copy_Makefile(claw_pkg, ndim)
     convert_setplot()
+
+    fix_fortran(claw_pkg, ndim)
+
     print "*** WARNING -- this only did a first pass at conversion"
     print "*** WARNING -- see hints above for what else needs to be done"
     print "*** WARNING -- and check all files for correctness"
