@@ -98,7 +98,7 @@ if (__name__ == '__main__'):
         print 'permute.py: need source and destination file specified on command line'
         
     else:
-
+        # assuming 2d:
         plist = [('q',     [3,1,2]),
                  ('aux',   [3,1,2])]
 

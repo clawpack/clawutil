@@ -40,8 +40,8 @@ MODULES = \
 
 SOURCES = \
   qinit.f \
-  $(CLAW)/riemann/src/rpn2_XXX.f \
-  $(CLAW)/riemann/src/rpt2_XXX.f \
+  $(CLAW)/riemann/src/rpn2_XXX.f90 \
+  $(CLAW)/riemann/src/rpt2_XXX.f90 \
   $(AMRLIB)/setprob.f \
   $(AMRLIB)/setaux.f \
   $(AMRLIB)/amr2.f90 \

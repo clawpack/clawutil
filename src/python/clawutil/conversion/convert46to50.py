@@ -143,6 +143,11 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
                  + '/conversion/setrun_template_classic_2d.py').read()
         newtext = template.format(**mapping)
 
+    elif claw_pkg == 'classic' and ndim==3:
+        template = open(clawutil \
+                 + '/conversion/setrun_template_classic_3d.py').read()
+        newtext = template.format(**mapping)
+
     elif claw_pkg == 'amrclaw' and ndim==2:
         template = open(clawutil \
                  + '/conversion/setrun_template_amrclaw_2d.py').read()
@@ -171,6 +176,13 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
 
 
 def copy_Makefile(claw_pkg, ndim):
+    if claw_pkg == 'classic' and ndim==3:
+        try:
+            os.system("mv Makefile Makefile_4.x")
+            os.system("cp %s/conversion/Makefile_classic_3d Makefile" \
+                    % clawutil)
+        except:
+            raise Exception("*** Error copying Makefile")
     if claw_pkg == 'classic' and ndim==2:
         try:
             os.system("mv Makefile Makefile_4.x")

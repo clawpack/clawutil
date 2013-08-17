@@ -31,31 +31,32 @@ FFLAGS ?=
 # List of sources for this program:
 # ---------------------------------
 
-LIB = $(CLAW)/classic/src/2d
+LIB = $(CLAW)/classic/src/3d
 
 MODULES = \
 
 SOURCES = \
   qinit.f \
-  $(CLAW)/riemann/src/rpn2_XXX.f90 \
-  $(CLAW)/riemann/src/rpt2_XXX.f90 \
-  $(CLAW)/classic/src/2d/setprob.f90 \
-  $(CLAW)/classic/src/2d/setaux.f90 \
-  $(CLAW)/classic/src/2d/driver.f90 \
-  $(CLAW)/classic/src/2d/claw2ez.f \
-  $(CLAW)/classic/src/2d/claw2.f \
-  $(CLAW)/classic/src/2d/bc2.f \
-  $(CLAW)/classic/src/2d/b4step2.f \
-  $(CLAW)/classic/src/2d/step2.f90 \
-  $(CLAW)/classic/src/2d/step2ds.f90 \
-  $(CLAW)/classic/src/2d/dimsp2.f \
-  $(CLAW)/classic/src/2d/flux2.f90 \
-  $(CLAW)/classic/src/2d/copyq2.f \
-  $(CLAW)/classic/src/2d/inlinelimiter.f90 \
-  $(CLAW)/classic/src/2d/src2.f \
-  $(CLAW)/classic/src/2d/out2.f \
-  $(CLAW)/classic/src/2d/restart2.f \
-  $(CLAW)/classic/src/2d/opendatafile.f
+  $(CLAW)/riemann/src/rpn3_XXX.f90 \
+  $(CLAW)/riemann/src/rpt3_XXX.f90 \
+  $(CLAW)/riemann/src/rptt3_XXX.f90 \
+  $(CLAW)/classic/src/3d/setprob.f90 \
+  $(CLAW)/classic/src/3d/setaux.f90 \
+  $(CLAW)/classic/src/3d/driver.f90 \
+  $(CLAW)/classic/src/3d/claw3ez.f \
+  $(CLAW)/classic/src/3d/claw3.f \
+  $(CLAW)/classic/src/3d/bc3.f \
+  $(CLAW)/classic/src/3d/b4step3.f \
+  $(CLAW)/classic/src/3d/step3.f90 \
+  $(CLAW)/classic/src/3d/step3ds.f90 \
+  $(CLAW)/classic/src/3d/dimsp3.f \
+  $(CLAW)/classic/src/3d/flux3.f90 \
+  $(CLAW)/classic/src/3d/copyq3.f \
+  $(CLAW)/classic/src/3d/inlinelimiter.f90 \
+  $(CLAW)/classic/src/3d/src3.f \
+  $(CLAW)/classic/src/3d/out3.f \
+  $(CLAW)/classic/src/3d/restart3.f \
+  $(CLAW)/classic/src/3d/opendatafile.f
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
