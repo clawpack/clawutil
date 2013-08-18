@@ -529,7 +529,7 @@ class ClawInputData(ClawData):
                 iout_aux = np.where(self.output_aux_components, 1, 0)
                 print "*** WARNING: Selective output_aux_components not implemented"
                 print "***          Will output all components of aux"
-                iout_aux = self.num_eqn * [1]
+                iout_aux = self.num_aux * [1]
             self.data_write(name='', value=iout_aux, alt_name='iout_aux')
             self.data_write('output_aux_onlyonce')
 
@@ -599,8 +599,8 @@ class ClawInputData(ClawData):
             if self.limiter[i] in [0,'none']:        self.limiter[i] = 0
             elif self.limiter[i] in [1,'minmod']:    self.limiter[i] = 1
             elif self.limiter[i] in [2,'superbee']:  self.limiter[i] = 2
-            elif self.limiter[i] in [3,'vanleer']:        self.limiter[i] = 3
-            elif self.limiter[i] in [4,'mc']:   self.limiter[i] = 4
+            elif self.limiter[i] in [3,'vanleer']:   self.limiter[i] = 3
+            elif self.limiter[i] in [4,'mc']:        self.limiter[i] = 4
             else:
                 raise AttributeError("Unrecognized limiter: %s" \
                       % self.limiter[i])
