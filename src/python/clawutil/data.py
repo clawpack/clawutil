@@ -609,6 +609,11 @@ class ClawInputData(ClawData):
         self.data_write()
 
         self.data_write('num_ghost')
+        if not isinstance(self.bc_lower, list):
+            self.bc_lower = [self.bc_lower]    # Allow bare number in 1D
+        if len(self.bc_lower) != self.num_dim:
+            raise AttributeError("Incorrect number of lower BC codes (expected %d, got %d)" \
+                                     %(self.num_dim, len(self.bc_lower)))
         for i in range(self.num_dim):
             if self.bc_lower[i] in [0,'user']:       self.bc_lower[i] = 0
             elif self.bc_lower[i] in [1,'extrap']:   self.bc_lower[i] = 1
@@ -619,6 +624,11 @@ class ClawInputData(ClawData):
                       % self.bc_lower[i])
         self.data_write('bc_lower')
 
+        if not isinstance(self.bc_upper, list):
+            self.bc_upper = [self.bc_upper]    # Allow bare number in 1D
+        if len(self.bc_upper) != self.num_dim:
+            raise AttributeError("Incorrect number of upper BC codes (expected %d, got %d)" \
+                                     %(self.num_dim, len(self.bc_upper)))
         for i in range(self.num_dim):
             if self.bc_upper[i] in [0,'user']:       self.bc_upper[i] = 0
             elif self.bc_upper[i] in [1,'extrap']:   self.bc_upper[i] = 1
