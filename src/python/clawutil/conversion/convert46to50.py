@@ -38,10 +38,14 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
     if claw_pkg is None:
         raise ValueError("*** Could not determine claw_pkg from %s" \
                                 % setrun_file)
+    else:
+        print "claw_pkg = ",claw_pkg
         
     if ndim is None:
         raise ValueError("*** Could not determine ndim from %s" \
                                 % setrun_file)
+    else:
+        print "ndim = ",ndim
         
 
     setrun_module = os.path.splitext(setrun_file)[0]
@@ -55,7 +59,10 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
 
 
     bc_map = {0:'user', 1:'extrap', 2:'periodic', 3:'wall'}
-    for b in ['xlower','xupper','ylower','yupper']:
+    bc_list = ['xlower','xupper']
+    if ndim >= 2: bc_list = bc_list + ['ylower','yupper']
+    if ndim == 3: bc_list = bc_list + ['zlower','zupper']
+    for b in bc_list:
         exec("s = bc_map.get(c.mthbc_%s, c.mthbc_%s)" % (b,b))
         if type(s) is str: 
             exec("""mthbc_%s = "'%s'" """ % (b,s))
@@ -138,7 +145,12 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
 
     # Use mapping to convert setrun file:
 
-    if claw_pkg == 'classic' and ndim==2:
+    if claw_pkg == 'classic' and ndim==1:
+        template = open(clawutil \
+                 + '/conversion/setrun_template_classic_1d.py').read()
+        newtext = template.format(**mapping)
+
+    elif claw_pkg == 'classic' and ndim==2:
         template = open(clawutil \
                  + '/conversion/setrun_template_classic_2d.py').read()
         newtext = template.format(**mapping)
@@ -176,17 +188,24 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
 
 
 def copy_Makefile(claw_pkg, ndim):
-    if claw_pkg == 'classic' and ndim==3:
+    if claw_pkg == 'classic' and ndim==1:
         try:
             os.system("mv Makefile Makefile_4.x")
-            os.system("cp %s/conversion/Makefile_classic_3d Makefile" \
+            os.system("cp %s/conversion/Makefile_classic_1d Makefile" \
                     % clawutil)
         except:
             raise Exception("*** Error copying Makefile")
-    if claw_pkg == 'classic' and ndim==2:
+    elif claw_pkg == 'classic' and ndim==2:
         try:
             os.system("mv Makefile Makefile_4.x")
             os.system("cp %s/conversion/Makefile_classic_2d Makefile" \
+                    % clawutil)
+        except:
+            raise Exception("*** Error copying Makefile")
+    elif claw_pkg == 'classic' and ndim==3:
+        try:
+            os.system("mv Makefile Makefile_4.x")
+            os.system("cp %s/conversion/Makefile_classic_3d Makefile" \
                     % clawutil)
         except:
             raise Exception("*** Error copying Makefile")

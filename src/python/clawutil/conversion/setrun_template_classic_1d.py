@@ -207,6 +207,7 @@ def setrun(claw_pkg='classic'):
     #   3 or 'wall'     => solid wall for systems where q(2) is normal velocity
     
     clawdata.bc_lower[0] = {mthbc_xlower:s}   # at xlower
+    clawdata.bc_upper[0] = {mthbc_xupper:s}   # at xupper
                   
     return rundata
 
