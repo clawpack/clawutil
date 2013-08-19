@@ -405,7 +405,7 @@ class ClawInputData(ClawData):
         
         self.add_attribute('dt_initial',1.e-5)
         self.add_attribute('dt_max',1.e99)
-        self.add_attribute('dt_variable',1)
+        self.add_attribute('dt_variable',True)
         self.add_attribute('cfl_desired',0.9)
         self.add_attribute('cfl_max',1.0)
         self.add_attribute('steps_max',50000)
@@ -540,6 +540,7 @@ class ClawInputData(ClawData):
         self.data_write('cfl_desired')
         self.data_write('steps_max')
         self.data_write()
+        self.dt_variable = bool(self.dt_variable) # in case 0 or 1
         self.data_write('dt_variable')
         self.data_write('order')
 
