@@ -29,7 +29,7 @@ def setrun(claw_pkg='classic'):
     
     assert claw_pkg.lower() == 'classic',  "Expected claw_pkg = 'classic'"
 
-    num_dim = 2
+    num_dim = 1
     rundata = data.ClawRunData(claw_pkg, num_dim)
 
     #------------------------------------------------------------------
@@ -56,12 +56,9 @@ def setrun(claw_pkg='classic'):
     # Lower and upper edge of computational domain:
     clawdata.lower[0] = {xlower:e}          # xlower
     clawdata.upper[0] = {xupper:e}          # xupper
-    clawdata.lower[1] = {ylower:e}          # ylower
-    clawdata.upper[1] = {yupper:e}          # yupper
     
     # Number of grid cells:
     clawdata.num_cells[0] = {mx:d}      # mx
-    clawdata.num_cells[1] = {my:d}      # my
     
 
     # ---------------
@@ -173,15 +170,6 @@ def setrun(claw_pkg='classic'):
     # Order of accuracy:  1 => Godunov,  2 => Lax-Wendroff plus limiters
     clawdata.order = {order:d}
     
-    # Use dimensional splitting? (not yet available for AMR)
-    clawdata.dimensional_split = 'unsplit'
-    
-    # For unsplit method, transverse_waves can be 
-    #  0 or 'none'      ==> donor cell (only normal solver used)
-    #  1 or 'increment' ==> corner transport of waves
-    #  2 or 'all'       ==> corner transport of 2nd order corrections too
-    clawdata.transverse_waves = {transverse_waves:d}
-    
     
     # Number of waves in the Riemann solution:
     clawdata.num_waves = {num_waves:d}
@@ -219,10 +207,6 @@ def setrun(claw_pkg='classic'):
     #   3 or 'wall'     => solid wall for systems where q(2) is normal velocity
     
     clawdata.bc_lower[0] = {mthbc_xlower:s}   # at xlower
-    clawdata.bc_upper[0] = {mthbc_xupper:s}   # at xupper
-
-    clawdata.bc_lower[1] = {mthbc_ylower:s}   # at ylower
-    clawdata.bc_upper[1] = {mthbc_yupper:s}   # at yupper
                   
     return rundata
 
