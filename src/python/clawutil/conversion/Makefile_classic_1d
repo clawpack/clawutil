@@ -31,15 +31,13 @@ FFLAGS ?=
 # List of sources for this program:
 # ---------------------------------
 
-LIB = $(CLAW)/classic/src/1d
-
 MODULES = \
 
 SOURCES = \
   qinit.f \
   $(CLAW)/riemann/src/rp1_XXX.f90 \
-  $(CLAW)/classic/src/2d/setprob.f \
-  $(CLAW)/classic/src/2d/setaux.f \
+  $(CLAW)/classic/src/1d/setprob.f \
+  $(CLAW)/classic/src/1d/setaux.f \
   $(CLAW)/classic/src/1d/bc1.f \
   $(CLAW)/classic/src/1d/b4step1.f \
   $(CLAW)/classic/src/1d/driver.f90 \
