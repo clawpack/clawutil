@@ -12,6 +12,7 @@ import os
 import sys
 import glob
 import shutil
+import time
 from claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False, 
@@ -27,7 +28,6 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     is given, data files are copied from there instead.
     """
     
-    import os,glob,shutil,time
     verbose = True
     xclawout = None
     xclawerr = None
