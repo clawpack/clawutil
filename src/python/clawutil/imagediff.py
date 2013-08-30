@@ -135,6 +135,9 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
         dir1 = 'dir1'
         dir2 = 'dir2'
 
+    files_missing1 = []
+    files_missing2 = []
+    files_differ = []
     
     for f in files:
         fhtml = os.path.splitext(f)[0] + '.html'  ## Specific to Clawpack _plots
@@ -144,8 +147,9 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
         fname2 = os.path.join(dir2,f)
         fhtml1 = os.path.join(dir1,fhtml)
         fhtml2 = os.path.join(dir2,fhtml)
-        
+
         if f not in files2:
+            files_missing2.append(f)
             hfile.write("""
               <table>
               <tr><td><b>%s</b> only appears in dir1</td></tr>
@@ -155,6 +159,7 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
               </tr>
               </table><p>"""  % (f, fhtml1, fname1))
         elif f not in files1:
+            files_missing1.append(f)
             hfile.write("""
               <table>
               <tr><td></td><td><b>%s</b> only appears in dir2</td></tr>
@@ -177,6 +182,7 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
             #               <a href="%s"><img src="%s" width=350 border="1"></a>""" \
             #                 % (fname1,fname1))
         else:
+            files_differ.append(f)
             fname3 = f
 
             fname3 = make_imagediff(fname1,fname2,fname3,verbose=verbose)
@@ -193,15 +199,16 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
 
     # Test regression files for return value:
     if regression_test_files=='all':
-        rfiles1 = os.listdir(dir1)
-        rfiles2 = os.listdir(dir2)
-        regression_test_files = rfiles1 + rfiles2
+        regression_test_files = files_both
     regression_ok = alltrue([f in f_equal for f in \
                                 regression_test_files])
     if verbose and regression_ok:
         print "Regression files all match"
     elif verbose:
         print "*** Regression files are not all identical"
+        print "*** Files missing from dir1:   ",files_missing1
+        print "*** Files missing from dir2:   ",files_missing2
+        print "*** Files that differ:   ",files_differ
         
     os.chdir(startdir)
     dir3 = os.path.abspath(dir3)
@@ -238,7 +245,6 @@ if __name__ == "__main__":
             if option in ("-h","--help"):
                 raise Usage(help_message)
 
-        #import pdb; pdb.set_trace()
         # Run diff
         if os.path.isfile(args[0]) and os.path.isfile(args[1]):
             sys.exit(imagediff_file(args[0],args[1],verbose=verbose))
