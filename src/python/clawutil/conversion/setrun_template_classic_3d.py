@@ -1,5 +1,5 @@
 """ 
-Module to set up run time parameters for Clawpack -- AMRClaw code.
+Module to set up run time parameters for Clawpack -- classic code.
 
 The values set in the function setrun are then written out to data files
 that will be read in by the Fortran code.
@@ -10,14 +10,14 @@ import os
 import numpy as np
 
 #------------------------------
-def setrun(claw_pkg='amrclaw'):
+def setrun(claw_pkg='classic'):
 #------------------------------
     
     """ 
     Define the parameters used for running Clawpack.
 
     INPUT:
-        claw_pkg expected to be "amrclaw" for this setrun.
+        claw_pkg expected to be "classic" for this setrun.
 
     OUTPUT:
         rundata - object of class ClawRunData 
@@ -27,9 +27,9 @@ def setrun(claw_pkg='amrclaw'):
     from clawpack.clawutil import data 
     
     
-    assert claw_pkg.lower() == 'amrclaw',  "Expected claw_pkg = 'amrclaw'"
+    assert claw_pkg.lower() == 'classic',  "Expected claw_pkg = 'classic'"
 
-    num_dim = 2
+    num_dim = 3
     rundata = data.ClawRunData(claw_pkg, num_dim)
 
     #------------------------------------------------------------------
@@ -41,14 +41,9 @@ def setrun(claw_pkg='amrclaw'):
     
     #------------------------------------------------------------------
     # Standard Clawpack parameters to be written to claw.data:
-    #   (or to amrclaw.data for AMR)
     #------------------------------------------------------------------
 
     clawdata = rundata.clawdata  # initialized when rundata instantiated
-
-
-    # Set single grid parameters first.
-    # See below for AMR parameters.
 
 
     # ---------------
@@ -63,10 +58,13 @@ def setrun(claw_pkg='amrclaw'):
     clawdata.upper[0] = {xupper:e}          # xupper
     clawdata.lower[1] = {ylower:e}          # ylower
     clawdata.upper[1] = {yupper:e}          # yupper
+    clawdata.lower[2] = {zlower:e}          # zlower
+    clawdata.upper[2] = {zupper:e}          # zupper
     
     # Number of grid cells:
     clawdata.num_cells[0] = {mx:d}      # mx
     clawdata.num_cells[1] = {my:d}      # my
+    clawdata.num_cells[2] = {mz:d}      # mz
     
 
     # ---------------
@@ -182,9 +180,10 @@ def setrun(claw_pkg='amrclaw'):
     clawdata.dimensional_split = 'unsplit'
     
     # For unsplit method, transverse_waves can be 
-    #  0 or 'none'      ==> donor cell (only normal solver used)
-    #  1 or 'increment' ==> corner transport of waves
-    #  2 or 'all'       ==> corner transport of 2nd order corrections too
+    #  0 ==> donor cell (only normal solver used)
+    #  10 ==> transverse terms
+    #  11 ==> double transverse terms too
+    #  22 ==> 2nd order corrections too
     clawdata.transverse_waves = {transverse_waves:d}
     
     
@@ -229,109 +228,6 @@ def setrun(claw_pkg='amrclaw'):
     clawdata.bc_lower[1] = {mthbc_ylower:s}   # at ylower
     clawdata.bc_upper[1] = {mthbc_yupper:s}   # at yupper
                   
-       
-    # ---------------
-    # Gauges:
-    # ---------------
-    rundata.gaugedata.gauges = {gauges:s}
-    # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
-
-                  
-    # --------------
-    # Checkpointing:
-    # --------------
-
-    # Specify when checkpoint files should be created that can be
-    # used to restart a computation.
-
-    clawdata.checkpt_style = 0
-
-    if clawdata.checkpt_style == 0:
-      # Do not checkpoint at all
-      pass
-
-    elif clawdata.checkpt_style == 1:
-      # Checkpoint only at tfinal.
-      pass
-
-    elif clawdata.checkpt_style == 2:
-      # Specify a list of checkpoint times.  
-      clawdata.checkpt_times = [0.1,0.15]
-
-    elif clawdata.checkpt_style == 3:
-      # Checkpoint every checkpt_interval timesteps (on Level 1)
-      # and at the final time.
-      clawdata.checkpt_interval = 5
-
-    
-
-    # ---------------
-    # AMR parameters:
-    # ---------------
-    amrdata = rundata.amrdata
-
-    # max number of refinement levels:
-    amrdata.amr_levels_max = {amr_levels_max:d}
-
-    # List of refinement ratios at each level (length at least amr_level_max-1)
-    amrdata.refinement_ratios_x = {refinement_ratios_x:s}
-    amrdata.refinement_ratios_y = {refinement_ratios_y:s}
-    amrdata.refinement_ratios_t = {refinement_ratios_t:s}
-
-
-    # Specify type of each aux variable in amrdata.auxtype.
-    # This must be a list of length num_aux, each element of which is one of:
-    #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
-    amrdata.aux_type = {aux_type:s}
-
-
-    # Flag for refinement based on Richardson error estimater:
-    amrdata.flag_richardson = {flag_richardson:s}    # use Richardson?
-    amrdata.flag_richardson_tol = {flag_richardson_tol:e}  # Richardson tolerance
-    
-    # Flag for refinement using routine flag2refine:
-    amrdata.flag2refine = {flag2refine:s}      # use this?
-    amrdata.flag2refine_tol = {flag2refine_tol:e}  # tolerance used in this routine
-    # User can modify flag2refine to change the criterion for flagging.
-    # Default: check maximum absolute difference of first component of q
-    # between a cell and each of its neighbors.
-
-    # steps to take on each level L between regriddings of level L+1:
-    amrdata.regrid_interval = {regrid_interval:d}       
-
-    # width of buffer zone around flagged points:
-    # (typically the same as regrid_interval so waves don't escape):
-    amrdata.regrid_buffer_width  = {regrid_buffer_width:d}
-
-    # clustering alg. cutoff for (# flagged pts) / (total # of cells refined)
-    # (closer to 1.0 => more small grids may be needed to cover flagged cells)
-    amrdata.clustering_cutoff = {clustering_cutoff:f}
-
-    # print info about each regridding up to this level:
-    amrdata.verbosity_regrid = 0      
-
-
-    # ---------------
-    # Regions:
-    # ---------------
-    rundata.regiondata.regions = {regions:s}
-    # to specify regions of refinement append lines of the form
-    #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
-
-
-    #  ----- For developers ----- 
-    # Toggle debugging print statements:
-    amrdata.dprint = False      # print domain flags
-    amrdata.eprint = False      # print err est flags
-    amrdata.edebug = False      # even more err est flags
-    amrdata.gprint = False      # grid bisection/clustering
-    amrdata.nprint = False      # proper nesting output
-    amrdata.pprint = False      # proj. of tagged points
-    amrdata.rprint = False      # print regridding summary
-    amrdata.sprint = False      # space/memory output
-    amrdata.tprint = False      # time step reporting each level
-    amrdata.uprint = False      # update/upbnd reporting
-    
     return rundata
 
     # end of function setrun
