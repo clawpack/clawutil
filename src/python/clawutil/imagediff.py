@@ -125,13 +125,20 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
         dir2copy = 'dir2'
         os.system('mkdir %s' % dir1copy)
         os.system('mkdir %s' % dir2copy)
-        for f in files:
+        for f in files1:
             shutil.copy(os.path.join(dir1,f),dir1copy)
+            ## Specific to Clawpack _plots, also want html file:
+            fhtml = os.path.splitext(f)[0] + '.html'  
+            if os.path.isfile(os.path.join(dir1,fhtml)): 
+                shutil.copy(os.path.join(dir1,fhtml),dir1copy)
+
+        for f in files2:
             shutil.copy(os.path.join(dir2,f),dir2copy)
-            fhtml = os.path.splitext(f)[0] + '.html'  ## Specific to Clawpack _plots
-            if not os.path.isfile(os.path.join(dir1,fhtml)): fhtml = f
-            shutil.copy(os.path.join(dir1,fhtml),dir1copy)
-            shutil.copy(os.path.join(dir2,fhtml),dir2copy)
+            ## Specific to Clawpack _plots, also want html file:
+            fhtml = os.path.splitext(f)[0] + '.html'  
+            if os.path.isfile(os.path.join(dir2,fhtml)): 
+                shutil.copy(os.path.join(dir2,fhtml),dir2copy)
+
         dir1 = 'dir1'
         dir2 = 'dir2'
 
