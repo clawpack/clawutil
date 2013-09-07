@@ -1,5 +1,5 @@
 """
-Conversion module for 2d classic or amrclaw setrun.py file 
+Conversion module for 2d classic, amrclaw, or geoclaw setrun.py file 
 from 4.6 to 5.0 format.
 """
     
@@ -125,7 +125,7 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
         mapping['mthbc_zlower'] = mthbc_zlower
         mapping['mthbc_zupper'] = mthbc_zupper
 
-    if claw_pkg == 'amrclaw':
+    if claw_pkg in ['amrclaw', 'geoclaw']:
         mapping['amr_levels_max'] =  abs(c.mxnest)
         mapping['refinement_ratios_x'] =  str(c.inratx)
         mapping['refinement_ratios_y'] =  str(c.inraty)
@@ -139,6 +139,31 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
         mapping['regrid_buffer_width'] =  c.ibuff
         mapping['clustering_cutoff'] =  c.cutoff
         mapping['regions'] =  regions
+
+    if claw_pkg == 'geoclaw':
+        try:
+            g = rundata.geodata
+        except:
+            raise ValueError("*** rundata has no geodata attribute")
+        mapping['gravity'] =  g.gravity
+        mapping['coordinate_system'] =  g.icoordsys
+        mapping['earth_radius'] =  g.Rearth
+        mapping['coriolis_forcing'] =  (g.icoriolis == 1)
+        mapping['sea_level'] =  g.sealevel
+        mapping['dry_tolerance'] =  g.drytolerance
+        mapping['friction_forcing'] =  (g.ifriction == 1)
+        mapping['manning_coefficient'] =  g.coeffmanning
+        mapping['friction_depth'] =  g.frictiondepth
+        mapping['variable_dt_refinement_ratios'] = g.variable_dt_refinement_ratios
+        mapping['wave_tolerance'] =  g.wavetolerance
+        mapping['deep_depth'] =  g.depthdeep
+        mapping['max_level_deep'] =  g.maxleveldeep
+        mapping['topofiles'] =  g.topofiles
+        mapping['dtopofiles'] =  g.dtopofiles
+        mapping['qinit_type'] =  g.iqinit
+        mapping['qinitfiles'] =  g.qinitfiles
+        mapping['fixedgrids'] =  g.fixedgrids
+        mapping['fgmax_files'] =  []
 
     if claw_pkg == 'amrclaw' and ndim == 3:
         mapping['refinement_ratios_z'] =  str(c.inratz)
@@ -158,6 +183,11 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
     elif claw_pkg == 'classic' and ndim==3:
         template = open(clawutil \
                  + '/conversion/setrun_template_classic_3d.py').read()
+        newtext = template.format(**mapping)
+
+    elif claw_pkg == 'geoclaw' and ndim==2:
+        template = open(clawutil \
+                 + '/conversion/setrun_template_geoclaw_2d_shallow.py').read()
         newtext = template.format(**mapping)
 
     elif claw_pkg == 'amrclaw' and ndim==2:
@@ -213,6 +243,13 @@ def copy_Makefile(claw_pkg, ndim):
         try:
             os.system("mv Makefile Makefile_4.x")
             os.system("cp %s/conversion/Makefile_amrclaw_2d Makefile" \
+                    % clawutil)
+        except:
+            raise Exception("*** Error copying Makefile")
+    elif claw_pkg == 'geoclaw' and ndim==2:
+        try:
+            os.system("mv Makefile Makefile_4.x")
+            os.system("cp %s/conversion/Makefile_geoclaw_2d_shallow Makefile" \
                     % clawutil)
         except:
             raise Exception("*** Error copying Makefile")
