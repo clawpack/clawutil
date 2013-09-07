@@ -155,7 +155,7 @@ def setrun(claw_pkg='geoclaw'):
     # --------------
 
     # if dt_variable==True:  variable time steps used based on cfl_desired,
-    # if dt_variable==False: fixed time steps dt = dt_initial always used.
+    # if dt_variable==Falseixed time steps dt = dt_initial always used.
     clawdata.dt_variable = {dt_variable}
     
     # Initial time step for variable dt.  
@@ -204,7 +204,7 @@ def setrun(claw_pkg='geoclaw'):
     #   4 or 'mc'       ==> MC limiter
     clawdata.limiter = {limiter}
     
-    clawdata.use_fwaves = False    # True ==> use f-wave version of algorithms
+    clawdata.use_fwaves = True    # True ==> use f-wave version of algorithms
     
     # Source terms splitting:
     #   src_split == 0 or 'none'    ==> no source term (src routine never called)
@@ -355,9 +355,9 @@ def setgeo(rundata):
         raise AttributeError("Missing geo_data attribute")
 
     # == Physics ==
-    geo_data.gravity = {gravity: f}
+    geo_data.gravity = {gravity}
     geo_data.coordinate_system = {coordinate_system: d}
-    geo_data.earth_radius = {earth_radius: f}
+    geo_data.earth_radius = {earth_radius}
 
     # == Forcing Options
     geo_data.coriolis_forcing = {coriolis_forcing}
@@ -366,15 +366,15 @@ def setgeo(rundata):
     geo_data.sea_level = {sea_level}
     geo_data.dry_tolerance = {dry_tolerance}
     geo_data.friction_forcing = {friction_forcing}
-    geo_data.manning_coefficient = {manning_coefficient: f}
-    geo_data.friction_depth = {friction_depth: f}
+    geo_data.manning_coefficient = {manning_coefficient}
+    geo_data.friction_depth = {friction_depth}
 
     # Refinement settings
     refinement_data = rundata.refinement_data
     refinement_data.variable_dt_refinement_ratios = {variable_dt_refinement_ratios}
-    refinement_data.wave_tolerance = {wave_tolerance: f}
-    refinement_data.deep_depth = {deep_depth: f}
-    refinement_data.max_level_deep = {max_level_deep: f}
+    refinement_data.wave_tolerance = {wave_tolerance}
+    refinement_data.deep_depth = {deep_depth}
+    refinement_data.max_level_deep = {max_level_deep}
 
     # == settopo.data values ==
     rundata.topo_data.topofiles = {topofiles}
