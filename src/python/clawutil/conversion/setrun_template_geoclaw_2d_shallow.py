@@ -62,10 +62,10 @@ def setrun(claw_pkg='geoclaw'):
     clawdata.num_dim = num_dim
     
     # Lower and upper edge of computational domain:
-    clawdata.lower[0] = {xlower:e}          # xlower
-    clawdata.upper[0] = {xupper:e}          # xupper
-    clawdata.lower[1] = {ylower:e}          # ylower
-    clawdata.upper[1] = {yupper:e}          # yupper
+    clawdata.lower[0] = {xlower}          # xlower
+    clawdata.upper[0] = {xupper}          # xupper
+    clawdata.lower[1] = {ylower}          # ylower
+    clawdata.upper[1] = {yupper}          # yupper
     
     # Number of grid cells:
     clawdata.num_cells[0] = {mx:d}      # mx
@@ -90,7 +90,7 @@ def setrun(claw_pkg='geoclaw'):
     # Initial time:
     # -------------
 
-    clawdata.t0 = {t0:f}
+    clawdata.t0 = {t0}
     
 
     # Restart from checkpoint file of a previous run?
@@ -117,7 +117,7 @@ def setrun(claw_pkg='geoclaw'):
         # Output ntimes frames at equally spaced times up to tfinal:
         # Can specify num_output_times = 0 for no output
         clawdata.num_output_times = {num_output_times:d}
-        clawdata.tfinal = {tfinal:f}
+        clawdata.tfinal = {tfinal}
         clawdata.output_t0 = True  # output at initial (or restart) time?
         
     elif clawdata.output_style == 2:
@@ -156,19 +156,19 @@ def setrun(claw_pkg='geoclaw'):
 
     # if dt_variable==True:  variable time steps used based on cfl_desired,
     # if dt_variable==False: fixed time steps dt = dt_initial always used.
-    clawdata.dt_variable = {dt_variable:s}
+    clawdata.dt_variable = {dt_variable}
     
     # Initial time step for variable dt.  
     # (If dt_variable==0 then dt=dt_initial for all steps)
-    clawdata.dt_initial = {dt_initial:e}
+    clawdata.dt_initial = {dt_initial}
     
     # Max time step to be allowed if variable dt used:
-    clawdata.dt_max = {dt_max:e}
+    clawdata.dt_max = {dt_max}
     
     # Desired Courant number if variable dt used 
-    clawdata.cfl_desired = {cfl_desired:f}
+    clawdata.cfl_desired = {cfl_desired}
     # max Courant number to allow without retaking step with a smaller dt:
-    clawdata.cfl_max = {cfl_max:f}
+    clawdata.cfl_max = {cfl_max}
     
     # Maximum number of time steps to allow between output times:
     clawdata.steps_max = {steps_max:d}
@@ -202,7 +202,7 @@ def setrun(claw_pkg='geoclaw'):
     #   2 or 'superbee' ==> superbee
     #   3 or 'vanleer'  ==> van Leer
     #   4 or 'mc'       ==> MC limiter
-    clawdata.limiter = {limiter:s}
+    clawdata.limiter = {limiter}
     
     clawdata.use_fwaves = False    # True ==> use f-wave version of algorithms
     
@@ -226,17 +226,17 @@ def setrun(claw_pkg='geoclaw'):
     #   2 or 'periodic' => periodic (must specify this at both boundaries)
     #   3 or 'wall'     => solid wall for systems where q(2) is normal velocity
     
-    clawdata.bc_lower[0] = {mthbc_xlower:s}   # at xlower
-    clawdata.bc_upper[0] = {mthbc_xupper:s}   # at xupper
+    clawdata.bc_lower[0] = {mthbc_xlower}   # at xlower
+    clawdata.bc_upper[0] = {mthbc_xupper}   # at xupper
 
-    clawdata.bc_lower[1] = {mthbc_ylower:s}   # at ylower
-    clawdata.bc_upper[1] = {mthbc_yupper:s}   # at yupper
+    clawdata.bc_lower[1] = {mthbc_ylower}   # at ylower
+    clawdata.bc_upper[1] = {mthbc_yupper}   # at yupper
                   
        
     # ---------------
     # Gauges:
     # ---------------
-    rundata.gaugedata.gauges = {gauges:s}
+    rundata.gaugedata.gauges = {gauges}
     # for gauges append lines of the form  [gaugeno, x, y, t1, t2]
 
                   
@@ -277,24 +277,24 @@ def setrun(claw_pkg='geoclaw'):
     amrdata.amr_levels_max = {amr_levels_max:d}
 
     # List of refinement ratios at each level (length at least amr_level_max-1)
-    amrdata.refinement_ratios_x = {refinement_ratios_x:s}
-    amrdata.refinement_ratios_y = {refinement_ratios_y:s}
-    amrdata.refinement_ratios_t = {refinement_ratios_t:s}
+    amrdata.refinement_ratios_x = {refinement_ratios_x}
+    amrdata.refinement_ratios_y = {refinement_ratios_y}
+    amrdata.refinement_ratios_t = {refinement_ratios_t}
 
 
     # Specify type of each aux variable in amrdata.auxtype.
     # This must be a list of length num_aux, each element of which is one of:
     #   'center',  'capacity', 'xleft', or 'yleft'  (see documentation).
-    amrdata.aux_type = {aux_type:s}
+    amrdata.aux_type = {aux_type}
 
 
     # Flag for refinement based on Richardson error estimater:
-    amrdata.flag_richardson = {flag_richardson:s}    # use Richardson?
-    amrdata.flag_richardson_tol = {flag_richardson_tol:e}  # Richardson tolerance
+    amrdata.flag_richardson = {flag_richardson}    # use Richardson?
+    amrdata.flag_richardson_tol = {flag_richardson_tol}  # Richardson tolerance
     
     # Flag for refinement using routine flag2refine:
-    amrdata.flag2refine = {flag2refine:s}      # use this?
-    amrdata.flag2refine_tol = {flag2refine_tol:e}  # tolerance used in this routine
+    amrdata.flag2refine = {flag2refine}      # use this?
+    amrdata.flag2refine_tol = {flag2refine_tol}  # tolerance used in this routine
     # User can modify flag2refine to change the criterion for flagging.
     # Default: check maximum absolute difference of first component of q
     # between a cell and each of its neighbors.
@@ -308,7 +308,7 @@ def setrun(claw_pkg='geoclaw'):
 
     # clustering alg. cutoff for (# flagged pts) / (total # of cells refined)
     # (closer to 1.0 => more small grids may be needed to cover flagged cells)
-    amrdata.clustering_cutoff = {clustering_cutoff:f}
+    amrdata.clustering_cutoff = {clustering_cutoff}
 
     # print info about each regridding up to this level:
     amrdata.verbosity_regrid = 0      
@@ -317,7 +317,7 @@ def setrun(claw_pkg='geoclaw'):
     # ---------------
     # Regions:
     # ---------------
-    rundata.regiondata.regions = {regions:s}
+    rundata.regiondata.regions = {regions}
     # to specify regions of refinement append lines of the form
     #  [minlevel,maxlevel,t1,t2,x1,x2,y1,y2]
 
