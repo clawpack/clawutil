@@ -295,9 +295,8 @@ def setrun(claw_pkg='geoclaw'):
     # Flag for refinement using routine flag2refine:
     amrdata.flag2refine = {flag2refine}      # use this?
     amrdata.flag2refine_tol = {flag2refine_tol}  # tolerance used in this routine
-    # User can modify flag2refine to change the criterion for flagging.
-    # Default: check maximum absolute difference of first component of q
-    # between a cell and each of its neighbors.
+    # Note: in geoclaw the refinement tolerance is set as wave_tolerance below 
+    # and flag2refine_tol is unused!
 
     # steps to take on each level L between regriddings of level L+1:
     amrdata.regrid_interval = {regrid_interval:d}       
