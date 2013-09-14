@@ -228,6 +228,9 @@ def setrun(claw_pkg='classic'):
     clawdata.bc_lower[1] = {mthbc_ylower:s}   # at ylower
     clawdata.bc_upper[1] = {mthbc_yupper:s}   # at yupper
                   
+    clawdata.bc_lower[2] = {mthbc_ylower:s}   # at zlower
+    clawdata.bc_upper[2] = {mthbc_yupper:s}   # at zupper
+                  
     return rundata
 
     # end of function setrun
