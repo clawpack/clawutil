@@ -560,7 +560,12 @@ class ClawInputData(ClawData):
                     raise AttributeError("Unrecognized transverse_waves: %s" \
                                              % self.transverse_waves)
             else:    # 3D
-                # Add textual names later
+                if self.transverse_waves in [0,'none']:  
+                    self.transverse_waves = 0
+                elif self.transverse_waves in [1,'increment']:  
+                    self.transverse_waves = 11
+                elif self.transverse_waves in [2,'all']:  
+                    self.transverse_waves = 22
                 if not (self.transverse_waves in [0, 10, 11, 20, 21, 22]):
                     raise AttributeError("Unrecognized transverse_waves: %s" \
                                              % self.transverse_waves)
