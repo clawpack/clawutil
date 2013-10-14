@@ -327,8 +327,8 @@ class ClawRunData(ClawData):
             self.xclawcmd = 'xamr'
             self.add_data(ClawInputData(num_dim),'clawdata')
             self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
-            self.add_data(amrclaw.RegionData(),'regiondata')
-            self.add_data(amrclaw.GaugeData(),'gaugedata')
+            self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
+            self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
 
         elif pkg.lower() in ['geoclaw']:
 
@@ -339,8 +339,8 @@ class ClawRunData(ClawData):
 
             # Required data set for basic run parameters:
             self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
-            self.add_data(amrclaw.RegionData(),'regiondata')
-            self.add_data(amrclaw.GaugeData(),'gaugedata')
+            self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
+            self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
             self.add_data(geoclaw.GeoClawData(),('geo_data'))
             self.add_data(geoclaw.TopographyData(),'topo_data')
             self.add_data(geoclaw.DTopoData(),'dtopo_data')
