@@ -50,7 +50,8 @@ MODULES ?=
 # Make list of .o files required from the sources above:
 OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(SOURCES)))))
 MODULE_FILES = $(subst .F,.mod, $(subst .F90,.mod, $(subst .f,.mod, $(subst .f90,.mod, $(MODULES)))))
-MODULE_PATHS = $(dir $(MODULE_FILES))
+# FYI: Sort weeds out duplicate paths
+MODULE_PATHS = $(sort $(dir $(MODULE_FILES)))
 MODULE_OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(MODULES)))))
 
 #----------------------------------------------------------------------------
