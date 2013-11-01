@@ -163,6 +163,7 @@ Makefile.html : Makefile ; $(CC2HTML) $<
 %.html : %.txt ; $(CC2HTML) --dropext $<    
 
 .htmls: $(HTML) ;
+	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/convert_rst2html.py
 
 #----------------------------------------------------------------------------
 
