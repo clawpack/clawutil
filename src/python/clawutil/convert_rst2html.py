@@ -1,6 +1,10 @@
 
 from docutils.core import publish_string
-import glob, os
+import glob, os, sys
+
+if not os.path.isfile('README.rst'):
+    print '*** README.rst file not found in %s' % os.getcwd()
+    sys.exit()
 
 html_string=publish_string(open('README.rst').read(),writer_name='html')
 
@@ -8,8 +12,9 @@ make_files = glob.glob("Makefile")
 f_files = glob.glob("*.f") + glob.glob("*.f90")
 py_files = glob.glob("*.py")
 m_files = glob.glob("*.m")
-out_dirs = glob.glob("_out*")
-plot_dirs = glob.glob("_plot*")
+out_dirs = glob.glob("_out*")   # not currently listed on html page
+plot_dirs = glob.glob("_plots") # for gallery -- want only main _plots
+#plot_dirs = glob.glob("_plot*")   # might want to list other plot directories
 
 
 make_text = "\n"
@@ -60,12 +65,10 @@ new_text = """
 %s
 <p>
 %s
-<p>
-%s
 </ul>
 </body>
 </html>
-""" % (make_text,f_text,py_text,m_text,out_text,plot_text)
+""" % (make_text,f_text,py_text,m_text,plot_text)
 
 html_string = html_string.replace("</body>\n</html>",new_text)
 
