@@ -103,8 +103,11 @@ if clawdir == None:
 # change the lines below if you want to point to a webpage home instead
 # of the local file system  (e.g.  clawaddr = "http://www.mywebpage/claw")
 
-clawaddr = 'http://localhost:50005'
-#clawaddr = 'http://kingkong.amath.washington.edu/claw4'
+#clawaddr = 'http://localhost:50005'
+
+clawaddr = 'http://clawpack.github.io/'
+# This doesn't work...  things are not found in the same places they were 
+# in Clawpack 4.x, so the favicon, logo, css files will not be found.
 
 
 # Set comment characters for different programming languages:
