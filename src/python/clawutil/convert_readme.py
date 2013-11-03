@@ -66,11 +66,28 @@ new_text = """
 <p>
 %s
 </ul>
+<p>
 </body>
 </html>
 """ % (make_text,f_text,py_text,m_text,plot_text)
 
 html_string = html_string.replace("</body>\n</html>",new_text)
+
+# Fix head for Clawpack style:
+head_text = """
+<link rel="icon" href="http://www.clawpack.org/clawicon.ico" />
+</head>
+<body BGCOLOR="#FFFFE8" LINK="#7F0000" VLINK="#7F0000">
+<font FACE="TREBUCHET MS,HELVETICA,ARIAL">
+<a href="http://www.clawpack.org">
+<IMG SRC="http://www.clawpack.org/clawlogo.jpg" WIDTH="200" HEIGHT="70" 
+VSPACE="0" HSPACE="0" ALT="CLAWPACK" BORDER="0" LOOP="0"> </a>
+"""
+
+i1 = html_string.find(r'</head>')
+i2 = i1+15
+
+html_string = html_string[:i1] + head_text + html_string[i2:]
 
 open('README.html','w').write(html_string)
 
