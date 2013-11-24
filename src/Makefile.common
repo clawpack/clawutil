@@ -108,8 +108,8 @@ endif
 
 # Default Rules, the module rule should be executed first in most instances,
 # this way the .mod file ends up always in the correct spot
-%.mod : %.f90 ; $(CLAW_FC) -c $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
-%.mod : %.f   ; $(CLAW_FC) -c $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f90 ; rm -f $@; $(CLAW_FC) -c $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f   ; rm -f $@; $(CLAW_FC) -c $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 %.o : %.f90 ;   $(CLAW_FC) -c $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 %.o : %.f ;     $(CLAW_FC) -c $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
