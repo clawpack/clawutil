@@ -252,10 +252,10 @@ clobber:
 
 #----------------------------------------------------------------------------
 
-# Deprecate 'make all' option since this is often defined in user file:
-#all:
-#	$(MAKE) .plots
-#	$(MAKE) .htmls
+# Default option that may be redefined in the application Makefile:
+all:
+	$(MAKE) .plots
+	$(MAKE) .htmls
 
 #----------------------------------------------------------------------------
 
