@@ -45,7 +45,7 @@ def list_examples(examples_dir):
     return dirlist
         
 
-def make_plots(examples_dir = '.'):
+def make_all(examples_dir = '.',make_clean_first=False):
     import os,sys
 
     examples_dir = os.path.abspath(examples_dir)
@@ -66,11 +66,11 @@ def make_plots(examples_dir = '.'):
         print "Aborting."
         sys.exit()
     
-    fname_output = 'make_plots_output.txt'
+    fname_output = 'make_all_output.txt'
     fout = open(fname_output, 'w')
     fout.write("ALL OUTPUT FROM RUNNING EXAMPLES\n\n")
 
-    fname_errors = 'make_plots_errors.txt'
+    fname_errors = 'make_all_errors.txt'
     ferr = open(fname_errors, 'w')
     ferr.write("ALL ERRORS FROM RUNNING EXAMPLES\n\n")
 
@@ -95,6 +95,12 @@ def make_plots(examples_dir = '.'):
         fout.flush()
         ferr.flush()
 
+        if make_clean_first:
+            # Run 'make clean':
+            job = subprocess.Popen(['make','clean'], \
+                      stdout=fout,stderr=ferr)
+            return_code = job.wait()
+                
         # Run 'make all':
         job = subprocess.Popen(['make','all'], \
                   stdout=fout,stderr=ferr)
@@ -110,14 +116,20 @@ def make_plots(examples_dir = '.'):
 
     print '------------------------------------------------------------- '
     print ' '
-    print 'Ran "make .plots" and created output and plots in directories:'
-    for d in goodlist_run:
-        print '   ',d
+    print 'Ran "make all" and created output and plots in directories:'
+    if len(goodlist_run) == 0:
+        print '   None'
+    else:
+        for d in goodlist_run:
+            print '   ',d
     print ' '
     
     print 'Errors encountered in the following directories:'
-    for d in badlist_run:
-        print '   ',d
+    if len(badlist_run) == 0:
+        print '   None'
+    else:
+        for d in badlist_run:
+            print '   ',d
     print ' '
     
     fout.close()
@@ -129,4 +141,4 @@ def make_plots(examples_dir = '.'):
 
 if __name__=='__main__':
     import sys
-    make_plots(*sys.argv[1:])
+    make_all(*sys.argv[1:])

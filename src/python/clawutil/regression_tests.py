@@ -59,19 +59,22 @@ def test_subdirs(compare_dir=None,examples_dir='.',\
  
     print "Will run imagediff on _plots in the above subdirectories of "
     print "    ", examples_dir
-    print "Will compare to _plots in subdirectories of: \n   %s" \
+    print "Will compare to _plots in corresponding subdirectories of: \n   %s" \
             % compare_dir
-    ans = raw_input("Ok? ")
-    if ans.lower() not in ['y','yes']:
-        print "Aborting."
-        all_ok = False
-        return all_ok
+    if 0:
+        ans = raw_input("Ok? ")
+        if ans.lower() not in ['y','yes']:
+            print "Aborting."
+            all_ok = False
+            return all_ok
 
+    top_dir = os.getcwd()
     for test_subdir in dir_list:
         print "\n============================================================="
         print test_subdir
         print "============================================================="
-        subdir = os.path.split(test_subdir)[1]
+        #subdir = os.path.split(test_subdir)[1]
+        subdir = test_subdir[len(examples_dir)+1:]
         compare_subdir = os.path.join(compare_dir, subdir)
         test_plots = os.path.join(test_subdir,'_plots')
         compare_plots = os.path.join(compare_subdir, '_plots')
@@ -88,6 +91,7 @@ def test_subdirs(compare_dir=None,examples_dir='.',\
             all_ok = False
             continue
     
+        os.chdir(subdir)
         try:
             regression_ok = imagediff.imagediff_dir(test_plots,compare_plots, \
                                     relocatable=relocatable,overwrite=True, \
@@ -100,6 +104,7 @@ def test_subdirs(compare_dir=None,examples_dir='.',\
                         % (test_plots,compare_plots)
             regression_ok = False
         all_ok = all_ok and regression_ok
+        os.chdir(top_dir)
 
     return all_ok
     
