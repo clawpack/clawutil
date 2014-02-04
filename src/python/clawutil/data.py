@@ -359,6 +359,15 @@ class ClawRunData(ClawData):
         self.data_list.append(data)
 
 
+    def replace_data(self, name, new_object):
+        r"""
+        Replace data objected named *name* with *new_object*
+        """
+        self.data_list.remove(getattr(self, name))
+        setattr(self, name, new_object)
+        self.data_list.append(getattr(self, name))
+
+
     def new_UserData(self,name,fname):
         r"""
         Create a new attribute called name
