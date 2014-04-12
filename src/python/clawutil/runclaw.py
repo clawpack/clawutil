@@ -15,7 +15,7 @@ import shutil
 from claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False, 
-            rundir=None, print_git_status=False):
+            rundir=None, print_git_status=False, nohup=False):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
     typically set to 'xclaw', 'xamr', etc.
@@ -25,6 +25,14 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     
     If rundir is None, all *.data is copied from current directory, if a path 
     is given, data files are copied from there instead.
+
+    If print_git_status=True, print a summary of the git status of all
+    clawpack repositories in the file claw_git_status.txt in outdir.
+
+    If nohup=True, run the xclawcmd in nohup mode:  runs in background and
+    output goes into nohup.out, and job keeps running if user logs off.
+    Useful for scripts starting long jobs in batch mode.
+
     """
     
     import os,glob,shutil,time
@@ -176,12 +184,23 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
             #returncode = pclaw.returncode
             #print '+++ pclaw done'
             
-            returncode = os.system(xclawcmd)
-    
-            if returncode == 0:
-                print "\n==> runclaw: Finished executing\n"
+            if nohup:
+                # run in nohup mode:
+                print "\n==> Running in nohup mode, output will be sent to:"
+                print "      %s/nohup.out" % outdir
+                returncode = os.system("nohup time %s &" % xclawcmd)
             else:
-                print "\n ==> runclaw: *** Runtime error: return code = %s\n " % returncode
+                returncode = os.system(xclawcmd)
+    
+                if returncode == 0:
+                    print "\n==> runclaw: Finished executing\n"
+                else:
+                    print "\n ==> runclaw: *** Runtime error: return code = %s\n "\
+                            % returncode
+                print '==> runclaw: Done executing %s via clawutil.runclaw.py' %\
+                            xclawcmd
+                print '==> runclaw: Output is in ', outdir
+                
         except:
             raise Exception("Could not execute command %s" % xclawcmd)
     
@@ -189,8 +208,6 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
 
     if returncode != 0:
         print '==> runclaw: *** fortran returncode = ', returncode, '   aborting'
-    print '==> runclaw: Done executing %s via clawutil.runclaw.py' % xclawcmd
-    print '==> runclaw: Output is in ', outdir
     
 
 #----------------------------------------------------------
