@@ -74,7 +74,6 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     
     
     #returncode = clawjob.runxclaw()
-    print "nohup = ",nohup
 
     if 1:
         startdir = os.getcwd()
@@ -189,7 +188,6 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
                 #pclaw.wait()   # wait for code to run
             #returncode = pclaw.returncode
             #print '+++ pclaw done'
-            print "nohup = ",nohup
             
             if nohup:
                 import pdb; pdb.set_trace()
