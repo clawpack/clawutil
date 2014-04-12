@@ -15,7 +15,7 @@ import shutil
 from claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False, 
-            rundir=None, print_git_status=False, nohup=False):
+            rundir=None, print_git_status=False, nohup=False, nice=None):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
     typically set to 'xclaw', 'xamr', etc.
@@ -26,12 +26,15 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     If rundir is None, all *.data is copied from current directory, if a path 
     is given, data files are copied from there instead.
 
-    If print_git_status=True, print a summary of the git status of all
+    If print_git_status is True, print a summary of the git status of all
     clawpack repositories in the file claw_git_status.txt in outdir.
 
-    If nohup=True, run the xclawcmd in nohup mode:  runs in background and
+    If nohup is True, run the xclawcmd in nohup mode:  runs in background and
     output goes into nohup.out, and job keeps running if user logs off.
     Useful for scripts starting long jobs in batch mode.
+
+    If nohup is True, and type(nice) is int, also runs it with "nice -n "
+    and this nice value so it doesn't hog computer resources.
 
     """
     
@@ -40,13 +43,15 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     xclawout = None
     xclawerr = None
 
+    # convert strings passed in from Makefile to boolean:
     if type(overwrite) is str:
-        # convert to boolean
         overwrite = (overwrite.lower() in ['true','t'])
-    
     if type(restart) is str:
-        # convert to boolean
         restart = (restart.lower() in ['true','t'])
+    if type(print_git_status) is str:
+        print_git_status = (print_git_status.lower() in ['true','t'])
+    if type(nohup) is str:
+        nohup = (nohup.lower() in ['true','t'])
     
 
     if xclawcmd is None:
@@ -69,6 +74,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     
     
     #returncode = clawjob.runxclaw()
+    print "nohup = ",nohup
 
     if 1:
         startdir = os.getcwd()
@@ -183,12 +189,19 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
                 #pclaw.wait()   # wait for code to run
             #returncode = pclaw.returncode
             #print '+++ pclaw done'
+            print "nohup = ",nohup
             
             if nohup:
+                import pdb; pdb.set_trace()
                 # run in nohup mode:
                 print "\n==> Running in nohup mode, output will be sent to:"
                 print "      %s/nohup.out" % outdir
-                returncode = os.system("nohup time %s &" % xclawcmd)
+                if type(nice) is int:
+                    cmd = "nice -n %s nohup time %s &" % (nice,xclawcmd)
+                else:
+                    cmd = "nohup time %s &" % xclawcmd
+                print cmd
+                returncode = os.system(cmd)
             else:
                 returncode = os.system(xclawcmd)
     
