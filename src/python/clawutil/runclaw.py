@@ -190,7 +190,6 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
             #print '+++ pclaw done'
             
             if nohup:
-                import pdb; pdb.set_trace()
                 # run in nohup mode:
                 print "\n==> Running in nohup mode, output will be sent to:"
                 print "      %s/nohup.out" % outdir
