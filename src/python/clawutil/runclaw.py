@@ -194,9 +194,9 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
                 print "\n==> Running in nohup mode, output will be sent to:"
                 print "      %s/nohup.out" % outdir
                 if type(nice) is int:
-                    cmd = "nice -n %s nohup time %s &" % (nice,xclawcmd)
+                    cmd = "nice -n %s nohup time %s " % (nice,xclawcmd)
                 else:
-                    cmd = "nohup time %s &" % xclawcmd
+                    cmd = "nohup time %s " % xclawcmd
                 print cmd
                 returncode = os.system(cmd)
             else:
