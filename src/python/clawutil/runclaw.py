@@ -30,11 +30,12 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     clawpack repositories in the file claw_git_status.txt in outdir.
 
     If nohup is True, run the xclawcmd in nohup mode:  runs in background and
-    output goes into nohup.out, and job keeps running if user logs off.
-    Useful for scripts starting long jobs in batch mode.
+    output goes into nohup.out file in the directory specified by outdir,
+    rather than all output going to the screen.  The job keeps running if user 
+    logs off.  Useful for scripts starting long jobs in batch mode.
 
-    If nohup is True, and type(nice) is int, also runs it with "nice -n "
-    and this nice value so it doesn't hog computer resources.
+    If type(nice) is int, runs the code using "nice -n "
+    with this nice value so it doesn't hog computer resources.
 
     """
     
@@ -42,6 +43,11 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     verbose = True
     xclawout = None
     xclawerr = None
+
+    try:
+        nice = int(nice)
+    except:
+        pass
 
     # convert strings passed in from Makefile to boolean:
     if type(overwrite) is str:
@@ -194,23 +200,28 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
                 print "\n==> Running in nohup mode, output will be sent to:"
                 print "      %s/nohup.out" % outdir
                 if type(nice) is int:
-                    cmd = "nice -n %s nohup time %s " % (nice,xclawcmd)
+                    cmd = "nohup time nice -n %s %s " % (nice,xclawcmd)
                 else:
                     cmd = "nohup time %s " % xclawcmd
-                print cmd
+                print "\n==> Running with command:\n   ", cmd
                 returncode = os.system(cmd)
             else:
-                returncode = os.system(xclawcmd)
-    
-                if returncode == 0:
-                    print "\n==> runclaw: Finished executing\n"
+                if type(nice) is int:
+                    cmd = "nice -n %s %s " % (nice,xclawcmd)
                 else:
-                    print "\n ==> runclaw: *** Runtime error: return code = %s\n "\
-                            % returncode
-                print '==> runclaw: Done executing %s via clawutil.runclaw.py' %\
-                            xclawcmd
-                print '==> runclaw: Output is in ', outdir
-                
+                    cmd = xclawcmd
+                print "\n==> Running with command:\n   ", cmd
+                returncode = os.system(cmd)
+    
+            if returncode == 0:
+                print "\n==> runclaw: Finished executing\n"
+            else:
+                print "\n ==> runclaw: *** Runtime error: return code = %s\n "\
+                        % returncode
+            print '==> runclaw: Done executing %s via clawutil.runclaw.py' %\
+                        xclawcmd
+            print '==> runclaw: Output is in ', outdir
+            
         except:
             raise Exception("Could not execute command %s" % xclawcmd)
     
