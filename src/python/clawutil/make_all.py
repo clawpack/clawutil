@@ -45,8 +45,13 @@ def list_examples(examples_dir):
     return dirlist
         
 
-def make_all(examples_dir = '.',make_clean_first=False):
+def make_all(examples_dir = '.',make_clean_first=False, env=None):
     import os,sys
+
+    if env is None:
+        my_env = os.environ
+    else:
+        my_env = env
 
     examples_dir = os.path.abspath(examples_dir)
     if not os.path.isdir(examples_dir):
@@ -103,7 +108,7 @@ def make_all(examples_dir = '.',make_clean_first=False):
                 
         # Run 'make all':
         job = subprocess.Popen(['make','all'], \
-                  stdout=fout,stderr=ferr)
+                  stdout=fout,stderr=ferr,env=my_env)
         return_code = job.wait()
                 
         if return_code == 0:
