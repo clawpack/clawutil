@@ -348,6 +348,8 @@ class ClawRunData(ClawData):
             self.add_data(geoclaw.FixedGridData(),'fixed_grid_data')
             self.add_data(geoclaw.QinitData(),'qinit_data')
             self.add_data(geoclaw.FGmaxData(),'fgmax_data')
+            self.add_data(geoclaw.SurgeData(),'surge_data')
+            self.add_data(geoclaw.FrictionData(),'friction_data')
 
         else:
             raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
