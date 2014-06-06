@@ -47,7 +47,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     try:
         nice = int(nice)
     except:
-        pass
+        nice = None
 
     # convert strings passed in from Makefile to boolean:
     if type(overwrite) is str:

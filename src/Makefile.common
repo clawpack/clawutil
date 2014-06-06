@@ -41,7 +41,7 @@ GIT_STATUS ?= False
 SETRUN_FILE ?= ./setrun.py
 SETPLOT_FILE ?= ./setplot.py
 NOHUP ?= False
-NICE ?= 7 
+NICE ?= None
 
 #----------------------------------------------------------------------------
 # Lists of source, modules, and objects
