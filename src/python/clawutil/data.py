@@ -348,8 +348,13 @@ class ClawRunData(ClawData):
             self.add_data(geoclaw.FixedGridData(),'fixed_grid_data')
             self.add_data(geoclaw.QinitData(),'qinit_data')
             self.add_data(geoclaw.FGmaxData(),'fgmax_data')
-            self.add_data(geoclaw.SurgeData(),'surge_data')
-            self.add_data(geoclaw.FrictionData(),'friction_data')
+
+            # can remove try-except after PR clawpack/geoclaw#80 is merged
+            try:
+                self.add_data(geoclaw.SurgeData(),'surge_data')
+                self.add_data(geoclaw.FrictionData(),'friction_data')
+            except:
+                pass 
 
         else:
             raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
