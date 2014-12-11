@@ -278,6 +278,7 @@ def convert_setplot(setplot_file='setplot.py'):
     setplot_text = setplot_text.replace('2d_grid','2d_patch')
     setplot_text = setplot_text.replace('gridedges','patchedges')
     setplot_text = setplot_text.replace('gridlines','celledges')
+    setplot_text = setplot_text.replace('grid_bgcolor','patch_bgcolor')
 
     os.system("mv %s %s_4.x" % (setplot_file,setplot_file))
     print 'Moved %s to %s_4.x ' % (setplot_file,setplot_file)
