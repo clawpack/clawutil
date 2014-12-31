@@ -67,11 +67,21 @@ new_text = """
 %s
 </ul>
 <p>
-</body>
-</html>
 """ % (make_text,f_text,py_text,m_text,plot_text)
 
-html_string = html_string.replace("</body>\n</html>",new_text)
+# If README.rst contains a section labelled "Version", insert the list of
+# files before this section.  Otherwise put list of files at end...
+
+version_loc = html_string.find(r'<h1>Version</h1>')
+end_body = html_string.find("</body>\n</html>")
+
+if version_loc > -1:
+    html_string = html_string[:version_loc] + new_text + html_string[version_loc:]
+else:
+    html_string = html_string[:end_body] + new_text + html_string[end_body:]
+
+# Adjust size of section heading:
+html_string = html_string.replace(r'<h1>Version</h1>','<h2>Version</h2>')
 
 # Fix head for Clawpack style:
 head_text = """
