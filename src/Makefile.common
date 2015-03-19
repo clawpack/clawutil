@@ -172,7 +172,7 @@ Makefile.html : Makefile ; $(CC2HTML) $<
 
 # Make data files needed by Fortran code:
 .data: $(SETRUN_FILE) $(MAKEFILE_LIST) ;
-	$(MAKE) data
+	$(MAKE) data -f $(MAKEFILE_LIST)
 
 data: $(MAKEFILE_LIST);
 	-rm -f .data
@@ -184,7 +184,7 @@ data: $(MAKEFILE_LIST);
 # runclaw will execute setrun.py to create data files and determine
 # what executable to run, e.g. xclaw or xamr.
 .output: $(EXE) .data $(MAKEFILE_LIST);
-	$(MAKE) output
+	$(MAKE) output -f $(MAKEFILE_LIST)
 
 #----------------------------------------------------------------------------
 # Run the code without checking dependencies:
@@ -206,7 +206,7 @@ PLOTCMD ?= $(CLAW_PYTHON) $(CLAW)/visclaw/src/python/visclaw/plotclaw.py
 # using data in subdirectory specified by OUTDIR and the plotting
 # commands specified in SETPLOT_FILE.
 .plots: .output $(SETPLOT_FILE) $(MAKEFILE_LIST) ;
-	$(MAKE) plots
+	$(MAKE) plots -f $(MAKEFILE_LIST)
 
 # Make the plots without checking dependencies
 # This has to use its own plot command to skip the check for .output
@@ -231,12 +231,12 @@ plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
 
 # Note that we reset MAKELEVEL to 0 here so that we make sure to set the
 # preprocessor flags correctly
-new: 
+new: $(MAKEFILE_LIST)
 	-rm -f  $(OBJECTS)
 	-rm -f  $(MODULE_OBJECTS)
 	-rm -f  $(MODULE_FILES)
 	-rm -f  $(EXE)
-	$(MAKE) $(EXE) MAKELEVEL=0
+	$(MAKE) $(EXE) MAKELEVEL=0 -f $(MAKEFILE_LIST)
 
 
 # Clean up options:
@@ -245,7 +245,7 @@ clean:
 	-rm -f .data .output .plots .htmls 
 
 clobber:
-	$(MAKE) clean
+	$(MAKE) clean -f $(MAKEFILE_LIST)
 	-rm -f $(OBJECTS)
 	-rm -f $(MODULE_OBJECTS)
 	-rm -f $(MODULE_FILES)
@@ -255,9 +255,9 @@ clobber:
 #----------------------------------------------------------------------------
 
 # Default option that may be redefined in the application Makefile:
-all:
-	$(MAKE) .plots
-	$(MAKE) .htmls
+all: $(MAKEFILE_LIST)
+	$(MAKE) .plots -f $(MAKEFILE_LIST)
+	$(MAKE) .htmls -f $(MAKEFILE_LIST)
 
 #----------------------------------------------------------------------------
 
