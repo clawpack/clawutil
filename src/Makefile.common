@@ -78,7 +78,7 @@ ALL_INCLUDE += $(addprefix -I,$(INCLUDE))
 ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -I,$(LIB_PATHS))
 
 # ALL_FFLAGS and ALL_LFLAGS currently only includes the user defined flags
-ALL_FFLAGS += $(FFLAGS)
+ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
 # Module flag setting, please add other compilers here as necessary
