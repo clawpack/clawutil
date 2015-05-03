@@ -62,7 +62,7 @@ MODULE_OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o,
 INCLUDE ?=
 FFLAGS ?=
 LFLAGS ?= $(FFLAGS)
-# PPFLAGS ?=
+PPFLAGS ?=
 
 # These will be included in all actual compilation and linking, one could
 # actually overwrite these before hand but that is not the intent of these
@@ -78,7 +78,7 @@ ALL_INCLUDE += $(addprefix -I,$(INCLUDE))
 ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -I,$(LIB_PATHS))
 
 # ALL_FFLAGS and ALL_LFLAGS currently only includes the user defined flags
-ALL_FFLAGS += $(FFLAGS)
+ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
 # Module flag setting, please add other compilers here as necessary
@@ -110,11 +110,11 @@ endif
 
 # Default Rules, the module rule should be executed first in most instances,
 # this way the .mod file ends up always in the correct spot
-%.mod : %.f90 ; touch $@; $(CLAW_FC) -c $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
-%.mod : %.f   ; touch $@; $(CLAW_FC) -c $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f90 ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f   ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 
-%.o : %.f90 ;   $(CLAW_FC) -c $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
-%.o : %.f ;     $(CLAW_FC) -c $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f90 ;             $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f ;               $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
 #----------------------------------------------------------------------------
 # Executable:
