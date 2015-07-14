@@ -276,7 +276,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         data = solution.Solution(frame_num, path=self.temp_path)
         data_sum = []
         for index in indices:
-            data_sum.append(data.q[index, :].sum())
+            data_sum.append(data.q[index, ...].sum())
         
         # Get (and save) regression comparison data
         regression_data_file = os.path.join(self.test_path,
@@ -293,7 +293,7 @@ class ClawpackRegressionTest(unittest.TestCase):
             "\n  new_data: %s, \n  expected: %s"  % (data_sum, regression_sum)
 
 
-    def check_gauges(self, save=False, indices=(2, 3), 
+    def check_gauges(self, save=False, gauge_num=1, indices=[0], 
                            regression_data_path="regression_data.txt"):
         r"""Basic test to assert gauge equality
 
@@ -309,8 +309,10 @@ class ClawpackRegressionTest(unittest.TestCase):
         # Get gauge data
         data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
         data_sum = []
+        gauge_numbers = numpy.array(data[:, 0], dtype=int)
+        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
         for index in indices:
-            data_sum.append(data[:, index].sum())
+            data_sum.append(data[gauge_indices, index].sum())
 
         # Get (and save) regression comparison data
         regression_data_file = os.path.join(self.test_path,
@@ -319,8 +321,10 @@ class ClawpackRegressionTest(unittest.TestCase):
             numpy.savetxt(regression_data_file, data)
         regression_data = numpy.loadtxt(regression_data_file)
         regression_sum = []
+        gauge_numbers = numpy.array(data[:, 0], dtype=int)
+        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
         for index in indices:
-            regression_sum.append(regression_data[:, index].sum())
+            regression_sum.append(regression_data[gauge_indices, index].sum())
         # regression_sum = regression_data
 
         # Compare data
