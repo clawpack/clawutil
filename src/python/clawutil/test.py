@@ -258,7 +258,8 @@ class ClawpackRegressionTest(unittest.TestCase):
 
     
     def check_frame(self, save=False, indices=[0], frame_num=1,
-                          regression_data_path="regression_data.txt"):
+                          regression_data_path="regression_data.txt",
+                          tolerance=1e-14):
         r"""Compare choosen frame to the comparison data
 
         :Input:
@@ -270,6 +271,8 @@ class ClawpackRegressionTest(unittest.TestCase):
            to *1*. 
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
+         - *tolerance* (float) - Tolerance used in the comparison, default is
+           *1e-14*.
         """
 
         # Load test data
@@ -288,13 +291,13 @@ class ClawpackRegressionTest(unittest.TestCase):
         # for index in indices:
         #     regression_sum.append(regression_data[index, :].sum())
 
-        TOLERANCE = 1e-14
-        assert numpy.allclose(data_sum, regression_sum, TOLERANCE), \
+        assert numpy.allclose(data_sum, regression_sum, tolerance), \
             "\n  new_data: %s, \n  expected: %s"  % (data_sum, regression_sum)
 
 
     def check_gauges(self, save=False, gauge_num=1, indices=[0], 
-                           regression_data_path="regression_data.txt"):
+                           regression_data_path="regression_data.txt",
+                           tolerance=1e-14):
         r"""Basic test to assert gauge equality
 
         :Input:
@@ -304,6 +307,8 @@ class ClawpackRegressionTest(unittest.TestCase):
            comparison.  Defaults to *(2, 3)*.
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
+         - *tolerance* (float) - Tolerance used in comparison, defaults to
+           *1e-14*.
         """
 
         # Get gauge data
@@ -328,7 +333,6 @@ class ClawpackRegressionTest(unittest.TestCase):
         # regression_sum = regression_data
 
         # Compare data
-        tolerance = 1e-14
         assert numpy.allclose(data_sum, regression_sum, tolerance), \
                 "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
         assert numpy.allclose(data, regression_data, tolerance), \
