@@ -8,7 +8,7 @@ import os
 
 #extract just the file name
 def get_name(filedir):
-	return str(filedir).split('/')[-1]
+	return str(filedir).split('/')[-1].split('.')[0]
 
 
 #first, make arrays for sources
