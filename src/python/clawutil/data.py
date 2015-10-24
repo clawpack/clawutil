@@ -763,13 +763,13 @@ class ClawInputData(ClawData):
         self.data_write('restart_file')
         self.data_write('checkpt_style')
 
-        if self.checkpt_style==2:
+        if self.checkpt_style in [-2,2]:
             num_checkpt_times = len(self.checkpt_times)
             self.data_write(name='', value=num_checkpt_times, alt_name='num_checkpt_times')
             self.data_write('checkpt_times')
-        elif self.checkpt_style==3:
+        elif self.checkpt_style in [-3,3]:
             self.data_write('checkpt_interval')
-        elif self.checkpt_style not in [0,1]:
+        elif self.checkpt_style not in [0,1,-1]:
             raise AttributeError("*** Unrecognized checkpt_style: %s"\
                   % self.checkpt_style)
 
