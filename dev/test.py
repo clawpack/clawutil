@@ -295,48 +295,70 @@ class ClawpackRegressionTest(unittest.TestCase):
             "\n  new_data: %s, \n  expected: %s"  % (data_sum, regression_sum)
 
 
-    def check_gauges(self, save=False, gauge_num=1, indices=[0], 
+    def check_gauges(self, save=False, 
                            regression_data_path="regression_data.txt",
                            tolerance=1e-14):
         r"""Basic test to assert gauge equality
 
+        Test all gauges found in gauges.data.  Do full comparison of all
+        times, levels, components of q.
+
         :Input:
          - *save* (bool) - If *True* will save the output from this test to 
            the file *regresion_data.txt*.  Default is *False*.
-         - *indices* (tuple) - Contains indices to compare in the gague 
-           comparison.  Defaults to *(2, 3)*.
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
          - *tolerance* (float) - Tolerance used in comparison, defaults to
            *1e-14*.
         """
+        from clawpack.visclaw import gaugetools
+        from clawpack.visclaw.data import ClawPlotData
 
         # Get gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
-        data_sum = []
-        gauge_numbers = numpy.array(data[:, 0], dtype=int)
-        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
-        for index in indices:
-            data_sum.append(data[gauge_indices, index].sum())
+        plotdata = ClawPlotData()
+        plotdata.outdir = self.temp_path
+
+        setgauges = gaugetools.read_setgauges(plotdata.outdir)
+        gauge_numbers = setgauges.gauge_numbers
+        
+        # read in all gauge data and sort by gauge numbers so we
+        # can properly compare.  Note gauges may be written to fort.gauge
+        # in random order when OpenMP used.
+
+        for gaugeno in gauge_numbers:
+            g = plotdata.getgauge(gaugeno)
+            m = len(g.level)
+            number = numpy.array(m*[g.number])
+            level = numpy.array(g.level)
+            data_gauge = numpy.vstack((number,level,g.t,g.q)).T
+            try:    
+                data = numpy.vstack((data, data_gauge))
+            except:
+                data = data_gauge  # first time thru loop
+
+        # save the gauge number sorted by gaugeno in case user wants to
+        # compare if assertion fails.
+        sorted_gauge_file = 'test_gauge.txt'
+        sorted_gauge_path = os.path.join(self.temp_path, sorted_gauge_file)
+        numpy.savetxt(sorted_gauge_path, data)
 
         # Get (and save) regression comparison data
         regression_data_file = os.path.join(self.test_path,
                                             regression_data_path)
         if save:
             numpy.savetxt(regression_data_file, data)
+            print "Saved new regression data to %s" % regression_data_file
         regression_data = numpy.loadtxt(regression_data_file)
-        regression_sum = []
-        gauge_numbers = numpy.array(data[:, 0], dtype=int)
-        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
-        for index in indices:
-            regression_sum.append(regression_data[gauge_indices, index].sum())
-        # regression_sum = regression_data
 
-        # Compare data
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
-                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
-        assert numpy.allclose(data, regression_data, tolerance), \
-                "Full gauge match failed."
+        # if assertion fails, indicate to user what files to compare:
+        output_dir = os.path.join(os.getcwd(),
+                                     "%s_output" % self.__class__.__name__)
+        sorted_gauge_path = os.path.join(output_dir, sorted_gauge_file)
+        error_msg = "Full gauge match failed.  Compare these files: " + \
+               "\n  %s\n  %s" % (regression_data_file, sorted_gauge_path) + \
+               "\nColumns are gaugeno, level, t, q[0:num_eqn]"
+
+        assert numpy.allclose(data, regression_data, tolerance), error_msg
 
 
     def tearDown(self):
