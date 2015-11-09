@@ -75,7 +75,7 @@ ALL_LFLAGS ?=
 # at the end of the ALL_INCLUDE variable so that INCLUDE can override any of
 # the default settings
 ALL_INCLUDE += $(addprefix -I,$(INCLUDE))
-ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -I,$(LIB_PATHS))
+ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -L,$(LIB_PATHS))
 
 # ALL_FFLAGS and ALL_LFLAGS currently only includes the user defined flags
 ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
