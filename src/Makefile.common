@@ -46,8 +46,19 @@ NICE ?= None
 #----------------------------------------------------------------------------
 # Lists of source, modules, and objects
 # These should be set in the including Makefile
+COMMON_SOURCES ?=
+COMMON_MODULES ?=
 SOURCES ?=
 MODULES ?=
+EXCLUDE_SOURCES ?=
+EXCLUDE_MODULES ?=
+
+#consolidate custom and common sources into a single list for compilations
+SOURCES := $(shell python $(CLAW)/clawutil/src/checkSources.py \
+		$(COMMON_SOURCES) ";" $(EXCLUDE_SOURCES) ";" $(SOURCES))
+MODULES := $(shell python $(CLAW)/clawutil/src/checkSources.py \
+		$(COMMON_MODULES) ";" $(EXCLUDE_MODULES) ";" $(MODULES))
+
 
 # Make list of .o files required from the sources above:
 OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(SOURCES)))))
