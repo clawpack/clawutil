@@ -54,9 +54,9 @@ EXCLUDE_SOURCES ?=
 EXCLUDE_MODULES ?=
 
 #consolidate custom and common sources into a single list for compilations
-SOURCES := $(shell python $(CLAW)/clawutil/src/checkSources.py \
+SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py \
 		$(COMMON_SOURCES) ";" $(EXCLUDE_SOURCES) ";" $(SOURCES))
-MODULES := $(shell python $(CLAW)/clawutil/src/checkSources.py \
+MODULES := $(shell python $(CLAW)/clawutil/src/check_src.py \
 		$(COMMON_MODULES) ";" $(EXCLUDE_MODULES) ";" $(MODULES))
 
 
