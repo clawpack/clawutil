@@ -120,7 +120,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         r"""Create temp dir for data and setup log files.
 
         """
-
+        
         self.temp_path = tempfile.mkdtemp()
 
         self.stdout = open(os.path.join(self.temp_path, "run_output.txt"), "w")
@@ -283,7 +283,7 @@ class ClawpackRegressionTest(unittest.TestCase):
             data_sum.append(data.q[index, ...].sum())
         
         # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path,
+        regression_data_file = os.path.join(self.test_path, "regression_data",
                                             regression_data_path)
         if save:
             numpy.savetxt(regression_data_file, data_sum)
