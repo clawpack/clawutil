@@ -259,7 +259,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
     
     def check_frame(self, save=False, indices=[0], frame_num=1,
-                          regression_data_path="regression_data.txt",
+                          file_name="regression_data.txt",
                           tolerance=1e-14):
         r"""Compare choosen frame to the comparison data
 
@@ -284,7 +284,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         
         # Get (and save) regression comparison data
         regression_data_file = os.path.join(self.test_path, "regression_data",
-                                            regression_data_path)
+                                            file_name)
         if save:
             numpy.savetxt(regression_data_file, data_sum)
         regression_sum = numpy.loadtxt(regression_data_file)
