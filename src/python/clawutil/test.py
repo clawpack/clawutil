@@ -18,7 +18,7 @@ import time
 import numpy
 
 import clawpack.geoclaw.util
-import clawpack.amrclaw.gauges as gauges
+import clawpack.pyclaw.gauges as gauges
 import clawpack.pyclaw.solution as solution
 
 # Support for WIP decorator
