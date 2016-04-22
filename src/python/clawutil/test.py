@@ -30,6 +30,7 @@ from nose.plugins.skip import SkipTest
 def fail(message):
     raise SkipTest(message)
  
+# Work in progress decorator - will test but skips the test on failure
 def wip(f):
     @wraps(f)
     def run_test(*args, **kwargs):
