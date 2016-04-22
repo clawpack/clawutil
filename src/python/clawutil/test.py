@@ -337,21 +337,22 @@ class ClawpackRegressionTest(unittest.TestCase):
             numpy.testing.assert_allclose(gauge_sum, regression_gauge_sum, 
                                           rtol=tolerance, verbose=True)
         except AssertionError as e:
-            print "Gauge id = %s failed complete check." % gauge_id
-            print gauge_sum, regression_gauge_sum
+            e.args += ("SUM CHECK", gauge_id, gauge_sum, regression_gauge_sum)
             failed = True
 
         try:
             numpy.testing.assert_allclose(gauge.q, regression_gauge.q, 
                                           rtol=tolerance, verbose=True)
         except AssertionError as e:
-            print "Gauge id = %s failed complete check." % gauge_id
-            failure_indices = numpy.nonzero(numpy.where(
-                    numpy.abs(gauge.q - regression_gauge.q) < tolerance))
-            print gauge.q[failure_indices]
-            print regression_gauge.q[failure_indices]
+            e.args += ("ALL CHECK", gauge_id)
+            for n in xrange(gauge.q.shape[0]):
+                failure_indices = numpy.nonzero(numpy.where(
+                        numpy.abs(gauge.q[n, :] 
+                                - regression_gauge.q[n, :]) < tolerance))
+                e.args += (repr(gauge.q[n, failure_indices]),
+                           repr(regression_gauge.q[n, failure_indices]))
             failed = True
-
+        
         if failed:
             raise e
 
