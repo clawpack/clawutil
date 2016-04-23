@@ -348,9 +348,9 @@ class ClawpackRegressionTest(unittest.TestCase):
             for n in xrange(gauge.q.shape[0]):
                 failure_indices = numpy.nonzero(numpy.where(
                         numpy.abs(gauge.q[n, :] 
-                                - regression_gauge.q[n, :]) < tolerance))
-                e.args += (gauge.q[n, failure_indices] - 
-                           regression_gauge.q[n, failure_indices])
+                                - regression_gauge.q[n, :]) < tolerance))[-1]
+                e.args += tuple(gauge.q[n, failure_indices] - 
+                                         regression_gauge.q[n, failure_indices])
             failed = True
         
         if failed:
