@@ -341,7 +341,8 @@ class ClawpackRegressionTest(unittest.TestCase):
             failed = True
 
         try:
-            numpy.testing.assert_allclose(gauge.q, regression_gauge.q, 
+            for n in indices:
+                numpy.testing.assert_allclose(gauge.q[n], regression_gauge.q[n], 
                                           rtol=tolerance, verbose=True)
         except AssertionError as e:
             e.args += ("ALL CHECK", gauge_id)
