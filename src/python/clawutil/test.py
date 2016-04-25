@@ -261,7 +261,7 @@ class ClawpackRegressionTest(unittest.TestCase):
     
     def check_frame(self, save=False, indices=[0], frame_num=1,
                           file_name="regression_data.txt",
-                          tolerance=1e-14):
+                          rtol=1e-14, atol=1e-08):
         r"""Compare choosen frame to the comparison data
 
         :Input:
@@ -289,16 +289,13 @@ class ClawpackRegressionTest(unittest.TestCase):
         if save:
             numpy.savetxt(regression_data_file, data_sum)
         regression_sum = numpy.loadtxt(regression_data_file)
-        # regression_sum = []
-        # for index in indices:
-        #     regression_sum.append(regression_data[index, :].sum())
 
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
+        assert numpy.allclose(data_sum, regression_sum, rtol=rtol, atol=atol), \
             "\n  new_data: %s, \n  expected: %s"  % (data_sum, regression_sum)
 
 
     def check_gauges(self, save=False, gauge_id=1, indices=[0],
-                           tolerance=1e-14):
+                           rol=1e-14, atol=1e-8):
         r"""Basic test to assert gauge equality
 
         :Input:
@@ -335,7 +332,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         failed = False
         try:
             numpy.testing.assert_allclose(gauge_sum, regression_gauge_sum, 
-                                          rtol=tolerance, verbose=True)
+                                             rtol=trol, atol=atol, verbose=True)
         except AssertionError as e:
             e.args += ("SUM CHECK", gauge_id, gauge_sum, regression_gauge_sum)
             failed = True
@@ -343,7 +340,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         try:
             for n in indices:
                 numpy.testing.assert_allclose(gauge.q[n], regression_gauge.q[n], 
-                                          rtol=tolerance, verbose=True)
+                                             rtol=rtol, atol=atol, verbose=True)
         except AssertionError as e:
             e.args += ("ALL CHECK", gauge_id)
             for n in xrange(gauge.q.shape[0]):
