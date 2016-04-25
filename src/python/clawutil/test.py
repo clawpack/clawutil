@@ -295,7 +295,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
 
     def check_gauges(self, save=False, gauge_id=1, indices=[0],
-                           rol=1e-14, atol=1e-8):
+                           rtol=1e-14, atol=1e-8):
         r"""Basic test to assert gauge equality
 
         :Input:
@@ -332,7 +332,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         failed = False
         try:
             numpy.testing.assert_allclose(gauge_sum, regression_gauge_sum, 
-                                             rtol=trol, atol=atol, verbose=True)
+                                             rtol=rtol, atol=atol, verbose=True)
         except AssertionError as e:
             e.args += ("SUM CHECK", gauge_id, gauge_sum, regression_gauge_sum)
             failed = True
