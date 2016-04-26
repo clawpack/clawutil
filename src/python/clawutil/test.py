@@ -261,7 +261,7 @@ class ClawpackRegressionTest(unittest.TestCase):
     
     def check_frame(self, save=False, indices=[0], frame_num=1,
                           file_name="regression_data.txt",
-                          rtol=1e-14, atol=1e-08):
+                          rtol=1e-14, atol=1e-08, tolerance=None):
         r"""Compare choosen frame to the comparison data
 
         :Input:
@@ -273,9 +273,15 @@ class ClawpackRegressionTest(unittest.TestCase):
            to *1*. 
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
-         - *tolerance* (float) - Tolerance used in the comparison, default is
-           *1e-14*.
+         - *rtol* (float) - Relative tolerance used in the comparison, default 
+           is *1e-14*.  Note that the old *tolerance* input is now synonymous 
+           with this parameter.
+         - *atol* (float) - Absolute tolerance used in the comparison, default
+           is *1e-08*.
         """
+
+        if isinstance(tolerance, float):
+            rtol = tolerance
 
         # Load test data
         data = solution.Solution(frame_num, path=self.temp_path)
@@ -295,7 +301,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
 
     def check_gauges(self, save=False, gauge_id=1, indices=[0],
-                           rtol=1e-14, atol=1e-8):
+                           rtol=1e-14, atol=1e-8, tolerance=None):
         r"""Basic test to assert gauge equality
 
         :Input:
@@ -305,9 +311,15 @@ class ClawpackRegressionTest(unittest.TestCase):
            comparison.  Defaults to *(2, 3)*.
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
-         - *tolerance* (float) - Tolerance used in comparison, defaults to
-           *1e-14*.
+         - *rtol* (float) - Relative tolerance used in the comparison, default 
+           is *1e-14*.  Note that the old *tolerance* input is now synonymous 
+           with this parameter.
+         - *atol* (float) - Absolute tolerance used in the comparison, default
+           is *1e-08*.
         """
+
+        if isinstance(tolerance, float):
+            rtol = tolerance
 
         # Get gauge data
         gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
