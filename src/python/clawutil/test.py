@@ -351,16 +351,21 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         try:
             for n in indices:
-                numpy.testing.assert_allclose(gauge.q[n], regression_gauge.q[n], 
-                                             rtol=rtol, atol=atol, verbose=True)
+                numpy.testing.assert_allclose(gauge.q[n, :],
+                                              regression_gauge.q[n, :], 
+                                              rtol=rtol, atol=atol, 
+                                              verbose=True)
+            assert False, "fake assertion"
         except AssertionError as e:
             e.args += ("ALL CHECK", gauge_id)
-            for n in xrange(gauge.q.shape[0]):
-                failure_indices = numpy.nonzero(numpy.where(
-                        numpy.abs(gauge.q[n, :] 
-                                - regression_gauge.q[n, :]) < tolerance))[-1]
+            for n in indices:
+                failure_indices = numpy.nonzero(~numpy.isclose(
+                                                       gauge.q[n, :],
+                                                       regression_gauge.q[n, :], 
+                                                       rtol=rtol, atol=atol))
                 e.args += tuple(gauge.q[n, failure_indices] - 
                                          regression_gauge.q[n, failure_indices])
+                e.args += ("%s: " % n, )
             failed = True
         
         if failed:
