@@ -321,33 +321,38 @@ class ClawpackRegressionTest(unittest.TestCase):
         if isinstance(tolerance, float):
             rtol = tolerance
 
+        if not(isinstance(indices, tuple) or isinstance(indices, list)):
+            indices = tuple(indices)
+
         # Get gauge data
         gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
         
         # Compute gauge sum for comparison
         gauge_sum = []
-        for index in indices:
-            gauge_sum.append(gauge.q[indices, :].sum())
+        for n in indices:
+            gauge_sum.append(gauge.q[n, :].sum())
 
         # Get regression comparison data
         regression_data_path = os.path.join(self.test_path, "regression_data")
         if save:
             gauge.write(regression_data_path)
         regression_gauge = gauges.GaugeSolution(gauge_id,
-                                               path=regression_data_path)
+                                                path=regression_data_path)
         
         regression_gauge_sum = []
-        for index in indices:
-            regression_gauge_sum.append(regression_gauge.q[indices, :].sum())
+        for n in indices:
+            regression_gauge_sum.append(regression_gauge.q[n, :].sum())
 
         # Compare data
-        failed = False
         try:
             numpy.testing.assert_allclose(gauge_sum, regression_gauge_sum, 
-                                             rtol=rtol, atol=atol, verbose=True)
+                                         rtol=rtol, atol=atol, verbose=True)
+
         except AssertionError as e:
-            e.args += ("SUM CHECK", gauge_id, gauge_sum, regression_gauge_sum)
-            failed = True
+            e.args += ("Sum Check Failed for gauge = %s" % gauge_id, 
+                       ["%.15e" % value for value in gauge_sum],
+                       ["%.15e" % value for value in regression_gauge_sum])
+            raise e
 
         try:
             for n in indices:
@@ -355,9 +360,8 @@ class ClawpackRegressionTest(unittest.TestCase):
                                               regression_gauge.q[n, :], 
                                               rtol=rtol, atol=atol, 
                                               verbose=True)
-            assert False, "fake assertion"
         except AssertionError as e:
-            e.args += ("ALL CHECK", gauge_id)
+            e.args += ("ALL CHECK: (gauge, ...)", gauge_id)
             for n in indices:
                 failure_indices = numpy.nonzero(~numpy.isclose(
                                                        gauge.q[n, :],
@@ -366,9 +370,6 @@ class ClawpackRegressionTest(unittest.TestCase):
                 e.args += tuple(gauge.q[n, failure_indices] - 
                                          regression_gauge.q[n, failure_indices])
                 e.args += ("%s: " % n, )
-            failed = True
-        
-        if failed:
             raise e
 
 
