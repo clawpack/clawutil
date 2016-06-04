@@ -18,6 +18,7 @@ import time
 import numpy
 
 import clawpack.geoclaw.util
+import clawpack.pyclaw.gauges as gauges
 import clawpack.pyclaw.solution as solution
 
 # Support for WIP decorator
@@ -29,6 +30,7 @@ from nose.plugins.skip import SkipTest
 def fail(message):
     raise SkipTest(message)
  
+# Work in progress decorator - will test but skips the test on failure
 def wip(f):
     @wraps(f)
     def run_test(*args, **kwargs):
@@ -119,7 +121,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         r"""Create temp dir for data and setup log files.
 
         """
-
+        
         self.temp_path = tempfile.mkdtemp()
 
         self.stdout = open(os.path.join(self.temp_path, "run_output.txt"), "w")
@@ -258,8 +260,8 @@ class ClawpackRegressionTest(unittest.TestCase):
 
     
     def check_frame(self, save=False, indices=[0], frame_num=1,
-                          regression_data_path="regression_data.txt",
-                          tolerance=1e-14):
+                          file_name="regression_data.txt",
+                          rtol=1e-14, atol=1e-08, tolerance=None):
         r"""Compare choosen frame to the comparison data
 
         :Input:
@@ -271,9 +273,15 @@ class ClawpackRegressionTest(unittest.TestCase):
            to *1*. 
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
-         - *tolerance* (float) - Tolerance used in the comparison, default is
-           *1e-14*.
+         - *rtol* (float) - Relative tolerance used in the comparison, default 
+           is *1e-14*.  Note that the old *tolerance* input is now synonymous 
+           with this parameter.
+         - *atol* (float) - Absolute tolerance used in the comparison, default
+           is *1e-08*.
         """
+
+        if isinstance(tolerance, float):
+            rtol = tolerance
 
         # Load test data
         data = solution.Solution(frame_num, path=self.temp_path)
@@ -282,22 +290,18 @@ class ClawpackRegressionTest(unittest.TestCase):
             data_sum.append(data.q[index, ...].sum())
         
         # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path,
-                                            regression_data_path)
+        regression_data_file = os.path.join(self.test_path, "regression_data",
+                                            file_name)
         if save:
             numpy.savetxt(regression_data_file, data_sum)
         regression_sum = numpy.loadtxt(regression_data_file)
-        # regression_sum = []
-        # for index in indices:
-        #     regression_sum.append(regression_data[index, :].sum())
 
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
+        assert numpy.allclose(data_sum, regression_sum, rtol=rtol, atol=atol), \
             "\n  new_data: %s, \n  expected: %s"  % (data_sum, regression_sum)
 
 
-    def check_gauges(self, save=False, gauge_num=1, indices=[0], 
-                           regression_data_path="regression_data.txt",
-                           tolerance=1e-14):
+    def check_gauges(self, save=False, gauge_id=1, indices=[0],
+                           rtol=1e-14, atol=1e-8, tolerance=None):
         r"""Basic test to assert gauge equality
 
         :Input:
@@ -307,36 +311,67 @@ class ClawpackRegressionTest(unittest.TestCase):
            comparison.  Defaults to *(2, 3)*.
          - *regression_data_path* (path) - Path to the regression test data.
            Defaults to 'regression_data.txt'.
-         - *tolerance* (float) - Tolerance used in comparison, defaults to
-           *1e-14*.
+         - *rtol* (float) - Relative tolerance used in the comparison, default 
+           is *1e-14*.  Note that the old *tolerance* input is now synonymous 
+           with this parameter.
+         - *atol* (float) - Absolute tolerance used in the comparison, default
+           is *1e-08*.
         """
 
-        # Get gauge data
-        data = numpy.loadtxt(os.path.join(self.temp_path, 'fort.gauge'))
-        data_sum = []
-        gauge_numbers = numpy.array(data[:, 0], dtype=int)
-        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
-        for index in indices:
-            data_sum.append(data[gauge_indices, index].sum())
+        if isinstance(tolerance, float):
+            rtol = tolerance
 
-        # Get (and save) regression comparison data
-        regression_data_file = os.path.join(self.test_path,
-                                            regression_data_path)
+        if not(isinstance(indices, tuple) or isinstance(indices, list)):
+            indices = tuple(indices)
+
+        # Get gauge data
+        gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
+        
+        # Compute gauge sum for comparison
+        gauge_sum = []
+        for n in indices:
+            gauge_sum.append(gauge.q[n, :].sum())
+
+        # Get regression comparison data
+        regression_data_path = os.path.join(self.test_path, "regression_data")
         if save:
-            numpy.savetxt(regression_data_file, data)
-        regression_data = numpy.loadtxt(regression_data_file)
-        regression_sum = []
-        gauge_numbers = numpy.array(data[:, 0], dtype=int)
-        gauge_indices = numpy.nonzero(gauge_num == gauge_numbers)[0]
-        for index in indices:
-            regression_sum.append(regression_data[gauge_indices, index].sum())
-        # regression_sum = regression_data
+            gauge.write(regression_data_path)
+        regression_gauge = gauges.GaugeSolution(gauge_id,
+                                                path=regression_data_path)
+        
+        regression_gauge_sum = []
+        for n in indices:
+            regression_gauge_sum.append(regression_gauge.q[n, :].sum())
 
         # Compare data
-        assert numpy.allclose(data_sum, regression_sum, tolerance), \
-                "\n data: %s, \n expected: %s" % (data_sum, regression_sum)
-        assert numpy.allclose(data, regression_data, tolerance), \
-                "Full gauge match failed."
+        try:
+            numpy.testing.assert_allclose(gauge_sum, regression_gauge_sum, 
+                                         rtol=rtol, atol=atol, verbose=True)
+
+        except AssertionError as e:
+            e.args += ("Sum Check Failed for gauge = %s" % gauge_id, 
+                       ["%.15e" % value for value in gauge_sum],
+                       ["%.15e" % value for value in regression_gauge_sum])
+            raise e
+
+        try:
+            for n in indices:
+                numpy.testing.assert_allclose(gauge.q[n, :],
+                                              regression_gauge.q[n, :], 
+                                              rtol=rtol, atol=atol, 
+                                              verbose=True)
+        except AssertionError as e:
+            e.args += ("ALL CHECK: (gauge, ...)", gauge_id)
+            for n in indices:
+                failure_indices = numpy.nonzero(~numpy.isclose(
+                                                       gauge.q[n, :],
+                                                       regression_gauge.q[n, :], 
+                                                       rtol=rtol, atol=atol))
+                e.args += tuple(gauge.q[n, failure_indices] - 
+                                         regression_gauge.q[n, failure_indices])
+                e.args += ("%s: " % n, )
+            raise e
+
 
 
     def tearDown(self):
