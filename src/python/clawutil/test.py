@@ -336,7 +336,7 @@ class ClawpackRegressionTest(unittest.TestCase):
         regression_data_path = os.path.join(self.test_path, "regression_data")
         if save:
             gauge_file_name = "gauge%s.txt" % str(gauge_id).zfill(5)
-            shutil.copy(os.path.join(self.test_path, gauge_file_name), 
+            shutil.copy(os.path.join(self.temp_path, gauge_file_name), 
                                                            regression_data_path)
         regression_gauge = gauges.GaugeSolution(gauge_id,
                                                 path=regression_data_path)
