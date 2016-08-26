@@ -14,7 +14,7 @@ import glob
 import shutil
 from claw_git_status import make_git_status_file
 
-def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False, 
+def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
             rundir=None, print_git_status=False, nohup=False, nice=None):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
@@ -22,6 +22,13 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
 
     If it is not set by the call, get it from the environment variable
     CLAW_EXE.  Default to 'xclaw' if that's not set.
+
+    If overwrite is True, it's ok to zap current contents of the outdir.
+    If overwrite is False, move the outdir (or copy in the case of a restart)
+    to a backup directory with a unique name based on time executed.
+
+    If restart is None, determine whether this is a restart from claw.data
+    (as set in setrun.py).  Can remove setting RESTART in Makefiles.
     
     If rundir is None, all *.data is copied from current directory, if a path 
     is given, data files are copied from there instead.
@@ -39,6 +46,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
 
     """
     
+    from clawpack.clawutil.data import ClawData
     import os,glob,shutil,time
     verbose = True
     xclawout = None
@@ -53,7 +61,10 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     if type(overwrite) is str:
         overwrite = (overwrite.lower() in ['true','t'])
     if type(restart) is str:
-        restart = (restart.lower() in ['true','t'])
+        if restart == 'None':
+            restart = None
+        else:
+            restart = (restart.lower() in ['true','t'])
     if type(print_git_status) is str:
         print_git_status = (print_git_status.lower() in ['true','t'])
     if type(nohup) is str:
@@ -78,6 +89,13 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=False,
     outdir = os.path.abspath(outdir)
     print '==> runclaw: Will write output to ',outdir
     
+    if restart is None:
+        # Added option to determine restart from claw.data (i.e. setrun.py)
+        clawdata = ClawData()
+        clawdata.read(os.path.join(rundir,'claw.data'), force=True) 
+        restart = clawdata.restart
+        #print '+++ From claw.data determined restart = %s' % restart
+
     
     #returncode = clawjob.runxclaw()
 
