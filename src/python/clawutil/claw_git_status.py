@@ -2,7 +2,7 @@
 Print status of all clawpack git repositories.
 """
 
-import os,sys, time
+import os, sys, time
 
 
 def make_git_status_file(outdir='.'):

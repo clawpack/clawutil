@@ -6,6 +6,8 @@ Sends output and result/errors to separate files to simplify checking
 results and looking for errors.
 """
 
+from __future__ import print_function
+
 import os
 import sys
 import tempfile
@@ -20,6 +22,7 @@ import numpy
 import clawpack.geoclaw.util
 import clawpack.pyclaw.gauges as gauges
 import clawpack.pyclaw.solution as solution
+import clawpack.clawutil.claw_git_status as claw_git_status
 
 # Support for WIP decorator
 from functools import wraps
@@ -294,6 +297,9 @@ class ClawpackRegressionTest(unittest.TestCase):
                                             file_name)
         if save:
             numpy.savetxt(regression_data_file, data_sum)
+            claw_git_status.make_git_status_file(
+                         outdir=os.path.join(self.test_path, "regression_data"))
+
         regression_sum = numpy.loadtxt(regression_data_file)
 
         assert numpy.allclose(data_sum, regression_sum, rtol=rtol, atol=atol), \
@@ -331,6 +337,9 @@ class ClawpackRegressionTest(unittest.TestCase):
             gauge_file_name = "gauge%s.txt" % str(gauge_id).zfill(5)
             shutil.copy(os.path.join(self.temp_path, gauge_file_name), 
                                                            regression_data_path)
+            claw_git_status.make_git_status_file(
+                         outdir=os.path.join(self.test_path, "regression_data"))
+
         regression_gauge = gauges.GaugeSolution(gauge_id,
                                                 path=regression_data_path)
 
