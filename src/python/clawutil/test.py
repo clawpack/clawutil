@@ -308,9 +308,7 @@ class ClawpackRegressionTest(unittest.TestCase):
          - *save* (bool) - If *True* will save the output from this test to 
            the file *regresion_data.txt*.  Default is *False*.
          - *indices* (tuple) - Contains indices to compare in the gague 
-           comparison.  Defaults to *(2, 3)*.
-         - *regression_data_path* (path) - Path to the regression test data.
-           Defaults to 'regression_data.txt'.
+           comparison.  Defaults to *(0)*.
          - *rtol* (float) - Relative tolerance used in the comparison, default 
            is *1e-14*.  Note that the old *tolerance* input is now synonymous 
            with this parameter.
@@ -326,11 +324,6 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         # Get gauge data
         gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
-        
-        # Compute gauge sum for comparison
-        gauge_sum = []
-        for n in indices:
-            gauge_sum.append(gauge.q[n, :].sum())
 
         # Get regression comparison data
         regression_data_path = os.path.join(self.test_path, "regression_data")
@@ -340,40 +333,25 @@ class ClawpackRegressionTest(unittest.TestCase):
                                                            regression_data_path)
         regression_gauge = gauges.GaugeSolution(gauge_id,
                                                 path=regression_data_path)
-        
-        regression_gauge_sum = []
-        for n in indices:
-            regression_gauge_sum.append(regression_gauge.q[n, :].sum())
 
         # Compare data
-        try:
-            numpy.testing.assert_allclose(gauge_sum, regression_gauge_sum, 
-                                         rtol=rtol, atol=atol, verbose=True)
-
-        except AssertionError as e:
-            e.args += ("Sum Check Failed for gauge = %s" % gauge_id, 
-                       ["%.15e" % value for value in gauge_sum],
-                       ["%.15e" % value for value in regression_gauge_sum])
-            raise e
-
         try:
             for n in indices:
                 numpy.testing.assert_allclose(gauge.q[n, :],
                                               regression_gauge.q[n, :], 
                                               rtol=rtol, atol=atol, 
-                                              verbose=True)
+                                              verbose=False)
         except AssertionError as e:
-            e.args += ("ALL CHECK: (gauge, ...)", gauge_id)
+            err_msg = "\n".join((e.args[0], 
+                                "Gauge Match Failed for gauge = %s" % gauge_id))
+            err_msg = "\n".join((err_msg, "  failures in fields:"))
+            failure_indices = []
             for n in indices:
-                failure_indices = numpy.nonzero(~numpy.isclose(
-                                                       gauge.q[n, :],
-                                                       regression_gauge.q[n, :], 
-                                                       rtol=rtol, atol=atol))
-                e.args += tuple(gauge.q[n, failure_indices] - 
-                                         regression_gauge.q[n, failure_indices])
-                e.args += ("%s: " % n, )
-            raise e
-
+                if ~numpy.allclose(gauge.q[n, :], regression_gauge.q[n, :], 
+                                                          rtol=rtol, atol=atol):
+                    failure_indices.append(str(n))
+            index_str = ", ".join(failure_indices)
+            raise AssertionError(" ".join((err_msg, index_str)))
 
 
     def tearDown(self):
