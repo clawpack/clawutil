@@ -53,9 +53,7 @@ def make_git_status_file(outdir=os.getcwd()):
 def repository_status(repository):
     r"""Return string representation of git status of *repository*
 
-    Uses a series of system command line calls to do so but does not change
-    the current working directory to avoid ending up some place we do not want
-    to be.
+    Uses a series of system command line calls via the subprocess module.
 
     :Input:
      - *repository* (str) - Name of clawpack repository whose status is needed.
@@ -90,7 +88,15 @@ def repository_status(repository):
     
 
 def repository_diff(repository):
-    r""""""
+    r"""Uses a series of system command line calls via the subprocess module.
+
+    :Input:
+     - *repository* (str) - Name of clawpack repository whose status is needed.
+
+    :Output:
+     - (str) - String with diff output
+
+    """
 
     # Query the repository for needed info
     repo_path = os.path.expandvars(os.path.join("$CLAW", repository.lower()))
