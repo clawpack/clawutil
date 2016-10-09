@@ -2,10 +2,18 @@
 Print status of all clawpack git repositories.
 """
 
-import os,sys, time
+from __future__ import print_function
 
+import os
+import sys
+import time
+import subprocess
+import StringIO
 
-def make_git_status_file(outdir='.'):
+repos_list = ['classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
+              'geoclaw']
+
+def make_git_status_file(outdir=os.getcwd()):
     """
     Print status of all clawpack git repositories.
     Creates 2 files:
@@ -17,71 +25,100 @@ def make_git_status_file(outdir='.'):
         
     """
 
-    try:
-        CLAW = os.environ['CLAW']
-    except:
-        raise Exception("*** CLAW environment variable not set ***")
-
-    topdir = CLAW
+    if not os.environ.has_key('CLAW'):
+        raise ValueError("*** CLAW environment variable not set ***")
 
     outdir = os.path.abspath(outdir)
-    fname = outdir + '/claw_git_status.txt' 
-    print "Will save to ",fname
+    status_file_path = os.path.join(outdir, "claw_git_status.txt")
+    diff_file_path = os.path.join(outdir, 'claw_git_diffs.txt')
 
-    diff_file = 'claw_git_diffs.txt'
-    f = open(fname,'w')
-    f.write("Clawpack Git Status \n")
-    f.write("Diffs can be found in %s\n\n" % diff_file)
-    f.close()
+    with open(status_file_path, 'w') as status_file:
 
-    diff_file = os.path.join(outdir, diff_file)
-    f = open(diff_file,'w')
-    f.write("Clawpack git diffs...")
-    f.close()
+        status_file.write("Clawpack Git Status \n")
+        status_file.write("Diffs can be found in %s\n\n" % diff_file_path)
+        status_file.write(time.strftime("%a, %d %b %Y %H:%M:%S %Z\n"))
+        # status_file.write(time.strftime("%c\n"))
+        status_file.write("$CLAW = %s\n" % os.environ["CLAW"])
+        status_file.write("$FC = %s\n" % os.environ.get("FC", "not set"))
+
+        for repos in repos_list:
+            status_file.write(repository_status(repos))
+
+    with open(diff_file_path, 'w') as diff_file:
+        diff_file.write("Clawpack git diffs...")
+        for repos in repos_list:
+            diff_file.write(repository_diff(repos))
 
 
-    def fwrite(s,file=fname):
-        f = open(file,'a')
-        f.write(s + "\n")
-        f.close()
+def repository_status(repository):
+    r"""Return string representation of git status of *repository*
 
-    os.system("date >> %s\n\n" % fname)
-    fwrite("$CLAW = %s \n" % CLAW)
-    try:
-        FC = os.environ['FC']
-        fwrite("$FC = %s " % FC)
-        os.system("%s --version | head -1 >> %s" % (FC,fname))
-    except:
-        fwrite("$FC not set")
+    Uses a series of system command line calls via the subprocess module.
 
-    claw_repositories = \
-        ['classic','amrclaw','clawutil','pyclaw','visclaw','riemann','geoclaw']
+    :Input:
+     - *repository* (str) - Name of clawpack repository whose status is needed.
 
-    os.chdir(topdir)
+    :Output:
+     - (str) - String with status output
 
-    for repos in claw_repositories:
-        
-        fwrite("\n\n===========\n%s\n===========" % repos)
+    """
 
-        try:
-            os.chdir(repos)
-            os.system('pwd >> %s' % fname)
-            if 0:
-                fwrite("\n--- branches ---")
-                os.system('git branch >> %s' % fname)
-            fwrite("\n--- last commit ---")
-            os.system('git log -1 --oneline >> %s' % fname)
-            fwrite("\n--- branch and status ---")
-            os.system('git status -b -s --untracked-files=no >> %s' % fname)
 
-            fwrite("\n\n===========\n%s\n===========" % repos, diff_file)
-            os.system('git diff --no-ext-diff >> %s' % diff_file)
-            os.system('git diff --cached --no-ext-diff >> %s' % diff_file)
+    # Query the repository for needed info
+    repo_path = os.path.expandvars(os.path.join("$CLAW", repository.lower()))
+    
+    # Construct output string
+    output = StringIO.StringIO()
+    output.write("\n\n===========\n%s\n===========\n" % repository)
+    output.write("%s\n\n" % repo_path)
 
-        except:
-            fwrite("*** git repository not found ***")
-        os.chdir(topdir)
+    output.write("--- last commit ---\n")
+    cmd = "cd %s ; git log -1 --oneline" % repo_path
+    output.write(str(subprocess.check_output(cmd, shell=True)))
+    output.write("\n")
+
+    output.write("--- branch and status ---\n")
+    cmd = "cd %s ; git status -b -s --untracked-files=no" % repo_path
+    output.write(str(subprocess.check_output(cmd, shell=True)))
+ 
+    output_str = output.getvalue()
+    output.close()
+
+    return output_str
+    
+
+def repository_diff(repository):
+    r"""Uses a series of system command line calls via the subprocess module.
+
+    :Input:
+     - *repository* (str) - Name of clawpack repository whose status is needed.
+
+    :Output:
+     - (str) - String with diff output
+
+    """
+
+    # Query the repository for needed info
+    repo_path = os.path.expandvars(os.path.join("$CLAW", repository.lower()))
+    
+    # Construct output string
+    output = StringIO.StringIO()
+    output.write("\n\n===========\n%s\n===========\n" % repository)
+    output.write("%s\n\n" % repo_path)
+    cmd = 'cd %s ; git diff --no-ext-diff' % repo_path
+    output.write(subprocess.check_output(cmd, shell=True))
+    cmd = 'cd %s ; git diff --cached --no-ext-diff' % repo_path
+    output.write(subprocess.check_output(cmd, shell=True))
+ 
+    output_str = output.getvalue()
+    output.close()
+
+    return output_str
+
+
 
 if __name__=="__main__":
-    import sys
-    make_git_status_file(*sys.argv[1:])
+    path = os.getcwd()
+    if len(sys.argv[1]) > 1:
+        path = os.path.abspath(sys.argv[1])
+    make_git_status_file(path)
