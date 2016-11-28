@@ -485,8 +485,14 @@ class ClawRunData(ClawData):
 
     def write(self):
         r"""Write out each data objects in datalist """
+        
+        import clawpack.amrclaw.data as amrclaw
+
         for data_object in self.data_list:
-            data_object.write()
+            if isinstance(data_object, amrclaw.GaugeData):
+                data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux)
+            else:
+                data_object.write()
 
 
 
