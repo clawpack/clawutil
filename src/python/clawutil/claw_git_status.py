@@ -119,6 +119,6 @@ def repository_diff(repository):
 
 if __name__=="__main__":
     path = os.getcwd()
-    if len(sys.argv[1]) > 1:
+    if len(sys.argv) > 1:
         path = os.path.abspath(sys.argv[1])
     make_git_status_file(path)
