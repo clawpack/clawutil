@@ -2,6 +2,8 @@
 #If a custom file has the same name as a common file, the common one is excluded.
 #Exclusions can also be manually set for replacement files with different names
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import os
 
@@ -46,4 +48,4 @@ for arg in all_sources:
 out=""
 for source in sources:
 	out+=" "+source
-print out
+print(out)

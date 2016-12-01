@@ -3,7 +3,10 @@
 
 # Written by @gradylemoine
 
+from __future__ import absolute_import
+from __future__ import print_function
 import re, sys
+from six.moves import range
 
 
 def permute_file(infile, outfile, permute_list, write_header=True):
@@ -14,7 +17,7 @@ an error if INFILE == OUTFILE.  See permute_indices for documentation
 on PERMUTE_LIST.'''
 
     if (infile == outfile):
-        print 'Identical filenames specified for input and output; not doing anything'
+        print('Identical filenames specified for input and output; not doing anything')
         return
 
     f = open(infile, 'r')    # No error checking
@@ -29,14 +32,14 @@ on PERMUTE_LIST.'''
         f.write("! This file was generated automatically from %s using\n"%infile)
         f.write("! the permute.py Python script to permute the array\n")
         f.write("! indices of the following variables:\n")
-        f.write("! %s\n"%(', '.join(map(lambda x: str(x[0]), permute_list))))
+        f.write("! %s\n"%(', '.join([str(x[0]) for x in permute_list])))
         f.write("! If this file is wrong, edit the parent file (for\n")
         f.write("! algorithmic errors) or the permute.py script\n")
         f.write("! (for array permutation errors)\n\n")
     f.write(code_out)
     f.close()
     for lineno, bad_vars, line in err_list:
-        print ('Line %4d: confused about '%lineno)+', '.join(bad_vars)+' in: '+line
+        print(('Line %4d: confused about '%lineno)+', '.join(bad_vars)+' in: '+line)
     
 
 def permute_indices(code, permute_list):
@@ -95,7 +98,7 @@ CODE_OUT is the modified code.'''
 
 if (__name__ == '__main__'):
     if (len(sys.argv) < 3):
-        print 'permute.py: need source and destination file specified on command line'
+        print('permute.py: need source and destination file specified on command line')
         
     else:
         # assuming 2d:

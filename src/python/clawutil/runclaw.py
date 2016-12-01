@@ -8,11 +8,13 @@ Execute via
 from a directory that contains a claw.data file and a Clawpack executable.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import glob
 import shutil
-from claw_git_status import make_git_status_file
+from .claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
             rundir=None, print_git_status=False, nohup=False, nice=None):
@@ -83,11 +85,11 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     if rundir is None:
         rundir = os.getcwd()
     rundir = os.path.abspath(rundir)
-    print "==> runclaw: Will take data from ", rundir
+    print("==> runclaw: Will take data from ", rundir)
 
     # directory for fort.* files:
     outdir = os.path.abspath(outdir)
-    print '==> runclaw: Will write output to ',outdir
+    print('==> runclaw: Will write output to ',outdir)
     
     if restart is None:
         # Added option to determine restart from claw.data (i.e. setrun.py)
@@ -114,7 +116,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     
     
         if os.path.isfile(outdir):
-            print "==> runclaw: Error: outdir specified is a file"
+            print("==> runclaw: Error: outdir specified is a file")
             return
         
         if (os.path.isdir(outdir) & (not overwrite)):
@@ -129,11 +131,11 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
             outdir_backup = outdir + '_%s-%s-%s-%s%s%s' \
                   % (year,month,day,hour,minute,second)
             if verbose:
-                print "==> runclaw: Directory already exists: ",os.path.split(outdir)[1]
+                print("==> runclaw: Directory already exists: ",os.path.split(outdir)[1])
                 if restart:
-                    print "==> runclaw: Copying directory to:      ",os.path.split(outdir_backup)[1]
+                    print("==> runclaw: Copying directory to:      ",os.path.split(outdir_backup)[1])
                 else:
-                    print "==> runclaw: Moving directory to:      ",os.path.split(outdir_backup)[1]
+                    print("==> runclaw: Moving directory to:      ",os.path.split(outdir_backup)[1])
                 time.sleep(1)
             
             try:
@@ -141,21 +143,21 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
                 if restart:
                     shutil.copytree(outdir_backup,outdir)
             except:
-                print "==> runclaw: Could not move directory... copy already exists?"
+                print("==> runclaw: Could not move directory... copy already exists?")
             
             
         if (not os.path.isdir(outdir)):
             try:
                 os.mkdir(outdir)
             except:
-                print "Cannot make directory ",outdir
+                print("Cannot make directory ",outdir)
                 return
     
         try:
             os.chdir(outdir)
         except:
-            print '==> runclaw: *** Error in runxclaw: cannot move to outdir = ',\
-                  outdir
+            print('==> runclaw: *** Error in runxclaw: cannot move to outdir = ',\
+                  outdir)
             raise
             return
     
@@ -166,17 +168,17 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         if (overwrite and (not restart)):
             # remove any old versions:
             if verbose:
-                print "==> runclaw: Removing all old fort files in ", outdir
+                print("==> runclaw: Removing all old fort files in ", outdir)
             for file in fortfiles:
                 os.remove(file)
         elif restart:
             if verbose:
-                print "==> runclaw: Restart: leaving original fort files in ", outdir
+                print("==> runclaw: Restart: leaving original fort files in ", outdir)
         else:
             if len(fortfiles) > 1:
-                print "==> runclaw: *** Remove fort.* and try again,"
-                print "  or use overwrite=True in call to runxclaw"
-                print "  e.g., by setting CLAW_OVERWRITE = True in Makefile"
+                print("==> runclaw: *** Remove fort.* and try again,")
+                print("  or use overwrite=True in call to runxclaw")
+                print("  e.g., by setting CLAW_OVERWRITE = True in Makefile")
                 return
             
         
@@ -188,7 +190,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     
         datafiles = glob.glob('*.data')
         if datafiles == ():
-            print "==> runclaw: Warning: no data files found in directory ",rundir
+            print("==> runclaw: Warning: no data files found in directory ",rundir)
         else:
             if rundir != outdir:
                 for file in datafiles:
@@ -215,30 +217,30 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
             
             if nohup:
                 # run in nohup mode:
-                print "\n==> Running in nohup mode, output will be sent to:"
-                print "      %s/nohup.out" % outdir
+                print("\n==> Running in nohup mode, output will be sent to:")
+                print("      %s/nohup.out" % outdir)
                 if type(nice) is int:
                     cmd = "nohup time nice -n %s %s " % (nice,xclawcmd)
                 else:
                     cmd = "nohup time %s " % xclawcmd
-                print "\n==> Running with command:\n   ", cmd
+                print("\n==> Running with command:\n   ", cmd)
                 returncode = os.system(cmd)
             else:
                 if type(nice) is int:
                     cmd = "nice -n %s %s " % (nice,xclawcmd)
                 else:
                     cmd = xclawcmd
-                print "\n==> Running with command:\n   ", cmd
+                print("\n==> Running with command:\n   ", cmd)
                 returncode = os.system(cmd)
     
             if returncode == 0:
-                print "\n==> runclaw: Finished executing\n"
+                print("\n==> runclaw: Finished executing\n")
             else:
-                print "\n ==> runclaw: *** Runtime error: return code = %s\n "\
-                        % returncode
-            print '==> runclaw: Done executing %s via clawutil.runclaw.py' %\
-                        xclawcmd
-            print '==> runclaw: Output is in ', outdir
+                print("\n ==> runclaw: *** Runtime error: return code = %s\n "\
+                        % returncode)
+            print('==> runclaw: Done executing %s via clawutil.runclaw.py' %\
+                        xclawcmd)
+            print('==> runclaw: Output is in ', outdir)
             
         except:
             raise Exception("Could not execute command %s" % xclawcmd)
@@ -246,7 +248,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         os.chdir(startdir)
 
     if returncode != 0:
-        print '==> runclaw: *** fortran returncode = ', returncode, '   aborting'
+        print('==> runclaw: *** fortran returncode = ', returncode, '   aborting')
     
 
 #----------------------------------------------------------
@@ -264,17 +266,17 @@ def create_path(path,overwrite=False):
 def create_output_paths(name,prefix,**kargs):
     r"""Create an output, plotting, and data path with the given prefix."""
     
-    if kargs.has_key('outdir'):
+    if 'outdir' in kargs:
         outdir = kargs['outdir']
     else:
         base_path = os.environ.get('DATA_PATH',os.getcwd())
         outdir = os.path.join(base_path,name,"%s_output" % prefix)
-    if kargs.has_key('plotdir'):
+    if 'plotdir' in kargs:
         plotdir = kargs['plotdir']
     else:
         base_path = os.environ.get('DATA_PATH',os.getcwd())
         plotdir = os.path.join(base_path,name,"%s_plots" % prefix)
-    if kargs.has_key('logfile'):
+    if 'logfile' in kargs:
         log_path = kargs['logfile']
     else:
         base_path = os.environ.get('DATA_PATH',os.getcwd())

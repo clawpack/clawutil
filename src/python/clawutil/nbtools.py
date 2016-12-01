@@ -2,11 +2,13 @@
 Useful tools for running Clawpack from an IPython notebook.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from IPython.core.display import display
 try:
     from IPython.display import FileLink
 except:
-    print "*** Ipython version does not support FileLink"
+    print("*** Ipython version does not support FileLink")
 
 
 def make_driver(args, env, outfile, verbose):
@@ -33,7 +35,7 @@ def make_driver(args, env, outfile, verbose):
         env = os.environ
 
     if verbose:
-        print "Executing shell command:   make %s" % args
+        print("Executing shell command:   make %s" % args)
         sys.stdout.flush()
 
     ofile = open(outfile,'w')
@@ -42,11 +44,11 @@ def make_driver(args, env, outfile, verbose):
     return_code = job.wait()
     errors = (return_code != 0)
     if errors:
-        print "*** Possible errors, return_code = %s" % return_code
+        print("*** Possible errors, return_code = %s" % return_code)
     
     if verbose or errors:
         local_file = FileLink(outfile)
-        print "Done...  Check this file to see output:" 
+        print("Done...  Check this file to see output:") 
         display(local_file)
 
 def make_htmls(outfile=None, env=None, verbose=False, readme_link=True):
@@ -60,7 +62,7 @@ def make_htmls(outfile=None, env=None, verbose=False, readme_link=True):
     make_driver(args, env, outfile, verbose)
 
     if readme_link:
-        print "See the README.html file for links to input files..."
+        print("See the README.html file for links to input files...")
         display(FileLink('README.html'))
     
 def make_data(env=None, verbose=True):
@@ -119,7 +121,7 @@ def make_plots(label=None, env=None, verbose=True):
 
     if verbose:
         index_file = FileLink('%s/_PlotIndex.html' % plotdir)
-        print "View plots created at this link:"
+        print("View plots created at this link:")
         display(index_file)
 
     return plotdir

@@ -6,7 +6,10 @@ or elsewhere.
 Sends output and errors to separate files to simplify looking for errors.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
+from six.moves import input
 
 # Determine directory:
 try:
@@ -60,15 +63,15 @@ def make_all(examples_dir = '.',make_clean_first=False, env=None):
     current_dir = os.getcwd()
 
     dir_list = list_examples(examples_dir)
-    print "Found the following example subdirectories:"
+    print("Found the following example subdirectories:")
     for d in dir_list:
-        print "    ", d
+        print("    ", d)
  
-    print "Will run code and make plots in the above subdirectories of "
-    print "    ", examples_dir
-    ans = raw_input("Ok? ")
+    print("Will run code and make plots in the above subdirectories of ")
+    print("    ", examples_dir)
+    ans = input("Ok? ")
     if ans.lower() not in ['y','yes']:
-        print "Aborting."
+        print("Aborting.")
         sys.exit()
     
     fname_output = 'make_all_output.txt'
@@ -112,35 +115,35 @@ def make_all(examples_dir = '.',make_clean_first=False, env=None):
         return_code = job.wait()
                 
         if return_code == 0:
-            print "Successful run\n"
+            print("Successful run\n")
             goodlist_run.append(directory)
         else:
-            print "*** Run errors encountered: see %s\n" % fname_errors
+            print("*** Run errors encountered: see %s\n" % fname_errors)
             badlist_run.append(directory)
 
 
-    print '------------------------------------------------------------- '
-    print ' '
-    print 'Ran "make all" and created output and plots in directories:'
+    print('------------------------------------------------------------- ')
+    print(' ')
+    print('Ran "make all" and created output and plots in directories:')
     if len(goodlist_run) == 0:
-        print '   None'
+        print('   None')
     else:
         for d in goodlist_run:
-            print '   ',d
-    print ' '
+            print('   ',d)
+    print(' ')
     
-    print 'Errors encountered in the following directories:'
+    print('Errors encountered in the following directories:')
     if len(badlist_run) == 0:
-        print '   None'
+        print('   None')
     else:
         for d in badlist_run:
-            print '   ',d
-    print ' '
+            print('   ',d)
+    print(' ')
     
     fout.close()
     ferr.close()
-    print 'For all output see ', fname_output
-    print 'For all errors see ', fname_errors
+    print('For all output see ', fname_output)
+    print('For all errors see ', fname_errors)
 
     os.chdir(current_dir)
 

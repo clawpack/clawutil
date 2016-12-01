@@ -3,6 +3,8 @@ Conversion module for 2d classic, amrclaw, or geoclaw setrun.py file
 from 4.6 to 5.0 format.
 """
     
+from __future__ import absolute_import
+from __future__ import print_function
 import os,sys
 from permute import permute_file
 
@@ -39,13 +41,13 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
         raise ValueError("*** Could not determine claw_pkg from %s" \
                                 % setrun_file)
     else:
-        print "claw_pkg = ",claw_pkg
+        print("claw_pkg = ",claw_pkg)
         
     if ndim is None:
         raise ValueError("*** Could not determine ndim from %s" \
                                 % setrun_file)
     else:
-        print "ndim = ",ndim
+        print("ndim = ",ndim)
         
 
     setrun_module = os.path.splitext(setrun_file)[0]
@@ -210,16 +212,16 @@ def convert_setrun(setrun_file='setrun.py', claw_pkg=None, ndim=None):
     for line in setrun_text:
         if "new_UserData" in line:
             if line.strip()[0] != '#':
-                print "*** Warning: call to new_UserData detected..."
-                print line
-                print "*** User data lines from %s have NOT been copied "\
-                        % setrun_file
+                print("*** Warning: call to new_UserData detected...")
+                print(line)
+                print("*** User data lines from %s have NOT been copied "\
+                        % setrun_file)
 
 
     os.system("mv %s %s_4.x" % (setrun_file,setrun_file))
-    print 'Moved %s to %s_4.x ' % (setrun_file,setrun_file)
+    print('Moved %s to %s_4.x ' % (setrun_file,setrun_file))
     open(setrun_file,'w').write(newtext)
-    print '===> Created ', setrun_file
+    print('===> Created ', setrun_file)
     return claw_pkg, ndim
 
 
@@ -264,11 +266,11 @@ def copy_Makefile(claw_pkg, ndim):
                     "for claw_pkg = %s, ndim = %s" \
                     % (claw_pkg, ndim))
 
-    print "Moved Makefile to Makefile_4.x"
-    print "===> Created new Makefile template -- must be customized!"
-    print "*** Edit Makefile based on Makefile_4.x, e.g. point to"
-    print "*** any local files, correct Riemann solver, etc.\n"
-    print "*** You might have to make other modifications to local fortran files"
+    print("Moved Makefile to Makefile_4.x")
+    print("===> Created new Makefile template -- must be customized!")
+    print("*** Edit Makefile based on Makefile_4.x, e.g. point to")
+    print("*** any local files, correct Riemann solver, etc.\n")
+    print("*** You might have to make other modifications to local fortran files")
 
 
 def convert_setplot(setplot_file='setplot.py'):
@@ -281,16 +283,16 @@ def convert_setplot(setplot_file='setplot.py'):
     setplot_text = setplot_text.replace('grid_bgcolor','patch_bgcolor')
 
     os.system("mv %s %s_4.x" % (setplot_file,setplot_file))
-    print 'Moved %s to %s_4.x ' % (setplot_file,setplot_file)
+    print('Moved %s to %s_4.x ' % (setplot_file,setplot_file))
     open(setplot_file,'w').write(setplot_text)
-    print '===> Created ', setplot_file
+    print('===> Created ', setplot_file)
 
 def fix_fortran(claw_pkg, ndim):
     
     import glob
     if claw_pkg=='classic':
         os.system("mv driver.f driver.f_4.x")
-        print "Moved driver.f to driver.f_4.x (no longer needed)"
+        print("Moved driver.f to driver.f_4.x (no longer needed)")
 
     ffiles = glob.glob('*.f*')
 
@@ -304,14 +306,14 @@ def fix_fortran(claw_pkg, ndim):
 
     for f in ffiles:
         if f[:1] == 'rp':
-            print "*** not reordering Riemann solver ",f
-            print "*** switch to library routine from $CLAW/riemann if possible"
+            print("*** not reordering Riemann solver ",f)
+            print("*** switch to library routine from $CLAW/riemann if possible")
         else:
             f4x = f + "_4.x"
             os.system("mv %s %s" % (f,f4x))
             permute_file(f4x, f, plist, write_header=False)
-            print "===> Tried to reorder indices in ",f
-            print "Moved original to ",f4x
+            print("===> Tried to reorder indices in ",f)
+            print("Moved original to ",f4x)
     
 
 if __name__ == "__main__":
@@ -321,6 +323,6 @@ if __name__ == "__main__":
 
     fix_fortran(claw_pkg, ndim)
 
-    print "*** WARNING -- this only did a first pass at conversion"
-    print "*** WARNING -- see hints above for what else needs to be done"
-    print "*** WARNING -- and check all files for correctness"
+    print("*** WARNING -- this only did a first pass at conversion")
+    print("*** WARNING -- see hints above for what else needs to be done")
+    print("*** WARNING -- and check all files for correctness")
