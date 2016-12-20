@@ -61,7 +61,7 @@ MODULES := $(shell python $(CLAW)/clawutil/src/checkSources.py \
 
 
 # Make list of .o files required from the sources above:
-OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(SOURCES)))))
+OBJECTS = $(subst .F,.o, $(subst .F90,.o90, $(subst .f,.o, $(subst .f90,.o90, $(SOURCES)))))
 MODULE_FILES = $(subst .F,.mod, $(subst .F90,.mod, $(subst .f,.mod, $(subst .f90,.mod, $(MODULES)))))
 # FYI: Sort weeds out duplicate paths
 MODULE_PATHS = $(sort $(dir $(MODULE_FILES)))
@@ -117,14 +117,14 @@ endif
 
 # Reset suffixes that we understand
 .SUFFIXES:
-.SUFFIXES: .f90 .f .mod .o
+.SUFFIXES: .f90 .f .mod .o .o90
 
 # Default Rules, the module rule should be executed first in most instances,
 # this way the .mod file ends up always in the correct spot
 %.mod : %.f90 ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 %.mod : %.f   ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 
-%.o : %.f90 ;             $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o90 : %.f90 ;             $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 %.o : %.f ;               $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
 #----------------------------------------------------------------------------
