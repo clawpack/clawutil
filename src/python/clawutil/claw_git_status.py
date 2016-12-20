@@ -72,7 +72,7 @@ def repository_status(repository):
     repo_path = os.path.expandvars(os.path.join("$CLAW", repository.lower()))
     
     # Construct output string
-    output = StringIO.StringIO()
+    output = StringIO()
     output.write("\n\n===========\n%s\n===========\n" % repository)
     output.write("%s\n\n" % repo_path)
 
@@ -106,7 +106,7 @@ def repository_diff(repository):
     repo_path = os.path.expandvars(os.path.join("$CLAW", repository.lower()))
     
     # Construct output string
-    output = StringIO.StringIO()
+    output = StringIO()
     output.write("\n\n===========\n%s\n===========\n" % repository)
     output.write("%s\n\n" % repo_path)
     cmd = 'cd %s ; git diff --no-ext-diff' % repo_path
