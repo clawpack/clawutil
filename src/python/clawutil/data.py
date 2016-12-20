@@ -14,7 +14,12 @@ Changes in 5.0:
 from __future__ import absolute_import
 from __future__ import print_function
 import os
-import urllib2
+try:
+    from urllib.request import urlopen
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
+
 import tarfile
 import string
 
@@ -61,7 +66,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
 
     :Raises:
      
-    Exceptions are raised from the *urllib2* module having to do with errors
+    Exceptions are raised from the *urllib* module having to do with errors
     fetching the remote file.  Please see its documentation for more details of
     the exceptions that can be raised.
 
@@ -94,7 +99,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
             if verbose:
                 print("Downloading %s to %s..." % (url, output_path))
             with open(output_path, "w") as output_file:
-                remote_file = urllib2.urlopen(url)
+                remote_file = urlopen(url)
                 output_file.write(remote_file.read())
             if verbose:
                 print("Done downloading.")

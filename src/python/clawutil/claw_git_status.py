@@ -9,7 +9,10 @@ import os
 import sys
 import time
 import subprocess
-import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 repos_list = ['classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
               'geoclaw']
