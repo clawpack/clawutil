@@ -11,11 +11,14 @@ and checking the status of the local repositories.
     clone - Clones git repositories from GitHub
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import os
 import subprocess
 import tempfile
 import getopt
+from six.moves import input
 
 # These environment variables, if they exist, point to the paths
 # of the repositories
@@ -70,11 +73,11 @@ def clone(repo,force=False,verbose=False):
     """
 
     if (os.path.isdir(repo) or os.path.isfile(repo)) and force:
-        print >> sys.stderr, "*** %s already exists, not cloning! ***" % repo
+        print("*** %s already exists, not cloning! ***" % repo, file=sys.stderr)
     else:
         git_cmd = "git clone git@github.com:clawpack/%s.git" % repo
         if verbose:
-            print "Running: %s" % git_cmd
+            print("Running: %s" % git_cmd)
         return subprocess.call(git_cmd,shell=True)
                 
                 
@@ -103,13 +106,13 @@ if __name__ == "__main__":
         if function == "status":
             try:
                 opts,args = getopt.getopt(arguments,"hv",["help","verbose"])
-            except getopt.error, msg:
+            except getopt.error as msg:
                 raise Usage(msg)
         elif function == "clone":
             try:
                 opts,args = getopt.getopt(arguments,"hvf",["help","verbose",
                                             "force"])
-            except getopt.error, msg:
+            except getopt.error as msg:
                 raise Usage(msg)
         else:
             raise Usage("Unsupported (or unknown) command %s." % function)
@@ -126,60 +129,60 @@ if __name__ == "__main__":
                 raise Usage(__doc__)
             if option in ('-f','--force'):
                 force = True
-    except Usage, err:
-        print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
-        print >> sys.stderr, "\t for help use --help"
+    except Usage as err:
+        print(sys.argv[0].split("/")[-1] + ": " + str(err.msg), file=sys.stderr)
+        print("\t for help use --help", file=sys.stderr)
         sys.exit(2)
             
 
     if function == "status":
         if len(args) > 0:
             for arg in args:
-                if env_variables.has_key(arg):
+                if arg in env_variables:
                     repo_checks.append(arg)
                 else:
-                    print ("*** WARNING *** %s may not be a Clawpack repos." 
-                            % argument)
+                    print(("*** WARNING *** %s may not be a Clawpack repos." 
+                            % argument))
         else:
-            repo_checks = env_variables.keys()
+            repo_checks = list(env_variables.keys())
 
         # Check if the environment variables exist for each requested repos
         available_projects = {}
         for repo in repo_checks:
-            if os.environ.has_key(env_variables[repo]):
+            if env_variables[repo] in os.environ:
                 available_projects[repo] = os.environ[env_variables[repo]]
             else:
                 if verbose:
-                    print ("*** WARNING *** Could not find environment variable ",
-                           "%s for project %s, skipping." % (env_variables[repo],repo))
+                    print(("*** WARNING *** Could not find environment variable ",
+                           "%s for project %s, skipping." % (env_variables[repo],repo)))
 
 
         # Loop through looking for each environment and check its status
         for (name,path) in available_projects.items():
-            print "Checking status of %s at path" % name
-            print "   %s" % path
-            print status(path)
-            print "========================================="
+            print("Checking status of %s at path" % name)
+            print("   %s" % path)
+            print(status(path))
+            print("=========================================")
     
     elif function == "clone":
         if len(args) == 0:
-            repos_list = env_variables.keys()
+            repos_list = list(env_variables.keys())
         else:
             repos_list = args
 
-        print "This will attempt to clone copies of the following Clawpack projects:"
-        print repos_list
-        ans = raw_input("Ok ? ")
+        print("This will attempt to clone copies of the following Clawpack projects:")
+        print(repos_list)
+        ans = input("Ok ? ")
         if ans.lower() not in ['y','yes']:
-            print "*** Aborting"
+            print("*** Aborting")
             sys.exit(1)
         for repo in repos_list:
             status = clone(repo,force=force,verbose=verbose)
             if status == 0:
                 if verbose:
-                    print "Succesfully cloned %s" % repos
+                    print("Succesfully cloned %s" % repos)
             else:
-                print >> sys.stderr, "*** Error cloning %s" % repos
+                print("*** Error cloning %s" % repos, file=sys.stderr)
                 
         
     

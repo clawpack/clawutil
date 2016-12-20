@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
+from __future__ import print_function
+from six.moves import input
 __doc__ = r"""
 Module to diff two images or directories full of images.
 
@@ -38,7 +41,7 @@ def imagediff_file(fname1, fname2, verbose=True):
          <h2>Pixel difference is nonzero where image below is black...</h2>
          <img src="%s" width=400 border="1">""" % fname3)
     html.close()
-    print "To view comparision and pixelwise difference, see ", hfile
+    print("To view comparision and pixelwise difference, see ", hfile)
     
     
          
@@ -46,10 +49,10 @@ def make_imagediff(fname1,fname2,fname3='', verbose=False):
     ext1 = os.path.splitext(fname1)[1]
     ext2 = os.path.splitext(fname2)[1]
     if ext1 != ext2:
-        print "*** Error: extensions of fname1 and fname2 must agree"
+        print("*** Error: extensions of fname1 and fname2 must agree")
         return
     if ext1 not in ['.png','.gif','.jpg']:
-        print "*** Error: image files not recognized"
+        print("*** Error: image files not recognized")
         return
     
     if fname3 == '':
@@ -59,7 +62,7 @@ def make_imagediff(fname1,fname2,fname3='', verbose=False):
          % (fname1, fname2, fname3))
     
     if verbose:     
-        print "Created pixelwise difference ", fname3
+        print("Created pixelwise difference ", fname3)
     return fname3
     
     
@@ -87,14 +90,14 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
         if f not in files: files.append(f)
     files.sort()
     
-    print "Comparing files in the  directory: ", dir1
-    print "               with the directory: ", dir2
+    print("Comparing files in the  directory: ", dir1)
+    print("               with the directory: ", dir2)
 
     if os.path.isdir(dir3):
         if (len(os.listdir(dir3)) > 0)  and (not overwrite):
-            ans = raw_input("Ok to overwrite files in %s ?  " % dir3)
+            ans = input("Ok to overwrite files in %s ?  " % dir3)
             if ans.lower() not in ['y','yes']:
-                print "*** Aborting"
+                print("*** Aborting")
                 return
     else:
         os.system('mkdir -p %s' % dir3)
@@ -210,16 +213,16 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
     regression_ok = alltrue([f in f_equal for f in \
                                 regression_test_files])
     if verbose and regression_ok:
-        print "Regression files all match"
+        print("Regression files all match")
     elif verbose:
-        print "*** Regression files are not all identical"
-        print "*** Files missing from dir1:   ",files_missing1
-        print "*** Files missing from dir2:   ",files_missing2
-        print "*** Files that differ:   ",files_differ
+        print("*** Regression files are not all identical")
+        print("*** Files missing from dir1:   ",files_missing1)
+        print("*** Files missing from dir2:   ",files_missing2)
+        print("*** Files that differ:   ",files_differ)
         
     os.chdir(startdir)
     dir3 = os.path.abspath(dir3)
-    print "To view diffs, open the file ",os.path.join(dir3,hname)
+    print("To view diffs, open the file ",os.path.join(dir3,hname))
 
     return regression_ok
     
@@ -235,7 +238,7 @@ if __name__ == "__main__":
     try:
         try:
             opts, args = getopt.getopt(argv[1:], "hv",["help","verbose","relocatable"])
-        except getopt.error, msg:
+        except getopt.error as msg:
             raise Usage(msg)
 
         # Default script parameter values
@@ -265,9 +268,9 @@ if __name__ == "__main__":
         else:
               raise Usage("Both paths must either be files or directories.")
         
-    except Usage, err:
-        print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
-        print >> sys.stderr, "\t for help use --help"
+    except Usage as err:
+        print(sys.argv[0].split("/")[-1] + ": " + str(err.msg), file=sys.stderr)
+        print("\t for help use --help", file=sys.stderr)
         sys.exit(2)
     
     

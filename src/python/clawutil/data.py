@@ -11,12 +11,17 @@ Changes in 5.0:
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import urllib2
 import tarfile
 import string
 
 import numpy as np
+import six
+from six.moves import range
+from six.moves import input
 
 # ======================
 #  Remote file handling
@@ -75,39 +80,39 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
     if not os.path.exists(unarchived_output_path) or force:
 
         if ask_user:
-            ans = raw_input("  Ok to download topo file and save as %s?  \n"
+            ans = input("  Ok to download topo file and save as %s?  \n"
                             % unarchived_output_path,
                             "     Type y[es], n[o].")
             if ans.lower() in ['y', 'yes']:
                 if verbose:
-                    print "*** Aborting download."
+                    print("*** Aborting download.")
                 return None
             
         if not os.path.exists(output_path):
             # Fetch remote file, will raise a variety of exceptions depending on
             # the retrieval problem if it happens
             if verbose:
-                print "Downloading %s to %s..." % (url, output_path)
+                print("Downloading %s to %s..." % (url, output_path))
             with open(output_path, "w") as output_file:
                 remote_file = urllib2.urlopen(url)
                 output_file.write(remote_file.read())
             if verbose:
-                print "Done downloading."
+                print("Done downloading.")
         elif verbose:
-            print "File already exists, not downloading"
+            print("File already exists, not downloading")
 
         if tarfile.is_tarfile(output_path) and unpack:
             if verbose:
-                print "Un-archiving %s to %s..." % (output_path, 
-                                                    unarchived_output_path)
+                print("Un-archiving %s to %s..." % (output_path, 
+                                                    unarchived_output_path))
             with tarfile.open(output_path, mode="r:*") as tar_file:
                 tar_file.extractall(path=output_dir)
             if verbose:
-                print "Done un-archiving."
+                print("Done un-archiving.")
     else:
         if verbose:
-            print "Skipping %s " % url
-            print "  because file already exists: %s" % output_path
+            print("Skipping %s " % url)
+            print("  because file already exists: %s" % output_path)
         return None
 
     if unpack:
@@ -156,9 +161,9 @@ class ClawData(object):
         """
 
         if (not name in self._attributes) and (name[0] != '_'):
-            print "*** Unrecognized attribute: ",name
-            print "*** Perhaps a typo?"
-            print "*** Add new attributes using add_attribute method"
+            print("*** Unrecognized attribute: ",name)
+            print("*** Perhaps a typo?")
+            print("*** Add new attributes using add_attribute method")
             raise AttributeError("Unrecognized attribute: %s" % name)
         
         # attribute exists, ok to set:
@@ -168,7 +173,7 @@ class ClawData(object):
     def __str__(self):
         r"""Returns string representation of this object"""
         output = "%s%s\n" % ("Name".ljust(25),"Value".ljust(12))
-        for (k,v) in self.iteritems():
+        for (k,v) in six.iteritems(self):
             output += "%s%s\n" % (str(k).ljust(25),str(v).ljust(12))
         return output
 
@@ -275,7 +280,7 @@ class ClawData(object):
         self.open_data_file(out_file,data_source)
 
         # Write out list of attributes
-        for (name,value) in self.iteritems():
+        for (name,value) in six.iteritems(self):
             self.data_write(name)
 
 
@@ -629,8 +634,8 @@ class ClawInputData(ClawData):
             iout_q = self.num_eqn * [0]
         else:
             #iout_q = np.where(self.output_q_components, 1, 0)
-            print "*** WARNING: Selective output_q_components not implemented"
-            print "***          Will output all components of q"
+            print("*** WARNING: Selective output_q_components not implemented")
+            print("***          Will output all components of q")
             iout_q = self.num_eqn * [1]
     
 
@@ -638,7 +643,7 @@ class ClawInputData(ClawData):
         self.data_write('', value=iout_q, alt_name='iout_q')
 
         if self.num_aux > 0:
-            if isinstance(self.output_aux_components,basestring):
+            if isinstance(self.output_aux_components,six.string_types):
                 if self.output_aux_components.lower() == 'all':
                     iout_aux = self.num_aux * [1]
                 elif self.output_aux_components.lower() == 'none':
@@ -647,8 +652,8 @@ class ClawInputData(ClawData):
                     raise ValueError("Invalid aux array component option.")
             else:
                 iout_aux = np.where(self.output_aux_components, 1, 0)
-                print "*** WARNING: Selective output_aux_components not implemented"
-                print "***          Will output all components of aux"
+                print("*** WARNING: Selective output_aux_components not implemented")
+                print("***          Will output all components of aux")
                 iout_aux = self.num_aux * [1]
             self.data_write(name='', value=iout_aux, alt_name='iout_aux')
             self.data_write('output_aux_onlyonce')

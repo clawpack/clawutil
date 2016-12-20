@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
+from __future__ import print_function
+from six.moves import range
+from six.moves import input
 __doc__ = r"""
 Module to perform charcter-wise diff of two files or a set of identically
 named files in two directories.  
@@ -33,9 +37,9 @@ def chardiff_file(fname1, fname2, print_all_lines=True, hfile1='', \
     f2 = open(fname2,'r').readlines()
 
     if (len(f1) != len(f2)) and verbose:
-        print "*** files have different number of lines"
-        print "    %s: %s lines" % (fname1,len(f1))
-        print "    %s: %s lines" % (fname2,len(f2))
+        print("*** files have different number of lines")
+        print("    %s: %s lines" % (fname1,len(f1)))
+        print("    %s: %s lines" % (fname2,len(f2)))
     flen = min(len(f1), len(f2))
     
     table1 = []
@@ -201,8 +205,8 @@ def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all',
     
     ignored_extensions = ['.o','.pdf','.ps','.chk','']
     
-    print "\nComparing files in the  directory: ", dir1
-    print "               with the directory: ", dir2
+    print("\nComparing files in the  directory: ", dir1)
+    print("               with the directory: ", dir2)
     
     
     # Start out comparing all files:
@@ -210,10 +214,10 @@ def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all',
     allsame = (checkfiles.diff_files==[]) and (checkfiles.left_list == checkfiles.right_list)
     
     if allsame:
-         print "*All* files in the two directories are equal"
+         print("*All* files in the two directories are equal")
     elif verbose:
         if len(checkfiles.diff_files)>0:
-            print "Files that differ between dir1 and dir2: ",checkfiles.diff_files
+            print("Files that differ between dir1 and dir2: ",checkfiles.diff_files)
 
 
     # Construct sorted list of files matching in either or both directories:
@@ -241,7 +245,7 @@ def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all',
     
     testfiles = [f in checkfiles.same_files for f in files]
     if alltrue(testfiles) and verbose:
-        print "Files matching pattern in the two directories are equal"
+        print("Files matching pattern in the two directories are equal")
 
     
     #f_equal, f_diff, f_other = filecmp.cmpfiles(dir1,dir2,files,False)
@@ -249,9 +253,9 @@ def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all',
     
     if os.path.isdir(dir3):
         if (len(os.listdir(dir3)) > 0)  and (not overwrite):
-            ans = raw_input("Ok to overwrite files in %s ?  " % dir3)
+            ans = input("Ok to overwrite files in %s ?  " % dir3)
             if ans.lower() not in ['y','yes']:
-                print "*** Aborting"
+                print("*** Aborting")
                 return
     else:
         os.system('mkdir -p %s' % dir3)
@@ -318,12 +322,12 @@ def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all',
     regression_ok = alltrue([f in checkfiles.same_files for f in \
                                 regression_test_files])
     if verbose and regression_ok:
-        print "Regression files all match"
+        print("Regression files all match")
     elif verbose:
-        print "*** Regression files are not all identical"
+        print("*** Regression files are not all identical")
 
     dir3 = os.path.abspath(dir3)
-    print "To view diffs, open the file ",dir3+'/_DiffIndex.html\n'
+    print("To view diffs, open the file ",dir3+'/_DiffIndex.html\n')
 
     return regression_ok
 
@@ -340,7 +344,7 @@ if __name__ == "__main__":
     try:
         try:
             opts, args = getopt.getopt(argv[1:], "hv",["help","verbose"])
-        except getopt.error, msg:
+        except getopt.error as msg:
             raise Usage(msg)
             
         # Default script parameter values
@@ -361,8 +365,8 @@ if __name__ == "__main__":
                 hfile2 = "diff_changed_lines.html"
                 (flen,numchanges) = chardiff_file(args[0],args[1],\
                    hfile1=hfile1,hfile2=hfile2,verbose=verbose)
-                print "View all %s lines with diffs: %s" % (flen, hfile1)
-                print "View only %s lines with changes: %s" % (numchanges, hfile2)
+                print("View all %s lines with diffs: %s" % (flen, hfile1))
+                print("View only %s lines with changes: %s" % (numchanges, hfile2))
                 sys.exit(0)
             except:
                 sys.exit(1)
@@ -378,7 +382,7 @@ if __name__ == "__main__":
         else:
             raise Usage("Both paths must either be files or directories.")
                             
-    except Usage, err:
-        print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
-        print >> sys.stderr, "\t for help use --help"
+    except Usage as err:
+        print(sys.argv[0].split("/")[-1] + ": " + str(err.msg), file=sys.stderr)
+        print("\t for help use --help", file=sys.stderr)
         sys.exit(2)

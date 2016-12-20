@@ -1,9 +1,11 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 from docutils.core import publish_string
 import glob, os, sys
 
 if not os.path.isfile('README.rst'):
-    print '*** README.rst file not found in %s' % os.getcwd()
+    print('*** README.rst file not found in %s' % os.getcwd())
     sys.exit()
 
 html_string=publish_string(open('README.rst').read(),writer_name='html')
@@ -50,7 +52,7 @@ for f in plot_dirs:
     if os.path.isfile("%s/_PlotIndex.html" % f):
         plot_text = plot_text + '<li><a href="%s/_PlotIndex.html">%s</a>\n' % (f,f)
     else:
-        print "*** No _PlotIndex.html in ",f
+        print("*** No _PlotIndex.html in ",f)
 
 
 new_text = """

@@ -8,6 +8,7 @@ results and looking for errors.
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 import os
 import sys
 import tempfile
@@ -190,7 +191,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         """
 
-        if sys.modules.has_key('setrun'):
+        if 'setrun' in sys.modules:
             del(sys.modules['setrun'])
         sys.path.insert(0, self.test_path)
         import setrun

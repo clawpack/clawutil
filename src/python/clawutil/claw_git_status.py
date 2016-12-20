@@ -4,6 +4,7 @@ Print status of all clawpack git repositories.
 
 from __future__ import print_function
 
+from __future__ import absolute_import
 import os
 import sys
 import time
@@ -25,7 +26,7 @@ def make_git_status_file(outdir=os.getcwd()):
         
     """
 
-    if not os.environ.has_key('CLAW'):
+    if 'CLAW' not in os.environ:
         raise ValueError("*** CLAW environment variable not set ***")
 
     outdir = os.path.abspath(outdir)

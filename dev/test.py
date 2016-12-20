@@ -6,6 +6,8 @@ Sends output and result/errors to separate files to simplify checking
 results and looking for errors.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import tempfile
@@ -185,7 +187,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         """
 
-        if sys.modules.has_key('setrun'):
+        if 'setrun' in sys.modules:
             del(sys.modules['setrun'])
         sys.path.insert(0, self.test_path)
         import setrun
@@ -347,7 +349,7 @@ class ClawpackRegressionTest(unittest.TestCase):
                                             regression_data_path)
         if save:
             numpy.savetxt(regression_data_file, data)
-            print "Saved new regression data to %s" % regression_data_file
+            print("Saved new regression data to %s" % regression_data_file)
         regression_data = numpy.loadtxt(regression_data_file)
 
         # if assertion fails, indicate to user what files to compare:
