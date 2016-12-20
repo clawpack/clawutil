@@ -14,7 +14,7 @@ import os
 import sys
 import glob
 import shutil
-from .claw_git_status import make_git_status_file
+from clawpack.clawutil.claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
             rundir=None, print_git_status=False, nohup=False, nice=None):
