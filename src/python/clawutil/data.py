@@ -98,7 +98,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
             # the retrieval problem if it happens
             if verbose:
                 print("Downloading %s to %s..." % (url, output_path))
-            with open(output_path, "w") as output_file:
+            with open(output_path, "wb") as output_file:
                 remote_file = urlopen(url)
                 output_file.write(remote_file.read())
             if verbose:
