@@ -698,7 +698,7 @@ class ClawInputData(ClawData):
                 if not (self.transverse_waves in [0, 10, 11, 20, 21, 22]):
                     raise AttributeError("Unrecognized transverse_waves: %s" \
                                              % self.transverse_waves)
-            self.data_write(file, self.transverse_waves, 'transverse_waves')
+            self.data_write(None, self.transverse_waves, 'transverse_waves')
 
             if self.dimensional_split in [0,'unsplit']:  
                 self.dimensional_split = 0
