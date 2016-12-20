@@ -285,7 +285,7 @@ class ClawData(object):
         self.open_data_file(out_file,data_source)
 
         # Write out list of attributes
-        for (name,value) in six.iteritems(self):
+        for (name,value) in self.iteritems():
             self.data_write(name)
 
 
