@@ -53,12 +53,15 @@ MODULES ?=
 EXCLUDE_SOURCES ?=
 EXCLUDE_MODULES ?=
 
-#consolidate custom and common sources into a single list for compilations
-SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py \
-		$(COMMON_SOURCES) ";" $(EXCLUDE_SOURCES) ";" $(SOURCES))
-MODULES := $(shell python $(CLAW)/clawutil/src/check_src.py \
-		$(COMMON_MODULES) ";" $(EXCLUDE_MODULES) ";" $(MODULES))
+# Consolidate custom and common sources into a single list for compilations
+SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
+		$(SOURCES) ";" $(COMMON_SOURCES) ";" $(EXCLUDE_SOURCES))
+MODULES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
+		$(MODULES) ";" $(COMMON_MODULES) ";" $(EXCLUDE_MODULES))
 
+# Create list of possible file name conflicts
+SOURCE_CONFLICTS := $(shell python $(CLAW)/clawutil/src/check_src.py conflicts $(SOURCES))
+MODULES_CONFLICTS := $(shell python $(CLAW)/clawutil/src/check_src.py conflicts $(MODULES))
 
 # Make list of .o files required from the sources above:
 OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(SOURCES)))))
@@ -145,6 +148,12 @@ debug:
 	@echo $(MODULE_FILES)
 	@echo 'debugging -- MODULE_PATHS:'
 	@echo $(MODULE_PATHS)
+	@echo
+	@echo 'Possible source conflicts - Please see the documentation at'
+	@echo '   www.clawpack.org/makefiles.html'
+	@echo 'for additional information and solutions.'
+	@echo $(SOURCE_CONFLICTS)
+	@echo $(MODULES_CONFLICTS)
 
 #----------------------------------------------------------------------------
 

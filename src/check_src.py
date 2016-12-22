@@ -15,20 +15,52 @@ from __future__ import absolute_import
 from __future__ import print_function
 import sys
 import os
+import warnings
+import argparse
 
-def consolidate_src_lists(common_src_files, excluded_src_files, src_files):
-    r"""
+def check_duplicate_fortran_src(src_list):
+    r"""Check to see if there may be hidden fixed-format Fortran files.
+
     """
 
-    excluded_src_names = [os.path.basename(os.path.splitext(src_file)[0]) 
-                          for src_file in excluded_src_files]
-    included_src_names = [os.path.basename(os.path.splitext(src_file)[0]) 
+    output = ""
+
+    # Extract all base paths to check for duplicate src conflicts
+    base_paths = []
+    for src_file in src_list:
+        if os.path.dirname(src_file) not in base_paths:
+            base_paths.append(os.path.dirname(src_file))
+
+    for src_file in src_list:
+        name = os.path.splitext(os.path.basename(src_file))[0]
+        extension = os.path.splitext(src_file)[-1]
+        if extension == ".f90":
+            for base_path in base_paths:
+                fixed_file = os.path.join(base_path, "%s.f" % name)
+                if os.path.exists(fixed_file):
+                    output = "\n".join((output, "%s -- %s" % (src_file,
+                                                              fixed_file)))
+
+    return output
+
+
+def consolidate_src_lists(src_files, common_src_files, excluded_src_files):
+    r"""
+    Takes source lists provided and consolidates them based on the following:
+     - source in the *src_files* list is always added,
+     - source in the *common_src_files* list is included except if it is in the
+       *exclued_src_files* list or specified in *src_files*.
+    """
+
+    excluded_src_names = [os.path.basename(os.path.splitext(src_file)[0])
+                          for src_file in excluded_src_files] +  \
+                         [os.path.basename(os.path.splitext(src_file)[0])
                           for src_file in src_files]
 
     src_list = []
     for src_file in common_src_files:
-        if os.path.basename(os.path.splitext(src_file)[0]) not in excluded_src_names and \
-           os.path.basename(os.path.splitext(src_file)[0]) not in included_src_names:
+        name = os.path.basename(os.path.splitext(src_file)[0])
+        if name not in excluded_src_names:
             src_list.append(src_file)
 
     for src_file in src_files:
@@ -37,21 +69,34 @@ def consolidate_src_lists(common_src_files, excluded_src_files, src_files):
     return src_list
 
 
-def parse_args(arg_list):
-    r"""
+def parse_args(arg_list, delimiter=";"):
+    r"""Parses the command line input into lists separated by *delimiter*
+
+
     """
-    file_list = [[], [], []]
-    list_index = 0
+    file_lists = [[]]
 
     for arg in arg_list:
-        if arg == ";":
-            list_index += 1
+        if arg == delimiter:
+            file_lists.append([])
         else:
-            file_list[list_index].append(arg)
+            file_lists[-1].append(arg)
 
-    return file_list[0], file_list[1], file_list[2]
+    return file_lists
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        raise ValueError("Need to provide at least one source.")
+    if len(sys.argv) < 2:
+        print("HELP")
+
+    if sys.argv[1].lower() == "consolidate":
+        source_files, common_files, excluded_files = parse_args(sys.argv[2:])
+        src_list = consolidate_src_lists(source_files, common_files,
+                                                       excluded_files)
+        print(" ".join(src_list))
+
+    elif sys.argv[1].lower() == "conflicts":
+        print(check_duplicate_fortran_src(sys.argv[2:]))
+
+    else:
+        raise ValueError("ERROR:  Unknown sub-command %s." % sys.argv[1])
