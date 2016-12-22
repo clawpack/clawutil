@@ -9,9 +9,10 @@ import os
 import sys
 import time
 import subprocess
-try:
+
+if sys.version_info < (3, 0):
     from StringIO import StringIO
-except ImportError:
+else:
     from io import StringIO
 
 repos_list = ['classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
@@ -78,12 +79,14 @@ def repository_status(repository):
 
     output.write("--- last commit ---\n")
     cmd = "cd %s ; git log -1 --oneline" % repo_path
-    output.write(str(subprocess.check_output(cmd, shell=True)))
+    output.write(subprocess.check_output(cmd, shell=True,
+                 universal_newlines=True))
     output.write("\n")
 
     output.write("--- branch and status ---\n")
     cmd = "cd %s ; git status -b -s --untracked-files=no" % repo_path
-    output.write(str(subprocess.check_output(cmd, shell=True)))
+    output.write(subprocess.check_output(cmd, shell=True,
+                 universal_newlines=True))
  
     output_str = output.getvalue()
     output.close()
