@@ -71,8 +71,6 @@ def consolidate_src_lists(src_files, common_src_files, excluded_src_files):
 
 def parse_args(arg_list, delimiter=";"):
     r"""Parses the command line input into lists separated by *delimiter*
-
-
     """
     file_lists = [[]]
 
@@ -87,7 +85,16 @@ def parse_args(arg_list, delimiter=";"):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("HELP")
+        print("Consolidate and check Fortran source list.")
+        print("  Usage:  ./check_src.py [consolidate|conflict] ...")
+        print("  Two functions exist in this script: ")
+        print("    (1) consolidate - a unified list of source based on three")
+        print("        lists, the overall source list, a list of source that")
+        print("        be included if not already in the first source list or")
+        print("        if it is in the third exclude list.")
+        print("    (2) conflict - Given a list of source files check to see")
+        print("        if there might be Fortran 90 source with '.f90' that")
+        print("        would hide a fixed-format Fortran source with '.f'.")
 
     if sys.argv[1].lower() == "consolidate":
         source_files, common_files, excluded_files = parse_args(sys.argv[2:])

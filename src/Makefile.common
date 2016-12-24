@@ -149,11 +149,12 @@ debug:
 	@echo 'debugging -- MODULE_PATHS:'
 	@echo $(MODULE_PATHS)
 	@echo
-	@echo 'Possible source conflicts - Please see the documentation at'
-	@echo '   www.clawpack.org/makefiles.html'
-	@echo 'for additional information and solutions.'
+	@echo 'Possible source conflicts:'
 	@echo $(SOURCE_CONFLICTS)
 	@echo $(MODULES_CONFLICTS)
+	@echo 'If conflicts are listed, see the documentation at'  
+	@echo '    www.clawpack.org/makefiles.html'
+	@echo 'for additional information and solutions.'
 
 #----------------------------------------------------------------------------
 
