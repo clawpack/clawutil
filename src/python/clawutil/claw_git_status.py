@@ -113,9 +113,11 @@ def repository_diff(repository):
     output.write("\n\n===========\n%s\n===========\n" % repository)
     output.write("%s\n\n" % repo_path)
     cmd = 'cd %s ; git diff --no-ext-diff' % repo_path
-    output.write(str(subprocess.check_output(cmd, shell=True)))
+    output.write(subprocess.check_output(cmd, shell=True,
+                 universal_newlines=True))
     cmd = 'cd %s ; git diff --cached --no-ext-diff' % repo_path
-    output.write(str(subprocess.check_output(cmd, shell=True)))
+    output.write(subprocess.check_output(cmd, shell=True,
+                 universal_newlines=True))
  
     output_str = output.getvalue()
     output.close()
