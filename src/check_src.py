@@ -18,6 +18,7 @@ import os
 import warnings
 import argparse
 
+
 def check_duplicate_fortran_src(src_list):
     r"""Check to see if there may be hidden fixed-format Fortran files.
 
@@ -32,14 +33,20 @@ def check_duplicate_fortran_src(src_list):
             base_paths.append(os.path.dirname(src_file))
 
     for src_file in src_list:
-        name = os.path.splitext(os.path.basename(src_file))[0]
+        base_name = os.path.splitext(os.path.basename(src_file))[0]
         extension = os.path.splitext(src_file)[-1]
-        if extension == ".f90":
+
+        if extension.lower() in (".f90", ".f"):
+            if extension.lower() == ".f90":
+                file_name = "%s.f" % base_name
+            elif extension.lower() == ".f":
+                file_name = "%s.f90" % base_name
+
             for base_path in base_paths:
-                fixed_file = os.path.join(base_path, "%s.f" % name)
-                if os.path.exists(fixed_file):
-                    output = "\n".join((output, "%s -- %s" % (src_file,
-                                                              fixed_file)))
+                check_file = os.path.join(base_path, file_name)
+                if os.path.exists(check_file):
+                    output = "".join((output, "%s -- %s, " % (src_file,
+                                                              check_file)))
 
     return output
 
