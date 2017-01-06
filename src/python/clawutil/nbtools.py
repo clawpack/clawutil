@@ -132,3 +132,27 @@ def make_output_and_plots(label=None, env=None, verbose=True):
     outdir = make_output(label,env,verbose)
     plotdir = make_plots(label,env,verbose)
     return outdir,plotdir
+
+
+def make_all(label=None, env=None, verbose=True):
+    """Perform 'make all' and display links"""
+
+    if label is None: 
+        label = ''
+    else:
+        if label[0] != '_':
+            label = '_' + label
+    outdir = '_output%s' % str(label)
+    plotdir = '_plots%s' % str(label)
+    outfile = 'make_all_output%s.txt' % str(label)
+
+    args = 'all OUTDIR=%s PLOTDIR=%s' % (outdir,plotdir)
+    make_driver(args, env, outfile, verbose)
+
+    if verbose:
+        index_file = FileLink('%s/_PlotIndex.html' % plotdir)
+        print("View plots created at this link:")
+        display(index_file)
+
+    return plotdir
+    
