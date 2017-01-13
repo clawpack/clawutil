@@ -6,6 +6,11 @@ Print out
 
 Useful for figuring out how paths are set and which version of clawpack is being
 used when more than one has been installed.
+
+Notes: 
+  - this should be run in the users' shell (which might not be bash)
+  - this script has not been extensively tested, maybe it's missing something
+
 """
 
 
