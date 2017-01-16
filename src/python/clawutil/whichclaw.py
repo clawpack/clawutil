@@ -16,10 +16,12 @@ Notes:
 
 import sys, os
 import site
+import inspect
 
 try:
     import clawpack
-    claw_dir = os.path.split(clawpack.__file__)[0]
+    claw_file = inspect.getfile(clawpack)
+    claw_dir = os.path.split(claw_file)[0]
     print('\n`import clawpack` imports from:\n    %s' % claw_dir[:-9])
 except:
     print('\n`import clawpack` gives an import error')
