@@ -336,10 +336,10 @@ for infilename in infiles:
         if string.count(line,"begin_html"):
             regexp = re.compile(r"\[color:(?P<color>[^\]]*)\]")
             result = regexp.search(line)
-	    if result:
-	        font_color = result.group('color')
-	    else:
-	        font_color = default_color
+            if result:
+                font_color = result.group('color')
+            else:
+                font_color = default_color
     
             if insidehtml:
                 print('  Error at line ', lineno, '\n')
@@ -420,21 +420,21 @@ for infilename in infiles:
                 # Allow wiki formatting of links:
                 # -------------------------------
 
-		# Replace [name: placemark] by <a name="placemark">
+                # Replace [name: placemark] by <a name="placemark">
                 # (to jump to a different spot in the same html file)
                 regexp = re.compile(r"\[name:[ ]*(?P<placemark>[^ ^\]]*)\]")
                 result = regexp.search(line)
                 while result:
                     placemark = result.group('placemark')
                     oldpat = result.group()
-		    newpat = '<a name="%s">' % placemark
+                    newpat = '<a name="%s">' % placemark
                     line = line.replace(oldpat,newpat)
                     result = regexp.search(line)
 
                 # Replace links of the form [code: target]
                 # by html links to both target and target.html.
-		# Also allows [code: target#placemark] with links to target 
-		# and target.html#placemark.
+                # Also allows [code: target#placemark] with links to target 
+                # and target.html#placemark.
 
                 regexp = re.compile(r"\[code:[ ]*(?P<target>[^ ^\]^#]*)([#]?)" + \
                                     r"(?P<placemark>[^\]]*)\]")
@@ -443,17 +443,17 @@ for infilename in infiles:
                     targetname = result.group('target')
                     placemark = result.group('placemark')
                     oldpat = result.group()
-		    if placemark:
+                    if placemark:
                         newpat = '<a href="%s">%s</a>' \
-			             % (targetname,targetname) + \
+                                     % (targetname,targetname) + \
                                  '&nbsp;<a href="%s.html#%s">[.html]</a>' \
-			             % (targetname,placemark) 
-		    else:
+                                     % (targetname,placemark) 
+                    else:
                         oldpat = result.group()
                         newpat = '<a href="%s">%s</a>' \
-			             % (targetname,targetname) + \
+                                     % (targetname,targetname) + \
                                  '&nbsp;<a href="%s.html">[.html]</a>' \
-			             % targetname 
+                                     % targetname 
                     line = line.replace(oldpat,newpat)
                     result = regexp.search(line)
 
@@ -509,11 +509,11 @@ for infilename in infiles:
                     result = regexp.search(line)
 
 
-		# special things for CLAWPACK:
+                # special things for CLAWPACK:
 
                 # replace links of the form [clawcode:clawpack/1d/lib/step1.f]
                 # for example by links relative to clawaddr, 
-		# along with a link to the .html version.
+                # along with a link to the .html version.
                 regexp = re.compile(r"\[clawcode:[ ]*(?P<target>[^ ^\]^#]*)([#]?)" + \
                                     r"(?P<placemark>[^\]]*)\]")
                 result = regexp.search(line)
@@ -521,23 +521,23 @@ for infilename in infiles:
                     targetname = result.group('target').lstrip()
                     placemark = result.group('placemark')
                     oldpat = result.group()
-		    if placemark:
+                    if placemark:
                         newpat = '<a href="%s/%s">claw/%s</a>' \
-			             % (clawaddr,targetname,targetname) + \
+                                     % (clawaddr,targetname,targetname) + \
                                  '&nbsp;<a href="%s/%s.html#%s">[.html]</a>' \
-			             % (clawaddr,targetname,placemark) 
-		    else:
+                                     % (clawaddr,targetname,placemark) 
+                    else:
                         newpat = '<a href="%s/%s">%s</a>' \
-			             % (clawaddr,targetname,targetname) + \
+                                     % (clawaddr,targetname,targetname) + \
                                  '&nbsp;<a href="%s/%s.html">[.html]</a>' \
-			             % (clawaddr,targetname) 
+                                     % (clawaddr,targetname) 
                     line = line.replace(oldpat,newpat)
                     result = regexp.search(line)
 
 
                 # replace links of the form [claw:clawpack/1d/lib]
                 # for example by links relative to clawaddr,
-		# with no .html version.
+                # with no .html version.
                 regexp = re.compile(r"\[claw:[ ]?(?P<target>[^ ^\]]*)" + \
                                     r"([ ]*)(?P<text>[^\]]*)\]")
                 result = regexp.search(line)
@@ -552,34 +552,34 @@ for infilename in infiles:
                     line = line.replace(oldpat,newpat)
                     result = regexp.search(line)
 
-		# place text surrounded by triple braces with 
-		# pre environment with background color:
-		newpat = '<pre class="clawcode">'
+                # place text surrounded by triple braces with 
+                # pre environment with background color:
+                newpat = '<pre class="clawcode">'
                 line = line.replace('{{{',newpat)
                 line = line.replace('}}}','</pre>')
 
           
-	    else:
+            else:
                 # not insidehtml - make regular comments default_color.
                 # Determine if this line contains a comment and if so,
                 # what column the comment starts in:
 
-		startcomment = 1000
-	        if (ext == '.f') & (line[0] in firstfort):
-	            startcomment = 0
-	        elif (ext == '.f95') & (line[0] in firstfort95):
-	            startcomment = 0
-		else:
-		    if commentchar[ext]:
+                startcomment = 1000
+                if (ext == '.f') & (line[0] in firstfort):
+                    startcomment = 0
+                elif (ext == '.f95') & (line[0] in firstfort95):
+                    startcomment = 0
+                else:
+                    if commentchar[ext]:
                         for c in commentchar[ext]:
-		            commentcol = string.find(line,c)
-		            if (commentcol>-1)&(commentcol<startcomment):
+                            commentcol = string.find(line,c)
+                            if (commentcol>-1)&(commentcol<startcomment):
                                 startcomment = commentcol
 
-		if startcomment<1000:
-		    line = line[0:startcomment] + \
-		           '<font color="%s">'  % default_color + \
-		           line[startcomment:-1] + '</font>\n'
+                if startcomment<1000:
+                    line = line[0:startcomment] + \
+                           '<font color="%s">'  % default_color + \
+                           line[startcomment:-1] + '</font>\n'
 
 
             # output the (possibly modified) line to the output file:
