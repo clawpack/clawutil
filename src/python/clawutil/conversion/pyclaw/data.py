@@ -909,24 +909,24 @@ def make_amrclawdatafile(clawdata):
 
     data_write(file, clawdata, 'mxnest', '(max number of grid levels)')
     if len(clawdata.inratx) < max(abs(clawdata.mxnest)-1, 1):
-	raise ValueError("*** Error in data parameter: " + \
+        raise ValueError("*** Error in data parameter: " + \
               "require len(inratx) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
     data_write(file, clawdata, 'inratx', '(refinement ratios)')
     if clawdata.mxnest < 0:
-	# negative mxnest indicates anisotropic refinement
-	if len(clawdata.inraty) < max(abs(clawdata.mxnest)-1, 1):
-	    raise ValueError("*** Error in data parameter: " + \
+        # negative mxnest indicates anisotropic refinement
+        if len(clawdata.inraty) < max(abs(clawdata.mxnest)-1, 1):
+            raise ValueError("*** Error in data parameter: " + \
               "require len(inraty) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
         data_write(file, clawdata, 'inraty', '(refinement ratios)')
-	if ndim == 3:
-	    if len(clawdata.inratz) < max(abs(clawdata.mxnest)-1, 1):
-	        raise ValueError("*** Error in data parameter: " + \
-		  "require len(inratz) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
-	    data_write(file, clawdata, 'inratz', '(refinement ratios)')
-	if len(clawdata.inratt) < max(abs(clawdata.mxnest)-1, 1):
-	    raise ValueError("*** Error in data parameter: " + \
-		  "require len(inratt) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
-	data_write(file, clawdata, 'inratt', '(refinement ratios)')
+        if ndim == 3:
+            if len(clawdata.inratz) < max(abs(clawdata.mxnest)-1, 1):
+                raise ValueError("*** Error in data parameter: " + \
+                  "require len(inratz) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
+            data_write(file, clawdata, 'inratz', '(refinement ratios)')
+        if len(clawdata.inratt) < max(abs(clawdata.mxnest)-1, 1):
+            raise ValueError("*** Error in data parameter: " + \
+                  "require len(inratt) >= %s " % max(abs(clawdata.mxnest) - 1, 1))
+        data_write(file, clawdata, 'inratt', '(refinement ratios)')
 
     data_write(file, clawdata, None)  # writes blank line
 

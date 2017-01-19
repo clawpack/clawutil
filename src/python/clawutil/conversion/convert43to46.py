@@ -41,12 +41,12 @@ def make_rundata(ndim):
     fname43 = 'claw%sez.data.claw43' % ndim
     if not os.path.isfile(fname43):
         try:
-	    shutil.move(fname, fname43)
-	    print("=== Moved %s to %s"  % (fname, fname43))
-	except:
-	    print("*** Could not find ", fname)
+            shutil.move(fname, fname43)
+            print("=== Moved %s to %s"  % (fname, fname43))
+        except:
+            print("*** Could not find ", fname)
             raise
-	    return
+            return
     clawdata_file = open(fname43,'r')
     lines = clawdata_file.readlines()
     class rundata(object):
@@ -119,7 +119,7 @@ def next(lines):
         numstring = numstring.replace('d','e')  # for floating notation
     except:
         print('*** Failed on line: ',line)
-	numstring = '0'
+        numstring = '0'
     return numstring
 
 
@@ -380,9 +380,9 @@ if __name__ == '__main__':
     # Set up run-time parameters and write all data files.
     import sys
     if len(sys.argv) == 2:
-	rundata = setrun(sys.argv[1])
+        rundata = setrun(sys.argv[1])
     else:
-	rundata = setrun()
+        rundata = setrun()
 
     rundata.write()
     """)
@@ -560,12 +560,12 @@ def setplot(plotdata):
 def make_Makefile1():
     if not os.path.isfile('Makefile.claw43'):
         try:
-	    shutil.move('Makefile','Makefile.claw43')
-	    print("=== Moved Makefile to Makefile.claw43")
-	except:
-	    print("*** Could not find Makefile")
+            shutil.move('Makefile','Makefile.claw43')
+            print("=== Moved Makefile to Makefile.claw43")
+        except:
+            print("*** Could not find Makefile")
             raise
-	    return
+            return
     oldmake = open('Makefile.claw43','r')
     mkfile = oldmake.read()
 
@@ -657,12 +657,12 @@ include $(CLAWMAKE)
 def make_Makefile2():
     if not os.path.isfile('Makefile.claw43'):
         try:
-	    shutil.move('Makefile','Makefile.claw43')
-	    print("=== Moved Makefile to Makefile.claw43")
-	except:
-	    print("*** Could not find Makefile")
+            shutil.move('Makefile','Makefile.claw43')
+            print("=== Moved Makefile to Makefile.claw43")
+        except:
+            print("*** Could not find Makefile")
             raise
-	    return
+            return
     oldmake = open('Makefile.claw43','r')
     mkfile = oldmake.read()
 
@@ -917,27 +917,27 @@ def fix_setprob(ndim):
 
     if (os.path.isfile('setprob.f') and \
           (not os.path.isfile('setprob.f.claw43'))):
-	shutil.move('setprob.f','setprob.f.claw43')
-	print("=== Moved setprob.f to setprob.f.claw43")
+        shutil.move('setprob.f','setprob.f.claw43')
+        print("=== Moved setprob.f to setprob.f.claw43")
         lines = open('setprob.f.claw43','r').readlines()
         setprob = open('setprob.f','w')
-	for line in lines:
-	    if line.find('implicit') > -1:
-	        setprob.write(line)
-		setprob.write("      character*12 fname\n")
-	    elif line.find('open(') > -1:
-	        regexp = re.compile(r"open.*unit\s*?=\s*?(?P<iunit>[0-9]+)\s*,")
-		result = regexp.search(line)
-		if result:
-		    iunit = result.group('iunit')
-		else:
-		    print('*** Oops, expected to find unit number in setprob.f')
-		    print('*** setprob.f is corrupted, revert from setprob.f.claw43')
-		    setprob.close()
+        for line in lines:
+            if line.find('implicit') > -1:
+                setprob.write(line)
+                setprob.write("      character*12 fname\n")
+            elif line.find('open(') > -1:
+                regexp = re.compile(r"open.*unit\s*?=\s*?(?P<iunit>[0-9]+)\s*,")
+                result = regexp.search(line)
+                if result:
+                    iunit = result.group('iunit')
+                else:
+                    print('*** Oops, expected to find unit number in setprob.f')
+                    print('*** setprob.f is corrupted, revert from setprob.f.claw43')
+                    setprob.close()
                     raise
-		    return
-		setprob.write("c\n      iunit = %s" % iunit)
-		setprob.write("""
+                    return
+                setprob.write("c\n      iunit = %s" % iunit)
+                setprob.write("""
       fname = 'setprob.data'
 c     # open the unit with new routine from Clawpack 4.4 to skip over
 c     # comment lines starting with #:
@@ -945,10 +945,10 @@ c     # comment lines starting with #:
                 \n""")
 
             else:
-	        setprob.write(line)
-	setprob.close()
+                setprob.write(line)
+        setprob.close()
   
-	print("=== Modified setprob.f")
+        print("=== Modified setprob.f")
 
     ## end of fix_setprob
    
