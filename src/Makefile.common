@@ -95,19 +95,28 @@ ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -L,$(LIB_PATHS))
 ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
-# Module flag setting, please add other compilers here as necessary
-ifeq ($(findstring gfortran,$(CLAW_FC)),gfortran)
+# Module flag and compile flag setting, please add other compilers here as necessary
+ifeq ($(CLAW_FC),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
+	COMPILE_FLAG = -cpp
+else ifeq ($(CLAW_FC),pgfortran)
+	# Note that there shoud be a space after this flag
+	MODULE_FLAG = -module 
+	#TODO: check if pgfortran has this flag
+	OMP_FLAG = -openmp
+	COMPILE_FLAG = -Mpreprocess
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
+	COMPILE_FLAG = -cpp
 else
 	# Assume gcc like flagging, probably should raise an error here
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
+	COMPILE_FLAG = -cpp
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -124,11 +133,11 @@ endif
 
 # Default Rules, the module rule should be executed first in most instances,
 # this way the .mod file ends up always in the correct spot
-%.mod : %.f90 ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
-%.mod : %.f   ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f90 ; touch $@; $(CLAW_FC) -c $(COMPILE_FLAG) $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f   ; touch $@; $(CLAW_FC) -c $(COMPILE_FLAG) $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 
-%.o : %.f90 ;             $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
-%.o : %.f ;               $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f90 ;             $(CLAW_FC) -c $(COMPILE_FLAG) $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f ;               $(CLAW_FC) -c $(COMPILE_FLAG) $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
 #----------------------------------------------------------------------------
 # Executable:
