@@ -100,13 +100,15 @@ ifeq ($(CLAW_FC),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
-	COMPILE_FLAG = -cpp
+	# enable preprocessing 
+	# COMPILE_FLAG = -cpp
 else ifeq ($(CLAW_FC),pgfortran)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	#TODO: check if pgfortran has this flag
 	OMP_FLAG = -openmp
-	COMPILE_FLAG = -Mpreprocess
+	COMPILE_FLAG = -Mpreprocess -Mcuda
+	ALL_LFLAGS += -Mcuda
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
@@ -308,3 +310,16 @@ help:
 
 .help: help
 
+#----------------------------------------------------------------------------
+# For debugging Makefile
+#
+# make print-VARIABLE will print info of the Makefile variable VARIABLE:
+# its value
+# how it was defined, e.g. from environment or file
+# the flavor of the variable, either simple or recursive
+# the unexpanded value of the variable
+print-%:
+	@echo '$*:'
+	@echo '  origin = $(origin $*)'
+	@echo '  flavor = $(flavor $*)'
+	@echo '   value = $(value  $*)'
