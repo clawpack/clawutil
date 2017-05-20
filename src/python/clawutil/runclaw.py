@@ -164,21 +164,29 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         if print_git_status not in [False,'False']:
             make_git_status_file()
 
+        # old fort.* files to be removed for new run?
         fortfiles = glob.glob(os.path.join(outdir,'fort.*'))
+        # also need to remove gauge*.txt output files now that the gauge
+        # output is no longer in fort.gauge  (but don't remove new gauges.data)
+        gaugefiles = glob.glob(os.path.join(outdir,'gauge*.txt'))
+
         if (overwrite and (not restart)):
             # remove any old versions:
             if verbose:
-                print("==> runclaw: Removing all old fort files in ", outdir)
-            for file in fortfiles:
+                print("==> runclaw: Removing all old fort/gauge files in ", outdir)
+            for file in fortfiles + gaugefiles:
                 os.remove(file)
         elif restart:
             if verbose:
-                print("==> runclaw: Restart: leaving original fort files in ", outdir)
+                print("==> runclaw: Restart: leaving original fort/gauge files in ", outdir)
         else:
-            if len(fortfiles) > 1:
-                print("==> runclaw: *** Remove fort.* and try again,")
-                print("  or use overwrite=True in call to runxclaw")
-                print("  e.g., by setting CLAW_OVERWRITE = True in Makefile")
+            # this should never be reached: 
+            # if overwrite==False then outdir has already been moved
+            if len(fortfiles+gaugefiles) > 1:
+                print("==> runclaw: *** Remove fort.* and gauge*.txt")
+                print("  from output directory %s and try again," % outdir)
+                print("  or use overwrite=True in call to runclaw")
+                print("  e.g., by setting OVERWRITE = True in Makefile")
                 return
             
         
