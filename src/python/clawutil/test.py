@@ -17,6 +17,7 @@ import unittest
 import shutil
 import inspect
 import time
+import glob
 
 import numpy
 
@@ -155,6 +156,9 @@ class ClawpackRegressionTest(unittest.TestCase):
         self.stdout.write("  %s" % self.temp_path)
         self.stdout.write("  %s" % self.test_path)
         self.stdout.flush()
+        # clean up *.o files in test path
+        for path in glob.glob(os.path.join(self.test_path,"*.o")):
+            os.remove(path)
         self.build_executable()
 
 
