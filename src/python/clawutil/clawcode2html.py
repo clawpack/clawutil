@@ -46,7 +46,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys,os,glob
-import string,re
+import re
 import time
 from six.moves import range
 from six.moves import input
@@ -109,9 +109,7 @@ if clawdir == None:
 
 #clawaddr = 'http://localhost:50005'
 
-clawaddr = 'http://clawpack.github.io/'
-# This doesn't work...  things are not found in the same places they were 
-# in Clawpack 4.x, so the favicon, logo, css files will not be found.
+clawaddr = 'http://www.clawpack.org/'
 
 
 # Set comment characters for different programming languages:
@@ -262,7 +260,7 @@ for infilename in infiles:
         ofile.write('&nbsp;<font size=6> %s </font> </td>\n' % outfilename)
     
         ofile.write("""
-            <td><a href="http://clawpack.github.io/doc/index.html"><img
+            <td><a href="http://www.clawpack.org/index.html"><img
             src="%s/clawlogo.jpg"
             width=100 alt="CLAWPACK"></a>""" % clawaddr)
 
@@ -333,7 +331,7 @@ for infilename in infiles:
     
         lineno += 1
     
-        if string.count(line,"begin_html"):
+        if 'begin_html' in line:
             regexp = re.compile(r"\[color:(?P<color>[^\]]*)\]")
             result = regexp.search(line)
             if result:
@@ -377,7 +375,7 @@ for infilename in infiles:
                 ofile.write('<font size="-1" color=%s>\n'  % font_color)
             insidehtml = 1;
     
-        elif string.count(line,"end_html"):
+        elif 'end_html' in line:
             # switch back to pre-formatted environment
             ofile.write('</font></td></tr></table>\n')
             ofile.write('<pre> \n')
@@ -387,9 +385,9 @@ for infilename in infiles:
             if insidehtml:
     
                 # replace blank line in html comment by new paragraph <p>:
-                blankline = (string.split(line) == [])
+                blankline = (line.strip == '')
                 if not blankline:
-                   firstchar = string.split(line)[0][0]
+                   firstchar = line.split()[0][0]
                    if ((ext in ['.f','.f95']) & (firstchar not in firstfort)): 
                        if firstchar not in commentchar[ext]:
                            print('  Error... in line ', lineno,'\n' \
@@ -409,10 +407,10 @@ for infilename in infiles:
                 # replace any comment character by ' ' 
                 if commentchar[ext]:
                     for char in commentchar[ext]:
-                        line = string.replace(line,char,' ')  
+                        line = line.replace(char,' ')  
     
     
-                blankline = (string.split(line) == [])
+                blankline = (line.strip == '')
                 if blankline:
                    line = ('<p>\n')
 
@@ -572,7 +570,7 @@ for infilename in infiles:
                 else:
                     if commentchar[ext]:
                         for c in commentchar[ext]:
-                            commentcol = string.find(line,c)
+                            commentcol = line.find(c)
                             if (commentcol>-1)&(commentcol<startcomment):
                                 startcomment = commentcol
 
