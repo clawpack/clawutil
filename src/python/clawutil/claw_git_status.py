@@ -18,7 +18,7 @@ else:
 repos_list = ['classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
               'geoclaw']
 
-def make_git_status_file(outdir=os.getcwd()):
+def make_git_status_file(outdir='.'):
     """
     Print status of all clawpack git repositories.
     Creates 2 files:

@@ -162,7 +162,9 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
             return
     
         if print_git_status not in [False,'False']:
-            make_git_status_file()
+            # create files claw_git_status.txt and claw_git_diffs.txt in
+            # outdir:
+            make_git_status_file(os.getcwd())
 
         # old fort.* files to be removed for new run?
         fortfiles = glob.glob(os.path.join(outdir,'fort.*'))
