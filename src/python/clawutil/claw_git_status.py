@@ -18,7 +18,7 @@ else:
 repos_list = ['classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
               'geoclaw']
 
-def make_git_status_file(outdir=os.getcwd()):
+def make_git_status_file(outdir=None):
     """
     Print status of all clawpack git repositories.
     Creates 2 files:
@@ -33,7 +33,11 @@ def make_git_status_file(outdir=os.getcwd()):
     if 'CLAW' not in os.environ:
         raise ValueError("*** CLAW environment variable not set ***")
 
-    outdir = os.path.abspath(outdir)
+    if outdir is None:
+        outdir = os.getcwd()
+    else:
+        outdir = os.path.abspath(outdir)
+
     status_file_path = os.path.join(outdir, "claw_git_status.txt")
     diff_file_path = os.path.join(outdir, 'claw_git_diffs.txt')
 
