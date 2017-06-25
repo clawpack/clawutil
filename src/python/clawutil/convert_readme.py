@@ -13,8 +13,11 @@ if not os.path.isfile('README.rst'):
     print('*** README.rst file not found in %s' % os.getcwd())
     sys.exit()
 
-html_string=publish_string(open('README.rst').read(),writer_name='html',
-            settings_overrides={'output_encoding': 'unicode'})
+if (sys.version_info > (3,0)):
+    html_string=publish_string(open('README.rst').read(),writer_name='html',
+                settings_overrides={'output_encoding': 'unicode'})
+else:
+    html_string=publish_string(open('README.rst').read(),writer_name='html')
 
 make_files = glob.glob("Makefile")
 f_files = glob.glob("*.f") + glob.glob("*.f90")
