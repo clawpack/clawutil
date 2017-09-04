@@ -70,6 +70,12 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
     fetching the remote file.  Please see its documentation for more details of
     the exceptions that can be raised.
 
+    :Notes:
+
+    If fetching the file fails *urllib* does not always warn you so if errors
+    occur it may be wise to check to make sure the downloaded file actually has
+    content in it.
+
     returns *unarchived_output_path*
     """
 
@@ -93,18 +99,18 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                     print("*** Aborting download.")
                 return None
             
-        if not os.path.exists(output_path):
-            # Fetch remote file, will raise a variety of exceptions depending on
-            # the retrieval problem if it happens
-            if verbose:
-                print("Downloading %s to %s..." % (url, output_path))
-            with open(output_path, "wb") as output_file:
-                remote_file = urlopen(url)
-                output_file.write(remote_file.read())
-            if verbose:
-                print("Done downloading.")
-        elif verbose:
-            print("File already exists, not downloading")
+        # if not os.path.exists(output_path):
+        # Fetch remote file, will raise a variety of exceptions depending on
+        # the retrieval problem if it happens
+        if verbose:
+            print("Downloading %s to %s..." % (url, output_path))
+        with open(output_path, "wb") as output_file:
+            remote_file = urlopen(url)
+            output_file.write(remote_file.read())
+        if verbose:
+            print("Done downloading.")
+        # elif verbose:
+        #     print("File already exists, not downloading")
 
         if tarfile.is_tarfile(output_path) and unpack:
             if verbose:
@@ -118,7 +124,6 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
         if verbose:
             print("Skipping %s " % url)
             print("  because file already exists: %s" % output_path)
-        return None
 
     if unpack:
         return unarchived_output_path
