@@ -21,6 +21,7 @@ except ImportError:
     from urllib2 import urlopen
 
 import tarfile
+import zipfile
 import string
 
 import numpy as np
@@ -31,12 +32,15 @@ from six.moves import input
 # ======================
 #  Remote file handling
 # ======================
-def strip_archive_extensions(path, extensions=["tar", "tgz", "bz2", "gz"]):
+def strip_archive_extensions(path, 
+                             extensions=["tar", "tgz", "bz2", "gz", "zip"]):
     r"""
     Strip off archive extensions defined in *extensions* list.
 
     Return stripped path calling this function recursively until all splitext
-    does not provide an extension in the *extensions* list.
+    does not provide an extension in the *extensions* list.  Note that zip
+    files store the names of the contained files in the archive and the 
+    returned path will more than likely not have the appropriate file suffix.
 
     """
 
@@ -120,6 +124,19 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                 tar_file.extractall(path=output_dir)
             if verbose:
                 print("Done un-archiving.")
+        elif zipfile.is_zipfile(output_path) and unpack:
+            if verbose:
+                print("Un-archiving %s to %s..." % (output_path, 
+                                                    unarchived_output_path))
+            with zipfile.ZipFile(output_path, mode="r") as zip_file:
+                zip_file.extractall(path=output_dir)
+                # Add file suffix
+                extension = os.path.splitext(zip_file.namelist()[0])[-1]
+                unarchived_output_path = "".join((unarchived_output_path,
+                                                  extension))
+            if verbose:
+                print("Done un-archiving.")
+
     else:
         if verbose:
             print("Skipping %s " % url)
