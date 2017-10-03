@@ -19,6 +19,11 @@ ifeq ($(FC),f77)
 	FC = gfortran
 endif
 
+# if FC is set to pgi, we use pgi compiler
+ifeq ($(FC),pgi)
+    FC = pgfortran
+endif
+
 CLAW_FC ?= $(FC)
 LINK ?= $(CLAW_FC)
 
@@ -84,6 +89,7 @@ PPFLAGS ?=
 ALL_INCLUDE ?=
 ALL_FFLAGS ?=
 ALL_LFLAGS ?=
+ALL_DEFINES ?=
 
 # Add includes, the module search paths and library search paths are appended
 # at the end of the ALL_INCLUDE variable so that INCLUDE can override any of
@@ -95,30 +101,44 @@ ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -L,$(LIB_PATHS))
 ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
-# Module flag and compile flag setting, please add other compilers here as necessary
+# -----------------------------------------------------------------------------
+#  GPU configurations 
+ifeq ($(USE_CUDA),TRUE)
+    ifneq ($(CLAW_FC),pgfortran)
+	$(error You must set FC to pgi to use CUDA)
+    endif
+    ALL_DEFINES += -DCUDA
+    ALL_FFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+endif
+# -----------------------------------------------------------------------------
+
+
+# Module flag setting, please add other compilers here as necessary
 ifeq ($(CLAW_FC),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
-	# enable preprocessing 
-	# COMPILE_FLAG = -cpp
-else ifeq ($(CLAW_FC),pgfortran)
-	# Note that there shoud be a space after this flag
-	MODULE_FLAG = -module 
-	#TODO: check if pgfortran has this flag
-	OMP_FLAG = -openmp
-	COMPILE_FLAG = -Mpreprocess -Mcuda
-	ALL_LFLAGS += -Mcuda
+	ifeq ($(DEBUG),TRUE)
+	    ALL_FFLAGS += -g -O0 -ggdb -fbacktrace -Wall -pedantic -fbounds-check -ffpe-trap=invalid,overflow,zero  
+	else
+	    ALL_FFLAGS += -O3 
+	endif
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
-	COMPILE_FLAG = -cpp
+	# TODO: add flags for the intel compiler
+else ifeq ($(CLAW_FC),pgfortran)
+	# Note that there shoud be a space after this flag
+	MODULE_FLAG = -module 
+	ifeq ($(DEBUG),TRUE)
+	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr
+	else
+	    ALL_FFLAGS += -gopt -fast -Mpreprocess
+	endif
+	# OMP_FLAG = -mp=nonuma -Minfo=mp
 else
-	# Assume gcc like flagging, probably should raise an error here
-	MODULE_FLAG = -J
-	OMP_FLAG = -fopenmp
-	COMPILE_FLAG = -cpp
+    $(error Unrecognized compiler: $(CLAW_FC))
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -135,11 +155,11 @@ endif
 
 # Default Rules, the module rule should be executed first in most instances,
 # this way the .mod file ends up always in the correct spot
-%.mod : %.f90 ; touch $@; $(CLAW_FC) -c $(COMPILE_FLAG) $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
-%.mod : %.f   ; touch $@; $(CLAW_FC) -c $(COMPILE_FLAG) $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f90 ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f   ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 
-%.o : %.f90 ;             $(CLAW_FC) -c $(COMPILE_FLAG) $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
-%.o : %.f ;               $(CLAW_FC) -c $(COMPILE_FLAG) $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f90 ;             $(CLAW_FC) -c -cpp $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f ;               $(CLAW_FC) -c -cpp $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
 #----------------------------------------------------------------------------
 # Executable:
@@ -148,7 +168,7 @@ endif
 
 # The order here is to again build the module files correctly
 $(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
-	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
+	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
 .exe: $(EXE)
 
@@ -310,16 +330,13 @@ help:
 
 .help: help
 
-#----------------------------------------------------------------------------
-# For debugging Makefile
-#
-# make print-VARIABLE will print info of the Makefile variable VARIABLE:
-# its value
-# how it was defined, e.g. from environment or file
-# the flavor of the variable, either simple or recursive
-# the unexpanded value of the variable
+#-----------------------------------------------------------------------------
+# for debugging.  To see the value of a Makefile variable,
+# e.g. libraries, simply do "make print-libraries".  This will
+# print out the value.
 print-%:
-	@echo '$*:'
-	@echo '  origin = $(origin $*)'
-	@echo '  flavor = $(flavor $*)'
-	@echo '   value = $(value  $*)'
+	@echo $* is '$($*)'
+	@echo '    origin = $(origin $*)'
+	@echo '     value = $(value  $*)'
+
+
