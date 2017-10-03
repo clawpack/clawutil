@@ -333,10 +333,13 @@ help:
 #-----------------------------------------------------------------------------
 # for debugging.  To see the value of a Makefile variable,
 # e.g. libraries, simply do "make print-libraries".  This will
-# print out the value.
+# print out the value:
+# its value
+# how it was defined, e.g. from environment or file
+# the flavor of the variable, either simple or recursive
+# the unexpanded value of the variable
 print-%:
 	@echo $* is '$($*)'
-	@echo '    origin = $(origin $*)'
-	@echo '     value = $(value  $*)'
-
-
+	@echo '  origin = $(origin $*)'
+	@echo '  flavor = $(flavor $*)'
+	@echo '   value = $(value  $*)'
