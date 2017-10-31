@@ -109,8 +109,36 @@ ifeq ($(USE_CUDA),TRUE)
     endif
     ALL_DEFINES += -DCUDA
     ALL_FFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc -lcudafor
 endif
 # -----------------------------------------------------------------------------
+
+ifndef DIM
+      $(warning DIM is not set. 2 is used for DIM by default.)
+      DIM := 2
+else
+      DIM := $(strip $(DIM))
+endif
+ALL_DEFINES += -DSPACEDIM=$(DIM)
+
+ifndef NUM_EQUATIONS
+      $(error NUM_EQUATIONS is not set)
+else
+      NUM_EQUATIONS := $(strip $(NUM_EQUATIONS))
+endif
+ALL_DEFINES += -DNEQNS=$(NUM_EQUATIONS)
+
+ifndef NUM_WAVES
+      $(error NUM_WAVES is not set)
+else
+      NUM_WAVES := $(strip $(NUM_WAVES))
+endif
+ALL_DEFINES += -DNWAVES=$(NUM_WAVES)
+
+ifeq ($(DEBUG),TRUE)
+    ALL_DEFINES += -DDEBUG
+endif
+
 
 
 # Module flag setting, please add other compilers here as necessary
@@ -135,7 +163,9 @@ else ifeq ($(CLAW_FC),pgfortran)
 	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr
 	else
 	    ALL_FFLAGS += -gopt -fast -Mpreprocess
+	    # ALL_FFLAGS += -gopt -O2 -Mpreprocess
 	endif
+	ALL_LFLAGS += -Mcuda=charstring
 	# OMP_FLAG = -mp=nonuma -Minfo=mp
 else
     $(error Unrecognized compiler: $(CLAW_FC))
@@ -153,21 +183,39 @@ endif
 .SUFFIXES:
 .SUFFIXES: .f90 .f .mod .o
 
-# Default Rules, the module rule should be executed first in most instances,
-# this way the .mod file ends up always in the correct spot
-%.mod : %.f90 ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
-%.mod : %.f   ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 
-%.o : %.f90 ;             $(CLAW_FC) -c -cpp $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
-%.o : %.f ;               $(CLAW_FC) -c -cpp $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+
+# Default Rules, the module rule should be executed first in most instances,
+
+%.o : %.f90
+	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f
+	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+
+#-----------------------------------------------------------------------------
+# These dependencies ensure some f90 files are compiled before others that 
+# depend on them
+#
+ifeq ($(USE_CUDA),TRUE)
+/home/xsqin/clawpack/amrclaw/src/2d/sweep_module.o: /home/xsqin/clawpack/amrclaw/examples/GPU/acoustics_2d_radial/problem_para_module.o \
+	/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o \
+	/home/xsqin/clawpack/amrclaw/src/2d/sweep_misc_module.o
+/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/memory_module.o
+/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/cuda_module.o
+/home/xsqin/clawpack/amrclaw/src/2d/advanc.o: /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o \
+    /home/xsqin/clawpack/amrclaw/src/2d/amr_module.o
+endif
+
+#-----------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------
 # Executable:
 
-.objs:  $(MODULE_FILES) $(OBJECTS);
+.objs:  $(MODULE_OBJECTS) $(OBJECTS);
 
 # The order here is to again build the module files correctly
-$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+
+$(EXE): $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
 	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
 .exe: $(EXE)
@@ -329,6 +377,8 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
+
+
 
 #-----------------------------------------------------------------------------
 # for debugging.  To see the value of a Makefile variable,
