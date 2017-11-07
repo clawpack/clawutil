@@ -160,10 +160,10 @@ else ifeq ($(CLAW_FC),pgfortran)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	ifeq ($(DEBUG),TRUE)
-	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr
+	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
 	else
 	    ALL_FFLAGS += -gopt -fast -Mpreprocess
-	    # ALL_FFLAGS += -gopt -O2 -Mpreprocess
+	    # ALL_FFLAGS += -gopt -O0 -Mpreprocess
 	endif
 	ALL_LFLAGS += -Mcuda=charstring
 	# OMP_FLAG = -mp=nonuma -Minfo=mp
@@ -198,8 +198,7 @@ endif
 #
 ifeq ($(USE_CUDA),TRUE)
 /home/xsqin/clawpack/amrclaw/src/2d/sweep_module.o: /home/xsqin/clawpack/amrclaw/examples/GPU/acoustics_2d_radial/problem_para_module.o \
-	/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o \
-	/home/xsqin/clawpack/amrclaw/src/2d/sweep_misc_module.o
+	/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o
 /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/memory_module.o
 /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/cuda_module.o
 /home/xsqin/clawpack/amrclaw/src/2d/advanc.o: /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o \
