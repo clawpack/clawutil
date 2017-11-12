@@ -13,6 +13,9 @@ INSTALL_DATA ?= $(INSTALL) -m 644
 # Fortran compiler:  FC may be set as an environment variable or in make
 # file that 'includes' this one.  Otherwise assume gfortran.
 FC ?= gfortran
+# CPP compiler
+CC ?= g++
+
 ifeq ($(FC),f77)
 	# make sometimes sets FC=f77 if it is not set as environment variable
 	# reset to gfortran since f77 will not work.  
@@ -23,8 +26,14 @@ endif
 ifeq ($(FC),pgi)
     FC = pgfortran
 endif
+# if CC is set to pgi, we use pgi compiler
+ifeq ($(CC),pgi)
+    CC = pgc++
+endif
+
 
 CLAW_FC ?= $(FC)
+CLAW_CC ?= $(CC)
 LINK ?= $(CLAW_FC)
 
 # Path to version of python to use:  May need to use something other than
@@ -57,6 +66,8 @@ SOURCES ?=
 MODULES ?=
 EXCLUDE_SOURCES ?=
 EXCLUDE_MODULES ?=
+CPP_SOURCES ?=
+CPP_HEADERS ?=
 
 # Consolidate custom and common sources into a single list for compilations
 SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
@@ -75,6 +86,12 @@ MODULE_FILES = $(subst .F,.mod, $(subst .F90,.mod, $(subst .f,.mod, $(subst .f90
 MODULE_PATHS = $(sort $(dir $(MODULE_FILES)))
 MODULE_OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(MODULES)))))
 
+ifeq ($(USE_CPP), TRUE)
+CPP_OBJECTS = $(subst .cpp,.o, $(CPP_SOURCES))
+else
+CPP_OBJECTS = 
+endif
+
 #----------------------------------------------------------------------------
 # Compiling, linking, and include flags
 # User set flags, empty if not set
@@ -82,6 +99,7 @@ INCLUDE ?=
 FFLAGS ?=
 LFLAGS ?= $(FFLAGS)
 PPFLAGS ?=
+CPPFLAGS ?=
 
 # These will be included in all actual compilation and linking, one could
 # actually overwrite these before hand but that is not the intent of these
@@ -90,16 +108,24 @@ ALL_INCLUDE ?=
 ALL_FFLAGS ?=
 ALL_LFLAGS ?=
 ALL_DEFINES ?=
+ALL_LIBRARIES ?=
 
 # Add includes, the module search paths and library search paths are appended
 # at the end of the ALL_INCLUDE variable so that INCLUDE can override any of
 # the default settings
 ALL_INCLUDE += $(addprefix -I,$(INCLUDE))
 ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -L,$(LIB_PATHS))
+ifeq ($(USE_CUDA), TRUE)
+    ifndef CUDA_PATH
+        $(error CUDA_PATH Environment variable is undefined)
+    endif
+    ALL_INCLUDE += -I$(CUDA_PATH)/include
+endif
 
 # ALL_FFLAGS and ALL_LFLAGS currently only includes the user defined flags
 ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
+ALL_CPPFLAGS += $(CPPFLAGS)
 
 # -----------------------------------------------------------------------------
 #  GPU configurations 
@@ -109,10 +135,11 @@ ifeq ($(USE_CUDA),TRUE)
     endif
     ALL_DEFINES += -DCUDA
     ALL_FFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
-    ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc -lcudafor
+    ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_CPPFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_LIBRARIES += -lcudafor -lcuda
 endif
 # -----------------------------------------------------------------------------
-
 ifndef DIM
       $(warning DIM is not set. 2 is used for DIM by default.)
       DIM := 2
@@ -137,11 +164,13 @@ ALL_DEFINES += -DNWAVES=$(NUM_WAVES)
 
 ifeq ($(DEBUG),TRUE)
     ALL_DEFINES += -DDEBUG
+else
+    ALL_DEFINES += -DNDEBUG
 endif
 
 
 
-# Module flag setting, please add other compilers here as necessary
+# Fortran module flag setting, please add other compilers here as necessary
 ifeq ($(CLAW_FC),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
@@ -163,12 +192,25 @@ else ifeq ($(CLAW_FC),pgfortran)
 	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
 	else
 	    ALL_FFLAGS += -gopt -fast -Mpreprocess
-	    # ALL_FFLAGS += -gopt -O0 -Mpreprocess
 	endif
-	ALL_LFLAGS += -Mcuda=charstring
+	ALL_LFLAGS += -Mcuda=charstring 
+	ALL_LIBRARIES += -latomic
 	# OMP_FLAG = -mp=nonuma -Minfo=mp
 else
     $(error Unrecognized compiler: $(CLAW_FC))
+endif
+
+# cpp compile flag setting, please add other compilers here as necessary
+ifeq ($(CLAW_CC),pgc++)
+    ifeq ($(DEBUG),TRUE)
+	ALL_CPPFLAGS += -g -O0 -Mbounds
+    else
+	ALL_CPPFLAGS += -gopt -fast
+    endif
+    ALL_CPPFLAGS += --c++11
+    ALL_LIBRARIES += -lstdc++
+else
+    $(error Only pgc++ can be used for cpp files at this time.)
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -181,7 +223,7 @@ endif
 
 # Reset suffixes that we understand
 .SUFFIXES:
-.SUFFIXES: .f90 .f .mod .o
+.SUFFIXES: .f90 .f .mod .o .cpp
 
 
 
@@ -191,6 +233,9 @@ endif
 	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 %.o : %.f
 	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+
+%.o : %.cpp %.H
+	$(CLAW_CC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) -o $@
 
 #-----------------------------------------------------------------------------
 # These dependencies ensure some f90 files are compiled before others that 
@@ -210,12 +255,12 @@ endif
 #----------------------------------------------------------------------------
 # Executable:
 
-.objs:  $(MODULE_OBJECTS) $(OBJECTS);
+.objs:  $(MODULE_OBJECTS) $(OBJECTS) $(CPP_OBJECTS);
 
 # The order here is to again build the module files correctly
 
-$(EXE): $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
-	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
+$(EXE): $(MODULE_OBJECTS) $(OBJECTS) $(CPP_OBJECTS) $(MAKEFILE_LIST) ;
+	$(LINK) -o $(EXE) $(MODULE_OBJECTS) $(OBJECTS) $(CPP_OBJECTS) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_LFLAGS) $(ALL_LIBRARIES)
 
 .exe: $(EXE)
 
@@ -332,6 +377,7 @@ plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
 # preprocessor flags correctly
 new: $(MAKEFILE_LIST)
 	-rm -f  $(OBJECTS)
+	-rm -f  $(CPP_OBJECTS)
 	-rm -f  $(MODULE_OBJECTS)
 	-rm -f  $(MODULE_FILES)
 	-rm -f  $(EXE)
@@ -346,6 +392,7 @@ clean:
 clobber:
 	$(MAKE) clean -f $(MAKEFILE_LIST)
 	-rm -f $(OBJECTS)
+	-rm -f $(CPP_OBJECTS)
 	-rm -f $(MODULE_OBJECTS)
 	-rm -f $(MODULE_FILES)
 	-rm -f fort.*  *.pyc pyclaw.log 
