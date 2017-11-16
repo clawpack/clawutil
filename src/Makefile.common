@@ -247,7 +247,12 @@ ifeq ($(USE_CUDA),TRUE)
 /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/memory_module.o
 /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/cuda_module.o
 /home/xsqin/clawpack/amrclaw/src/2d/advanc.o: /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o \
-    /home/xsqin/clawpack/amrclaw/src/2d/amr_module.o
+    /home/xsqin/clawpack/amrclaw/src/2d/amr_module.o \
+    /home/xsqin/clawpack/amrclaw/src/2d/timer_module.o
+/home/xsqin/clawpack/amrclaw/src/2d/amr2.o: /home/xsqin/clawpack/amrclaw/src/2d/timer_module.o \
+    /home/xsqin/clawpack/amrclaw/src/2d/cuda_module.o
+
+
 endif
 
 #-----------------------------------------------------------------------------
