@@ -141,31 +141,36 @@ ifeq ($(USE_CUDA),TRUE)
 endif
 # -----------------------------------------------------------------------------
 ifndef DIM
-      $(warning DIM is not set. 2 is used for DIM by default.)
-      DIM := 2
+    $(warning DIM is not set. 2 is used for DIM by default.)
+    DIM := 2
 else
-      DIM := $(strip $(DIM))
+    DIM := $(strip $(DIM))
 endif
 ALL_DEFINES += -DSPACEDIM=$(DIM)
 
 ifndef NUM_EQUATIONS
-      $(error NUM_EQUATIONS is not set)
+    $(error NUM_EQUATIONS is not set)
 else
-      NUM_EQUATIONS := $(strip $(NUM_EQUATIONS))
+    NUM_EQUATIONS := $(strip $(NUM_EQUATIONS))
 endif
 ALL_DEFINES += -DNEQNS=$(NUM_EQUATIONS)
 
 ifndef NUM_WAVES
-      $(error NUM_WAVES is not set)
+    $(error NUM_WAVES is not set)
 else
-      NUM_WAVES := $(strip $(NUM_WAVES))
+    NUM_WAVES := $(strip $(NUM_WAVES))
+    ALL_DEFINES += -DNWAVES=$(NUM_WAVES)
 endif
-ALL_DEFINES += -DNWAVES=$(NUM_WAVES)
+
 
 ifeq ($(DEBUG),TRUE)
     ALL_DEFINES += -DDEBUG
 else
     ALL_DEFINES += -DNDEBUG
+endif
+
+ifeq ($(PROFILE),TRUE)
+    ALL_DEFINES += -DPROFILE
 endif
 
 
