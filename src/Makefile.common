@@ -138,6 +138,11 @@ ifeq ($(USE_CUDA),TRUE)
     ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
     ALL_CPPFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
     ALL_LIBRARIES += -lcudafor -lcuda
+    ifeq ($(VERBOSE), TRUE)
+	ALL_FFLAGS   += -Mcuda=ptxinfo
+	ALL_LFLAGS   += -Mcuda=ptxinfo
+	ALL_CPPFLAGS += -Mcuda=ptxinfo
+    endif
 endif
 # -----------------------------------------------------------------------------
 ifndef DIM
