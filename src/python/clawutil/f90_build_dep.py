@@ -66,12 +66,7 @@ class SourceFile(object):
 
         self.name = filename
 
-        # do we need to be preprocessed?  We'll use the convention
-        # that .F90 = yes, .f90 = no
         self.ext = os.path.splitext(filename)[1]
-
-
-
 
     def obj(self):
         """ the name of the object file we expect to be produced -- this
@@ -131,7 +126,7 @@ class SourceFile(object):
         return depends
 
 
-def doit(prefix, files, debug=False):
+def doit(files, debug=False):
     """ main routine that processes the files"""
 
     if debug:
@@ -194,8 +189,8 @@ def doit(prefix, files, debug=False):
             # on its own; otherwise output the dependency line
             if provides_obj != sf.obj():
                 print("{}: {}".format(
-                    prefix+os.path.basename(sf.obj()),
-                    prefix+os.path.basename(provides_obj)))
+                    sf.obj(),
+                    provides_obj))
 
         print(" ")
 
@@ -213,9 +208,6 @@ def doit(prefix, files, debug=False):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prefix",
-                        help="prefix to prepend to each dependency pair, e.g., for a build directory",
-                        default="")
     parser.add_argument("--debug",
                         help="output a detailed log file describing each source file",
                         action="store_true")
@@ -224,14 +216,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.prefix != "":
-        prefix_pass = "{}/".format(os.path.normpath(args.prefix))
-    else:
-        prefix_pass = "./"
-
-
     try:
-        doit(prefix_pass, args.files, debug=args.debug)
+        doit(args.files, debug=args.debug)
     except:
         # something went wrong
         print("$(error something went wrong in f90_build_dep.py. Please add the option 'DEPENDENCY_BUILD_OPTS=--debug' to your make command, re-make and examine the 'dependencies.out' file)")

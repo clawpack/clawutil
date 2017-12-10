@@ -251,18 +251,17 @@ endif
 # These dependencies ensure some f90 files are compiled before others that 
 # depend on them
 #
-ifeq ($(USE_CUDA),TRUE)
-/home/xsqin/clawpack/amrclaw/src/2d/sweep_module.o: /home/xsqin/clawpack/amrclaw/examples/GPU/acoustics_2d_radial/problem_para_module.o \
-	/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o
-/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/memory_module.o
-/home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o: /home/xsqin/clawpack/amrclaw/src/2d/cuda_module.o
-/home/xsqin/clawpack/amrclaw/src/2d/advanc.o: /home/xsqin/clawpack/amrclaw/src/2d/parallel_advanc_module.o \
-    /home/xsqin/clawpack/amrclaw/src/2d/amr_module.o \
-    /home/xsqin/clawpack/amrclaw/src/2d/timer_module.o
-/home/xsqin/clawpack/amrclaw/src/2d/amr2.o: /home/xsqin/clawpack/amrclaw/src/2d/timer_module.o \
-    /home/xsqin/clawpack/amrclaw/src/2d/cuda_module.o
+MODDEP = $(CLAW)/clawutil/src/python/clawutil/f90_build_dep.py
+DEPENDENCY_BUILD_OPTS = 
+ALL_SOURCES_TMP = $(SOURCES) $(MODULES)
 
+f90.depends: $(ALL_SOURCES_TMP)
+	@echo "Building f90 dependency file ..."
+	@$(MODDEP) $(DEPENDENCY_BUILD_OPTS) \
+	    $^ > f90.depends
 
+ifneq "$(strip $(ALL_SOURCES_TMP))" ""
+-include f90.depends
 endif
 
 #-----------------------------------------------------------------------------
@@ -402,7 +401,7 @@ new: $(MAKEFILE_LIST)
 # Clean up options:
 clean:
 	-rm -f $(EXE) $(HTML)
-	-rm -f .data .output .plots .htmls 
+	-rm -f .data .output .plots .htmls f90.depends
 
 clobber:
 	$(MAKE) clean -f $(MAKEFILE_LIST)
