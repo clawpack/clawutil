@@ -176,6 +176,7 @@ endif
 
 ifeq ($(PROFILE),TRUE)
     ALL_DEFINES += -DPROFILE
+    ALL_LIBRARIES += -L/usr/local/cuda/lib64 -lnvToolsExt
 endif
 
 
