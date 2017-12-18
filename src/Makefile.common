@@ -149,9 +149,15 @@ ifeq ($(USE_CUDA),TRUE)
 	$(error You must set FC to pgi to use CUDA)
     endif
     ALL_DEFINES += -DCUDA
-    ALL_FFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
-    ALL_LFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
-    ALL_CPPFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+    ifeq ($(computer_name), titan)
+	ALL_FFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+    else
+	ALL_FFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+    endif
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
 	ALL_FFLAGS   += -Mcuda=ptxinfo
