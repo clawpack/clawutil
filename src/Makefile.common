@@ -10,6 +10,11 @@ SHELL = /bin/sh
 INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA ?= $(INSTALL) -m 644
 
+host_name := $(shell hostname -f)
+ifeq ($(findstring titan, $(host_name)), titan)
+    computer_name := titan
+endif
+
 # Fortran compiler:  FC may be set as an environment variable or in make
 # file that 'includes' this one.  Otherwise assume gfortran.
 FC ?= gfortran
@@ -24,16 +29,26 @@ endif
 
 # if FC is set to pgi, we use pgi compiler
 ifeq ($(FC),pgi)
-    FC = pgfortran
+    ifeq ($(computer_name), titan)
+	CLAW_FC ?= ftn
+    else
+        CLAW_FC ?= pgfortran
+    endif
+else
+    CLAW_FC ?= $(FC)
 endif
 # if CC is set to pgi, we use pgi compiler
 ifeq ($(CC),pgi)
-    CC = pgc++
+    ifeq ($(computer_name), titan)
+	CLAW_CC ?= CC
+    else
+	CLAW_CC ?= pgc++
+    endif
+else
+    CLAW_CC ?= $(CC)
 endif
 
 
-CLAW_FC ?= $(FC)
-CLAW_CC ?= $(CC)
 LINK ?= $(CLAW_FC)
 
 # Path to version of python to use:  May need to use something other than
@@ -130,13 +145,13 @@ ALL_CPPFLAGS += $(CPPFLAGS)
 # -----------------------------------------------------------------------------
 #  GPU configurations 
 ifeq ($(USE_CUDA),TRUE)
-    ifneq ($(CLAW_FC),pgfortran)
+    ifneq ($(FC),pgi)
 	$(error You must set FC to pgi to use CUDA)
     endif
     ALL_DEFINES += -DCUDA
-    ALL_FFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
-    ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
-    ALL_CPPFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_FFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_LFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_CPPFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
 	ALL_FFLAGS   += -Mcuda=ptxinfo
@@ -207,12 +222,31 @@ else ifeq ($(CLAW_FC),pgfortran)
 	ALL_LFLAGS += -Mcuda=charstring 
 	ALL_LIBRARIES += -latomic
 	# OMP_FLAG = -mp=nonuma -Minfo=mp
+else ifeq ($(CLAW_FC),ftn) # for titan
+	# Note that there shoud be a space after this flag
+	MODULE_FLAG = -module 
+	ifeq ($(DEBUG),TRUE)
+	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
+	else
+	    ALL_FFLAGS += -gopt -fast -Mpreprocess
+	endif
+	ALL_LFLAGS += -Mcuda=charstring 
+	ALL_LIBRARIES += -latomic
+	# OMP_FLAG = -mp=nonuma -Minfo=mp
 else
     $(error Unrecognized compiler: $(CLAW_FC))
 endif
 
 # cpp compile flag setting, please add other compilers here as necessary
 ifeq ($(CLAW_CC),pgc++)
+    ifeq ($(DEBUG),TRUE)
+	ALL_CPPFLAGS += -g -O0 -Mbounds
+    else
+	ALL_CPPFLAGS += -gopt -fast
+    endif
+    ALL_CPPFLAGS += --c++11
+    ALL_LIBRARIES += -lstdc++
+else ifeq ($(CLAW_CC),CC) # for titan
     ifeq ($(DEBUG),TRUE)
 	ALL_CPPFLAGS += -g -O0 -Mbounds
     else
