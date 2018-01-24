@@ -212,6 +212,9 @@ ifeq ($(CLAW_FC),gfortran)
 	else
 	    ALL_FFLAGS += -O3 
 	endif
+	ifeq ($(OPENMP), TRUE)
+	    ALL_FFLAGS += -fopenmp
+	endif
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
@@ -227,7 +230,9 @@ else ifeq ($(CLAW_FC),pgfortran)
 	endif
 	ALL_LFLAGS += -Mcuda=charstring 
 	ALL_LIBRARIES += -latomic
-	# OMP_FLAG = -mp=nonuma -Minfo=mp
+	ifeq ($(OPENMP), TRUE)
+	    ALL_FFLAGS += -mp=nonuma -Minfo=mp
+	endif
 else ifeq ($(CLAW_FC),ftn) # for titan
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
@@ -238,7 +243,9 @@ else ifeq ($(CLAW_FC),ftn) # for titan
 	endif
 	ALL_LFLAGS += -Mcuda=charstring 
 	ALL_LIBRARIES += -latomic
-	# OMP_FLAG = -mp=nonuma -Minfo=mp
+	ifeq ($(OPENMP), TRUE)
+	    ALL_FFLAGS += -mp=nonuma -Minfo=mp
+	endif
 else
     $(error Unrecognized compiler: $(CLAW_FC))
 endif
