@@ -212,7 +212,7 @@ ifeq ($(CLAW_FC),gfortran)
 	else
 	    ALL_FFLAGS += -O3 
 	endif
-	ifeq ($(OPENMP), TRUE)
+	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -fopenmp
 	endif
 else ifeq ($(CLAW_FC),ifort)
@@ -230,8 +230,9 @@ else ifeq ($(CLAW_FC),pgfortran)
 	endif
 	ALL_LFLAGS += -Mcuda=charstring 
 	ALL_LIBRARIES += -latomic
-	ifeq ($(OPENMP), TRUE)
-	    ALL_FFLAGS += -mp=nonuma -Minfo=mp
+	ifeq ($(USE_OPENMP), TRUE)
+	    ALL_FFLAGS += -mp -Minfo=mp
+	    ALL_LFLAGS += -mp -Minfo=mp
 	endif
 else ifeq ($(CLAW_FC),ftn) # for titan
 	# Note that there shoud be a space after this flag
@@ -243,8 +244,8 @@ else ifeq ($(CLAW_FC),ftn) # for titan
 	endif
 	ALL_LFLAGS += -Mcuda=charstring 
 	ALL_LIBRARIES += -latomic
-	ifeq ($(OPENMP), TRUE)
-	    ALL_FFLAGS += -mp=nonuma -Minfo=mp
+	ifeq ($(USE_OPENMP), TRUE)
+	    ALL_FFLAGS += -mp -Minfo=mp
 	endif
 else
     $(error Unrecognized compiler: $(CLAW_FC))
@@ -259,6 +260,9 @@ ifeq ($(CLAW_CC),pgc++)
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
+    ifeq ($(USE_OPENMP), TRUE)
+	ALL_CPPFLAGS += -mp -Minfo=mp
+    endif
 else ifeq ($(CLAW_CC),CC) # for titan
     ifeq ($(DEBUG),TRUE)
 	ALL_CPPFLAGS += -g -O0 -Mbounds
@@ -267,6 +271,9 @@ else ifeq ($(CLAW_CC),CC) # for titan
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
+    ifeq ($(USE_OPENMP), TRUE)
+	ALL_CPPFLAGS += -mp -Minfo=mp
+    endif
 else
     $(error Only pgc++ can be used for cpp files at this time.)
 endif
