@@ -166,6 +166,15 @@ ifeq ($(USE_CUDA),TRUE)
     endif
 endif
 # -----------------------------------------------------------------------------
+# by default, use double precision
+ifeq ($(USE_DOUBLE_PRECISION),FALSE)
+    ALL_DEFINES += -DCLAW_REAL=4
+else
+    ALL_DEFINES += -DCLAW_REAL=8
+endif
+
+
+
 ifndef DIM
     $(warning DIM is not set. 2 is used for DIM by default.)
     DIM := 2
