@@ -237,7 +237,7 @@ else ifeq ($(CLAW_FC),pgfortran)
 	else
 	    ALL_FFLAGS += -gopt -fast -Mpreprocess
 	endif
-	ALL_LFLAGS += -Mcuda=charstring 
+	ALL_LFLAGS += -Mcuda=charstring -Minform=inform
 	ALL_LIBRARIES += -latomic
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -mp -Minfo=mp
