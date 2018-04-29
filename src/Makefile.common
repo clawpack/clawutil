@@ -235,7 +235,7 @@ else ifeq ($(CLAW_FC),pgfortran)
 	ifeq ($(DEBUG),TRUE)
 	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
 	else
-	    ALL_FFLAGS += -gopt -fast -Mpreprocess
+	    ALL_FFLAGS += -gopt -O4 -fast -Mpreprocess
 	endif
 	ALL_LFLAGS += -Mcuda=charstring -Minform=inform
 	ALL_LIBRARIES += -latomic
@@ -249,7 +249,7 @@ else ifeq ($(CLAW_FC),ftn) # for titan
 	ifeq ($(DEBUG),TRUE)
 	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
 	else
-	    ALL_FFLAGS += -gopt -fast -Mpreprocess
+	    ALL_FFLAGS += -gopt -O4 -fast -Mpreprocess
 	endif
 	ALL_LFLAGS += -Mcuda=charstring 
 	ALL_LIBRARIES += -latomic
@@ -265,7 +265,7 @@ ifeq ($(CLAW_CC),pgc++)
     ifeq ($(DEBUG),TRUE)
 	ALL_CPPFLAGS += -g -O0 -Mbounds
     else
-	ALL_CPPFLAGS += -gopt -fast
+	ALL_CPPFLAGS += -gopt -O4 -fast
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
@@ -276,7 +276,7 @@ else ifeq ($(CLAW_CC),CC) # for titan
     ifeq ($(DEBUG),TRUE)
 	ALL_CPPFLAGS += -g -O0 -Mbounds
     else
-	ALL_CPPFLAGS += -gopt -fast
+	ALL_CPPFLAGS += -gopt -O4 -fast
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
