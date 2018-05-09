@@ -135,6 +135,7 @@ ifeq ($(USE_CUDA), TRUE)
         $(error CUDA_PATH Environment variable is undefined)
     endif
     ALL_INCLUDE += -I$(CUDA_PATH)/include
+    ALL_LIBRARIES += -L$(CUDA_PATH)/lib64
 endif
 
 # ALL_FFLAGS and ALL_LFLAGS currently only includes the user defined flags
@@ -206,7 +207,7 @@ endif
 
 ifeq ($(PROFILE),TRUE)
     ALL_DEFINES += -DPROFILE
-    ALL_LIBRARIES += -L/usr/local/cuda/lib64 -lnvToolsExt
+    ALL_LIBRARIES += -lnvToolsExt
 endif
 
 
