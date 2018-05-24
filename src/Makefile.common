@@ -48,6 +48,9 @@ else
     CLAW_CC ?= $(CC)
 endif
 
+# CUDA nvcc compiler
+CLAW_NVCC ?= $(CUDA_PATH)/bin/nvcc
+
 
 LINK ?= $(CLAW_FC)
 
@@ -102,9 +105,13 @@ MODULE_PATHS = $(sort $(dir $(MODULE_FILES)))
 MODULE_OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(MODULES)))))
 
 ifeq ($(USE_CPP), TRUE)
-CPP_OBJECTS = $(subst .cpp,.o, $(CPP_SOURCES))
+    ifeq ($(USE_CUDA), TRUE)
+	CPP_OBJECTS = $(subst .cu,.o, $(subst .cpp,.o, $(CPP_SOURCES)))
+    else
+	CPP_OBJECTS = $(subst .cpp,.o, $(CPP_SOURCES))
+    endif
 else
-CPP_OBJECTS = 
+    CPP_OBJECTS = 
 endif
 
 #----------------------------------------------------------------------------
@@ -288,6 +295,10 @@ else
     $(error Only pgc++ can be used for cpp files at this time.)
 endif
 
+ifeq ($(USE_CUDA), TRUE)
+    ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -O3
+endif
+
 # We may want to set MAKELEVEL here as it is not always set but we know we are
 # not the first level (the original calling Makefile should be MAKELEVEL = 0)
 # MAKELEVEL ?= 0
@@ -298,7 +309,7 @@ endif
 
 # Reset suffixes that we understand
 .SUFFIXES:
-.SUFFIXES: .f90 .f .mod .o .cpp
+.SUFFIXES: .f90 .f .mod .o .cpp .cu
 
 
 
@@ -311,6 +322,11 @@ endif
 
 %.o : %.cpp %.H
 	$(CLAW_CC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) -o $@
+
+ifeq ($(USE_CUDA), TRUE)
+    %.o : %.cu %.H
+	    $(CLAW_NVCC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) -o $@
+endif
 
 #-----------------------------------------------------------------------------
 # These dependencies ensure some f90 files are compiled before others that 
@@ -328,6 +344,7 @@ f90.depends: $(ALL_SOURCES_TMP)
 ifneq "$(strip $(ALL_SOURCES_TMP))" ""
 -include f90.depends
 endif
+# TODO: add a python script that process C++ dependencies
 
 #-----------------------------------------------------------------------------
 
