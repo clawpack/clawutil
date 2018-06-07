@@ -93,7 +93,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                     print("*** Aborting download.")
                 return None
             
-        if not os.path.exists(output_path):
+        if not os.path.exists(output_path) or force:
             # Fetch remote file, will raise a variety of exceptions depending on
             # the retrieval problem if it happens
             if verbose:
