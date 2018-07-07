@@ -609,13 +609,14 @@ class ClawInputData(ClawData):
             dx = (upper-lower)/num_cells
             num_cells_abl_lower = np.ceil(depth_lower/dx)
             num_cells_abl_upper = np.ceil(depth_upper/dx)
-            num_cells += int(num_cells_abl_lower) + int(num_cells_abl_upper)
+            for j in range(self.num_dim):
+              num_cells[j] += int(num_cells_abl_lower[j]) + int(num_cells_abl_upper[j])
             lower -= num_cells_abl_lower*dx
             upper += num_cells_abl_upper*dx
             self.data_write('', value=lower, alt_name='lower')
             self.data_write('', value=upper, alt_name='upper')
             self.data_write('', value=num_cells, alt_name='num_cells')
-            num_aux += 1
+            num_aux += self.num_dim
 
         self.data_write()  # writes blank line
         self.data_write('num_eqn')
