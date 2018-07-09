@@ -277,6 +277,11 @@ ifeq ($(CLAW_CC),pgc++)
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
+
+    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4
+    # We should get rid of this at the end
+    ALL_CPPFLAGS += -D__CUDACC__ 
+
     ifeq ($(USE_OPENMP), TRUE)
 	ALL_CPPFLAGS += -mp -Minfo=mp
     endif
