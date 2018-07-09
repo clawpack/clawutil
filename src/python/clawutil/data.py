@@ -561,7 +561,6 @@ class ClawInputData(ClawData):
             self.add_attribute('bc_lower',[0])
             self.add_attribute('bc_upper',[0])
             self.add_attribute('transverse_waves',0)
-            self.add_attribute('abl_depth_lower',[0.])
         elif num_dim == 2:
             self.add_attribute('lower',[0.,0.])
             self.add_attribute('upper',[1.,1.])
