@@ -247,7 +247,9 @@ else ifeq ($(CLAW_FC),pgfortran)
 	    ALL_FFLAGS += -O4 -fast -Mpreprocess
 	endif
 	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast 
-	ALL_LIBRARIES += -latomic
+	# Although we are using pgi compiler, we link against gnu omp lib instead of pgi omp lib, which 
+	# is the default choice, since sometimes we get deadlock in omp region if pgi omp lib is used.
+	ALL_LIBRARIES += -latomic -lgomp
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -mp -Minfo=mp
 	    ALL_LFLAGS += -mp -Minfo=mp
@@ -261,7 +263,9 @@ else ifeq ($(CLAW_FC),ftn) # for titan
 	    ALL_FFLAGS += -O4 -fast -Mpreprocess 
 	endif
 	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast 
-	ALL_LIBRARIES += -latomic
+	# Although we are using pgi compiler, we link against gnu omp lib instead of pgi omp lib, which 
+	# is the default choice, since sometimes we get deadlock in omp region if pgi omp lib is used.
+	ALL_LIBRARIES += -latomic -lgomp
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -mp -Minfo=mp
 	endif
