@@ -241,7 +241,8 @@ else ifeq ($(CLAW_FC),pgfortran)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	ifeq ($(DEBUG),TRUE)
-	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
+	    # ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=inv,denorm,divz,ovf,unf -Mchkptr -Mchkstk -Kieee
+	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=fp -Mchkstk -Kieee
 	else
 	    ALL_FFLAGS += -O4 -fast -Mpreprocess
 	endif
@@ -271,7 +272,8 @@ endif
 # cpp compile flag setting, please add other compilers here as necessary
 ifeq ($(CLAW_CC),pgc++)
     ifeq ($(DEBUG),TRUE)
-	ALL_CPPFLAGS += -g -O0 -Mbounds
+	# ALL_CPPFLAGS += -g -O0 -Mbounds -Kieee -Ktrap=inv,denorm,divz,ovf,unf 
+	ALL_CPPFLAGS += -g -O0 -Mbounds -Kieee -Ktrap=fp
     else
 	ALL_CPPFLAGS += -O4 -fast
     endif
