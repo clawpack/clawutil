@@ -188,15 +188,15 @@ ifndef DIM
     DIM := 2
 else
     DIM := $(strip $(DIM))
+    ALL_DEFINES += -DSPACEDIM=$(DIM)
 endif
-ALL_DEFINES += -DSPACEDIM=$(DIM)
 
 ifndef NUM_EQUATIONS
     $(error NUM_EQUATIONS is not set)
 else
     NUM_EQUATIONS := $(strip $(NUM_EQUATIONS))
+    ALL_DEFINES += -DNEQNS=$(NUM_EQUATIONS)
 endif
-ALL_DEFINES += -DNEQNS=$(NUM_EQUATIONS)
 
 ifndef NUM_WAVES
     $(error NUM_WAVES is not set)
@@ -205,6 +205,12 @@ else
     ALL_DEFINES += -DNWAVES=$(NUM_WAVES)
 endif
 
+ifndef NUM_COEFFS
+    $(error NUM_COEFFS is not set)
+else
+    NUM_COEFFS := $(strip $(NUM_COEFFS))
+    ALL_DEFINES += -DNCOEFFS=$(NUM_COEFFS)
+endif
 
 ifeq ($(DEBUG),TRUE)
     ALL_DEFINES += -DDEBUG
@@ -284,8 +290,8 @@ ifeq ($(CLAW_CC),pgc++)
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
 
-    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4
-    # We should get rid of this at the end
+    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4 on Doppio
+    # We should get rid of this eventually 
     ALL_CPPFLAGS += -D__CUDACC__ 
 
     ifeq ($(USE_OPENMP), TRUE)
@@ -331,33 +337,13 @@ endif
 %.o : %.f
 	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
-%.o : %.cpp %.H
+%.o : %.cpp
 	$(CLAW_CC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) -o $@
 
 ifeq ($(USE_CUDA), TRUE)
-    %.o : %.cu %.H
+    %.o : %.cu
 	    $(CLAW_NVCC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) -o $@
 endif
-
-#-----------------------------------------------------------------------------
-# These dependencies ensure some f90 files are compiled before others that 
-# depend on them
-#
-MODDEP = $(CLAW)/clawutil/src/python/clawutil/f90_build_dep.py
-DEPENDENCY_BUILD_OPTS = 
-ALL_SOURCES_TMP = $(SOURCES) $(MODULES)
-
-f90.depends: $(ALL_SOURCES_TMP)
-	@echo "Building f90 dependency file ..."
-	@$(MODDEP) $(DEPENDENCY_BUILD_OPTS) \
-	    $^ > f90.depends
-
-ifneq "$(strip $(ALL_SOURCES_TMP))" ""
--include f90.depends
-endif
-# TODO: add a python script that process C++ dependencies
-
-#-----------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------
 # Executable:
@@ -387,6 +373,50 @@ debug:
 	@echo 'for additional information and solutions.'
 
 #----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# the f90.depends ensure some f90 files are compiled before others that 
+# depend on them
+#
+MODDEP = $(CLAW)/clawutil/src/python/clawutil/f90_build_dep.py
+DEPENDENCY_BUILD_OPTS = 
+ALL_SOURCES_TMP = $(SOURCES) $(MODULES)
+
+f90.depends: $(ALL_SOURCES_TMP)
+	@echo "Building f90 dependency file ..."
+	@rm -f f90.depends
+	@$(MODDEP) $(DEPENDENCY_BUILD_OPTS) \
+	    $^ > f90.depends
+
+ifneq "$(strip $(ALL_SOURCES_TMP))" ""
+-include f90.depends
+endif
+
+# the cpp.depends ensure correct dependencies of cpp files
+ 
+ifeq ($(USE_CPP), TRUE)
+
+ifeq ($(USE_CUDA), TRUE)
+cpp.depends: $(CPP_SOURCES)
+	@echo "Building cpp dependency file ..."
+	@rm -f cpp.depends
+	@for CPP_FILE in $(CPP_SOURCES); do \
+ 		$(CLAW_NVCC) -M $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) >> cpp.depends; \
+	done
+else
+cpp.depends: $(CPP_SOURCES)
+	@echo "Building cpp dependency file ..."
+	@rm -f cpp.depends
+	@for CPP_FILE in $(CPP_SOURCES); do \
+ 		g++ -M $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) >> cpp.depends; \
+	done
+endif
+# only g++ has the -M option
+
+-include cpp.depends
+endif
+#-----------------------------------------------------------------------------
+
 
 # Command to create *.html files from *.f etc:
 CC2HTML = $(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/clawcode2html.py --force 
@@ -494,7 +524,7 @@ new: $(MAKEFILE_LIST)
 # Clean up options:
 clean:
 	-rm -f $(EXE) $(HTML)
-	-rm -f .data .output .plots .htmls f90.depends
+	-rm -f .data .output .plots .htmls f90.depends cpp.depends
 
 clobber:
 	$(MAKE) clean -f $(MAKEFILE_LIST)
