@@ -328,8 +328,50 @@ endif
 .SUFFIXES:
 .SUFFIXES: .f90 .f .mod .o .cpp .cu
 
+#-----------------------------------------------------------------------------
+# the f90.depends ensure some f90 files are compiled before others that 
+# depend on them
+MODDEP = $(CLAW)/clawutil/src/python/clawutil/f90_build_dep.py
+DEPENDENCY_BUILD_OPTS = 
+ALL_SOURCES_TMP = $(SOURCES) $(MODULES)
+
+f90.depends: $(ALL_SOURCES_TMP)
+	@echo "Building f90 dependency file ..."
+	@rm -f f90.depends
+	@$(MODDEP) $(DEPENDENCY_BUILD_OPTS) \
+	    $^ > f90.depends
+
+ifneq "$(strip $(ALL_SOURCES_TMP))" ""
+-include f90.depends
+endif
+
+# the cpp.depends ensure correct dependencies of cpp files
+ifeq ($(USE_CPP), TRUE)
+
+ifeq ($(USE_CUDA), TRUE)
+cpp.depends: $(CPP_SOURCES)
+	@echo "Building cpp dependency file ..."
+	@rm -f cpp.depends
+	@for CPP_FILE in $(CPP_SOURCES); do \
+	    	TMP_PATH=$$(dirname $$CPP_FILE); \
+		$(CLAW_NVCC) -M -odir $$(dirname $$CPP_FILE) $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) >> cpp.depends; \
+	done
+else
+# this has not been tested
+# note that only gnu c++ compiler has the -M option
+cpp.depends: $(CPP_SOURCES)
+	@echo "Building cpp dependency file ..."
+	@rm -f cpp.depends
+	@for CPP_FILE in $(CPP_SOURCES); do \
+ 		g++ -M $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) >> cpp.depends; \
+	done
+endif
+-include cpp.depends
+endif
+#-----------------------------------------------------------------------------
 
 
+#-----------------------------------------------------------------------------
 # Default Rules, the module rule should be executed first in most instances,
 
 %.o : %.f90
@@ -344,6 +386,8 @@ ifeq ($(USE_CUDA), TRUE)
     %.o : %.cu
 	    $(CLAW_NVCC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) -o $@
 endif
+#-----------------------------------------------------------------------------
+
 
 #----------------------------------------------------------------------------
 # Executable:
@@ -373,49 +417,6 @@ debug:
 	@echo 'for additional information and solutions.'
 
 #----------------------------------------------------------------------------
-
-#-----------------------------------------------------------------------------
-# the f90.depends ensure some f90 files are compiled before others that 
-# depend on them
-#
-MODDEP = $(CLAW)/clawutil/src/python/clawutil/f90_build_dep.py
-DEPENDENCY_BUILD_OPTS = 
-ALL_SOURCES_TMP = $(SOURCES) $(MODULES)
-
-f90.depends: $(ALL_SOURCES_TMP)
-	@echo "Building f90 dependency file ..."
-	@rm -f f90.depends
-	@$(MODDEP) $(DEPENDENCY_BUILD_OPTS) \
-	    $^ > f90.depends
-
-ifneq "$(strip $(ALL_SOURCES_TMP))" ""
--include f90.depends
-endif
-
-# the cpp.depends ensure correct dependencies of cpp files
- 
-ifeq ($(USE_CPP), TRUE)
-
-ifeq ($(USE_CUDA), TRUE)
-cpp.depends: $(CPP_SOURCES)
-	@echo "Building cpp dependency file ..."
-	@rm -f cpp.depends
-	@for CPP_FILE in $(CPP_SOURCES); do \
- 		$(CLAW_NVCC) -M $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) >> cpp.depends; \
-	done
-else
-cpp.depends: $(CPP_SOURCES)
-	@echo "Building cpp dependency file ..."
-	@rm -f cpp.depends
-	@for CPP_FILE in $(CPP_SOURCES); do \
- 		g++ -M $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) >> cpp.depends; \
-	done
-endif
-# only g++ has the -M option
-
--include cpp.depends
-endif
-#-----------------------------------------------------------------------------
 
 
 # Command to create *.html files from *.f etc:
