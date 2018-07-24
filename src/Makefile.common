@@ -220,7 +220,9 @@ endif
 
 ifeq ($(PROFILE),TRUE)
     ALL_DEFINES += -DPROFILE
+    ifeq ($(USE_CUDA), TRUE)
     ALL_LIBRARIES += -lnvToolsExt
+    endif
 endif
 
 
@@ -237,6 +239,7 @@ ifeq ($(CLAW_FC),gfortran)
 	endif
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -fopenmp
+	    ALL_LFLAGS += -fopenmp
 	endif
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
