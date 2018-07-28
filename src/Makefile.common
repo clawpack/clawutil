@@ -246,77 +246,66 @@ else ifeq ($(CLAW_FC),ifort)
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
 	# TODO: add flags for the intel compiler
-else ifeq ($(CLAW_FC),pgfortran)
+else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pgfortran or ftn
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	ifeq ($(DEBUG),TRUE)
 	    # ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=inv,denorm,divz,ovf,unf -Mchkptr -Mchkstk -Kieee
 	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=fp -Mchkstk -Kieee
 	else
-	    ALL_FFLAGS += -O4 -fast -Mpreprocess
+	    ALL_FFLAGS += -O4 -fast -Mpreprocess -Minline -Mipa=inline,reshape,safeall
 	endif
-	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast 
-	# Although we are using pgi compiler, we link against gnu omp lib instead of pgi omp lib, which 
-	# is the default choice, since sometimes we get deadlock in omp region if pgi omp lib is used.
+	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast -Minline -Mipa=inline,reshape,safeall 
 	ALL_LIBRARIES += -latomic
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -mp -Minfo=mp
-	    ALL_LFLAGS += -mp -Minfo=mp
 	endif
-else ifeq ($(CLAW_FC),ftn) # for titan
-	# Note that there shoud be a space after this flag
-	MODULE_FLAG = -module 
-	ifeq ($(DEBUG),TRUE)
-	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=divz,inv -Mchkptr -Mchkstk
-	else
-	    ALL_FFLAGS += -O4 -fast -Mpreprocess 
-	endif
-	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast 
-	# Although we are using pgi compiler, we link against gnu omp lib instead of pgi omp lib, which 
-	# is the default choice, since sometimes we get deadlock in omp region if pgi omp lib is used.
-	ALL_LIBRARIES += -latomic
-	ifeq ($(USE_OPENMP), TRUE)
-	    ALL_FFLAGS += -mp -Minfo=mp
+	ifeq ($(VERBOSE), TRUE)
+	    ALL_FFLAGS += -Manno -Mkeepasm
 	endif
 else
     $(error Unrecognized compiler: $(CLAW_FC))
 endif
 
 # cpp compile flag setting, please add other compilers here as necessary
-ifeq ($(CLAW_CC),pgc++)
-    ifeq ($(DEBUG),TRUE)
-	# ALL_CPPFLAGS += -g -O0 -Mbounds -Kieee -Ktrap=inv,denorm,divz,ovf,unf 
-	ALL_CPPFLAGS += -g -O0 -Mbounds -Kieee -Ktrap=fp
-    else
-	ALL_CPPFLAGS += -O4 -fast
-    endif
-    ALL_CPPFLAGS += --c++11
-    ALL_LIBRARIES += -lstdc++
-
-    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4 on Doppio
-    # We should get rid of this eventually 
-    ALL_CPPFLAGS += -D__CUDACC__ 
-
-    ifeq ($(USE_OPENMP), TRUE)
-	ALL_CPPFLAGS += -mp -Minfo=mp
-    endif
-else ifeq ($(CLAW_CC),CC) # for titan
+ifeq ($(CLAW_CC),$(filter $(CLAW_CC),pgc++ CC)) # CLAW_CC is either pgc++ or CC 
     ifeq ($(DEBUG),TRUE)
 	ALL_CPPFLAGS += -g -O0 -Mbounds
     else
-	ALL_CPPFLAGS += -O4 -fast
+	ALL_CPPFLAGS += -O4 -fast -Minline -Mipa=inline,reshape,safeall -Mpreprocess
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
     ifeq ($(USE_OPENMP), TRUE)
 	ALL_CPPFLAGS += -mp -Minfo=mp
+    endif
+    ifeq ($(VERBOSE), TRUE)
+	ALL_CPPFLAGS += -Manno -Mkeepasm
     endif
 else
     $(error Only pgc++ can be used for cpp files at this time.)
 endif
 
 ifeq ($(USE_CUDA), TRUE)
-    ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -O3
+    ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -O3 -rdc=true -lineinfo
+    ALL_NVCCFLAGS += -Xcompiler='-O3'
+    ifeq ($(VERBOSE), TRUE)
+	ALL_NVCCFLAGS += -keep --resource-usage -Xptxas=--verbose
+	ALL_NVCCFLAGS += -keep-dir built.tmp
+    endif
+endif
+
+ifeq ($(USE_CUDA), TRUE)
+ifeq ($(VERBOSE), TRUE)
+$(shell if [ -d built.tmp ]; then rm -rf built.tmp; fi)
+$(shell mkdir -p built.tmp)
+endif
+endif
+
+ifeq ($(findstring doppio, $(host_name)), doppio)
+    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4 on Doppio
+    # We should get rid of this eventually 
+    ALL_CPPFLAGS += -D__CUDACC__ 
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -538,6 +527,7 @@ clobber:
 	-rm -f $(MODULE_FILES)
 	-rm -f fort.*  *.pyc pyclaw.log 
 	-rm -f -r $(OUTDIR) $(PLOTDIR)
+	-if [ -d built.tmp ]; then rm -rf built.tmp; fi
 
 #----------------------------------------------------------------------------
 
