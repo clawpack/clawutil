@@ -500,7 +500,10 @@ class ClawRunData(ClawData):
 
         for data_object in self.data_list:
             if isinstance(data_object, amrclaw.GaugeData):
-                data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux)
+                if self.clawdata.abldata.abltype == 0:
+                    data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux)
+                else:
+                    data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux+self.clawdata.num_dim)
             else:
                 data_object.write()
 
