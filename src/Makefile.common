@@ -181,8 +181,6 @@ else
     ALL_DEFINES += -DCLAW_REAL=8
 endif
 
-
-
 ifndef DIM
     $(warning DIM is not set. 2 is used for DIM by default.)
     DIM := 2
@@ -210,6 +208,10 @@ ifndef NUM_COEFFS
 else
     NUM_COEFFS := $(strip $(NUM_COEFFS))
     ALL_DEFINES += -DNCOEFFS=$(NUM_COEFFS)
+endif
+
+ifeq ($(USE_FWAVES),TRUE)
+    ALL_DEFINES += -DUSE_FWAVES
 endif
 
 ifeq ($(DEBUG),TRUE)
