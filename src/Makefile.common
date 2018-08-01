@@ -174,6 +174,7 @@ ifeq ($(USE_CUDA),TRUE)
     endif
 endif
 # -----------------------------------------------------------------------------
+ 
 # by default, use double precision
 ifeq ($(USE_DOUBLE_PRECISION),FALSE)
     ALL_DEFINES += -DCLAW_REAL=4
@@ -214,6 +215,10 @@ ifeq ($(USE_FWAVES),TRUE)
     ALL_DEFINES += -DUSE_FWAVES
 endif
 
+ifeq ($(CLAW_PKG),geoclaw)
+    ALL_DEFINES += -DGEOCLAW
+endif
+
 ifeq ($(DEBUG),TRUE)
     ALL_DEFINES += -DDEBUG
 else
@@ -226,8 +231,6 @@ ifeq ($(PROFILE),TRUE)
     ALL_LIBRARIES += -lnvToolsExt
     endif
 endif
-
-
 
 # Fortran module flag setting, please add other compilers here as necessary
 ifeq ($(CLAW_FC),gfortran)
@@ -255,9 +258,9 @@ else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pg
 	    # ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=inv,denorm,divz,ovf,unf -Mchkptr -Mchkstk -Kieee
 	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=fp -Mchkstk -Kieee
 	else
-	    ALL_FFLAGS += -O4 -fast -Mpreprocess -Minline -Mipa=inline,reshape,safeall
+	    ALL_FFLAGS += -O4 -fast -Mpreprocess -Minline # -Mipa=inline,reshape,safeall
 	endif
-	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast -Minline -Mipa=inline,reshape,safeall 
+	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast -Minline # -Mipa=inline,reshape,safeall 
 	ALL_LIBRARIES += -latomic
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -mp -Minfo=mp
@@ -274,7 +277,7 @@ ifeq ($(CLAW_CC),$(filter $(CLAW_CC),pgc++ CC)) # CLAW_CC is either pgc++ or CC
     ifeq ($(DEBUG),TRUE)
 	ALL_CPPFLAGS += -g -O0 -Mbounds
     else
-	ALL_CPPFLAGS += -O4 -fast -Minline -Mipa=inline,reshape,safeall -Mpreprocess
+	ALL_CPPFLAGS += -O4 -fast -Minline -Mpreprocess # -Mipa=inline,reshape,safeall
     endif
     ALL_CPPFLAGS += --c++11
     ALL_LIBRARIES += -lstdc++
