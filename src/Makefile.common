@@ -12,7 +12,9 @@ INSTALL_DATA ?= $(INSTALL) -m 644
 
 host_name := $(shell hostname -f)
 ifeq ($(findstring titan, $(host_name)), titan)
-    computer_name := titan
+    machine_name := titan
+else ifeq ($(findstring doppio, $(host_name)), doppio)
+    machine_name := doppio
 endif
 
 # Fortran compiler:  FC may be set as an environment variable or in make
@@ -29,7 +31,7 @@ endif
 
 # if FC is set to pgi, we use pgi compiler
 ifeq ($(FC),pgi)
-    ifeq ($(computer_name), titan)
+    ifeq ($(machine_name), titan)
 	CLAW_FC ?= ftn
     else
         CLAW_FC ?= pgfortran
@@ -39,7 +41,7 @@ else
 endif
 # if CC is set to pgi, we use pgi compiler
 ifeq ($(CC),pgi)
-    ifeq ($(computer_name), titan)
+    ifeq ($(machine_name), titan)
 	CLAW_CC ?= CC
     else
 	CLAW_CC ?= pgc++
@@ -157,13 +159,17 @@ ifeq ($(USE_CUDA),TRUE)
 	$(error You must set FC to pgi to use CUDA)
     endif
     ALL_DEFINES += -DCUDA
-    ifeq ($(computer_name), titan)
-	ALL_FFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda7.5 -Mcuda=lineinfo -Mcuda=rdc
+    ifeq ($(machine_name), titan)
+	ALL_FFLAGS   += -Mcuda=cuda7.5,cc35 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda7.5,cc35 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda7.5,cc35 -Mcuda=lineinfo -Mcuda=rdc
+    else ifeq ($(machine_name), doppio)
+	ALL_FFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else
-	ALL_FFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_FFLAGS   += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_CPPFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
     endif
     ALL_LIBRARIES += -lcudafor -lcuda
@@ -294,6 +300,15 @@ endif
 ifeq ($(USE_CUDA), TRUE)
     ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -O3 -rdc=true -lineinfo
     ALL_NVCCFLAGS += -Xcompiler='-O3'
+    ifeq ($(machine_name), titan)
+	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
+	# below are equivalant to the line above
+	# ALL_NVCCFLAGS += --gpu-architecture=compute_35
+	# ALL_NVCCFLAGS += --gpu-code=sm_35
+    else ifeq ($(machine_name), doppio)
+	ALL_NVCCFLAGS += --generate-code arch=compute_60,code=compute_60
+	ALL_NVCCFLAGS += --generate-code arch=compute_61,code=compute_61
+    endif
     ifeq ($(VERBOSE), TRUE)
 	ALL_NVCCFLAGS += -keep --resource-usage -Xptxas=--verbose
 	ALL_NVCCFLAGS += -keep-dir built.tmp
@@ -307,7 +322,7 @@ $(shell mkdir -p built.tmp)
 endif
 endif
 
-ifeq ($(findstring doppio, $(host_name)), doppio)
+ifeq ($(machine_name), doppio)
     # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4 on Doppio
     # We should get rid of this eventually 
     ALL_CPPFLAGS += -D__CUDACC__ 
