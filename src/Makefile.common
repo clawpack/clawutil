@@ -160,9 +160,9 @@ ifeq ($(USE_CUDA),TRUE)
     endif
     ALL_DEFINES += -DCUDA
     ifeq ($(machine_name), titan)
-	ALL_FFLAGS   += -Mcuda=cuda7.5,cc35 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda7.5,cc35 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda7.5,cc35 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_FFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else ifeq ($(machine_name), doppio)
 	ALL_FFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_LFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
@@ -262,7 +262,7 @@ else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pg
 	MODULE_FLAG = -module 
 	ifeq ($(DEBUG),TRUE)
 	    # ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=inv,denorm,divz,ovf,unf -Mchkptr -Mchkstk -Kieee
-	    ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=fp -Mchkstk -Kieee
+	    ALL_FFLAGS += -g -O0 -Mpreprocess -Mbounds -Ktrap=fp -Mchkstk -Kieee -Mchkptr 
 	else
 	    ALL_FFLAGS += -O4 -fast -Mpreprocess -Minline # -Mipa=inline,reshape,safeall
 	endif
@@ -281,7 +281,7 @@ endif
 # cpp compile flag setting, please add other compilers here as necessary
 ifeq ($(CLAW_CC),$(filter $(CLAW_CC),pgc++ CC)) # CLAW_CC is either pgc++ or CC 
     ifeq ($(DEBUG),TRUE)
-	ALL_CPPFLAGS += -g -O0 -Mbounds
+	ALL_CPPFLAGS += -g -O0 -Mbounds -Mpreprocess
     else
 	ALL_CPPFLAGS += -O4 -fast -Minline -Mpreprocess # -Mipa=inline,reshape,safeall
     endif
@@ -298,8 +298,10 @@ else
 endif
 
 ifeq ($(USE_CUDA), TRUE)
-    ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -O3 -rdc=true -lineinfo
-    ALL_NVCCFLAGS += -Xcompiler='-O3'
+    ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -rdc=true -lineinfo
+    ifneq ($(DEBUG),TRUE)
+	ALL_NVCCFLAGS += -O3 -Xcompiler='-O3'
+    endif
     ifeq ($(machine_name), titan)
 	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
 	# below are equivalant to the line above
