@@ -221,7 +221,11 @@ ifeq ($(USE_FWAVES),TRUE)
     ALL_DEFINES += -DUSE_FWAVES
 endif
 
-ifeq ($(CLAW_PKG),geoclaw)
+ifeq ($(USE_CAPA),TRUE)
+    ALL_DEFINES += -DUSE_CAPA
+endif
+
+ifeq ($(findstring geoclaw, $(CLAW_PKG)), geoclaw)
     ALL_DEFINES += -DGEOCLAW
 endif
 
