@@ -25,8 +25,7 @@ LINK ?= $(CLAW_FC)
 # Path to version of python to use:  May need to use something other than
 # the system default in order for plotting to work.  Can set CLAW_PYTHON as
 # environment variable or in make file that 'includes' this one.
-PYTHON ?= python
-CLAW_PYTHON ?= $(PYTHON)
+CLAW_PYTHON ?= python
 
 # Variables below should be set in Makefile that "includes" this one.
 # Default values if not set:
