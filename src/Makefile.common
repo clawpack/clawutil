@@ -106,7 +106,7 @@ else ifeq ($(CLAW_FC),ifort)
 	OMP_FLAG = -openmp
 else
 	# Assume gcc like flagging, probably should raise an error here
-	MODULE_FLAG = -I
+	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
 endif
 
