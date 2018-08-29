@@ -54,14 +54,14 @@ EXCLUDE_SOURCES ?=
 EXCLUDE_MODULES ?=
 
 # Consolidate custom and common sources into a single list for compilations
-SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
+SOURCES := $(shell $(PYTHON) $(CLAW)/clawutil/src/check_src.py consolidate \
 		$(SOURCES) ";" $(COMMON_SOURCES) ";" $(EXCLUDE_SOURCES))
-MODULES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
+MODULES := $(shell $(PYTHON) $(CLAW)/clawutil/src/check_src.py consolidate \
 		$(MODULES) ";" $(COMMON_MODULES) ";" $(EXCLUDE_MODULES))
 
 # Create list of possible file name conflicts
-SOURCE_CONFLICTS := $(shell python $(CLAW)/clawutil/src/check_src.py conflicts $(SOURCES))
-MODULES_CONFLICTS := $(shell python $(CLAW)/clawutil/src/check_src.py conflicts $(MODULES))
+SOURCE_CONFLICTS := $(shell $(PYTHON) $(CLAW)/clawutil/src/check_src.py conflicts $(SOURCES))
+MODULES_CONFLICTS := $(shell $(PYTHON) $(CLAW)/clawutil/src/check_src.py conflicts $(MODULES))
 
 # Make list of .o files required from the sources above:
 OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(SOURCES)))))
