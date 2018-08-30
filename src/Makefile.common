@@ -95,7 +95,7 @@ ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
 # Module flag setting, please add other compilers here as necessary
-ifeq ($(findstring gfortran,$(CLAW_FC)),gfortran)
+ifeq ($(CLAW_FC),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
@@ -103,9 +103,9 @@ else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
-else ifeq ($(CLAW_FC), pgfortran)
+else ifeq ($(CLAW_FC),pgfortran)
     MODULE_FLAG = -module
-    OMP_FLAG = -openmp
+    OMP_FLAG = -mp
 else
 	# Assume gcc like flagging, probably should raise an error here
 	MODULE_FLAG = -J
