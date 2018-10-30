@@ -281,7 +281,6 @@ else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pg
 	    ALL_FFLAGS += -O4 -fast -Mpreprocess -Minline # -Mipa=inline,reshape,safeall
 	endif
 	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast -Minline # -Mipa=inline,reshape,safeall 
-	ALL_LIBRARIES += -latomic
 	ifeq ($(USE_OPENMP), TRUE)
 	    ALL_FFLAGS += -mp -Minfo=mp
 	endif
