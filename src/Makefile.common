@@ -15,6 +15,8 @@ ifeq ($(findstring titan, $(host_name)), titan)
     machine_name := titan
 else ifeq ($(findstring doppio, $(host_name)), doppio)
     machine_name := doppio
+else ifeq ($(findstring rhea, $(host_name)), rhea)
+    machine_name := rhea
 endif
 
 # Fortran compiler:  FC may be set as an environment variable or in make
@@ -33,6 +35,8 @@ endif
 ifeq ($(FC),pgi)
     ifeq ($(machine_name), titan)
 	CLAW_FC ?= ftn
+    else ifeq ($(machine_name), rhea)
+	CLAW_FC ?= pgfortran
     else
         CLAW_FC ?= pgfortran
     endif
@@ -43,6 +47,8 @@ endif
 ifeq ($(CC),pgi)
     ifeq ($(machine_name), titan)
 	CLAW_CC ?= CC
+    else ifeq ($(machine_name), rhea)
+	CLAW_CC ?= pgc++
     else
 	CLAW_CC ?= pgc++
     endif
@@ -167,6 +173,10 @@ ifeq ($(USE_CUDA),TRUE)
 	ALL_FFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_LFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_CPPFLAGS += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    else ifeq ($(machine_name), rhea)
+	ALL_FFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else
 	ALL_FFLAGS   += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_LFLAGS   += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
@@ -278,6 +288,9 @@ else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pg
 	ifeq ($(VERBOSE), TRUE)
 	    ALL_FFLAGS += -Manno -Mkeepasm
 	endif
+	ifeq ($(machine_name), rhea)
+	    ALL_LIBRARIES += -L/ccs/compilers/gcc/rhel6-x86_64/5.3.0/lib64
+	endif
 else
     $(error Unrecognized compiler: $(CLAW_FC))
 endif
@@ -314,6 +327,8 @@ ifeq ($(USE_CUDA), TRUE)
     else ifeq ($(machine_name), doppio)
 	ALL_NVCCFLAGS += --generate-code arch=compute_60,code=compute_60
 	ALL_NVCCFLAGS += --generate-code arch=compute_61,code=compute_61
+    else ifeq ($(machine_name), rhea)
+	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
     endif
     ifeq ($(VERBOSE), TRUE)
 	ALL_NVCCFLAGS += -keep --resource-usage -Xptxas=--verbose
