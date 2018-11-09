@@ -58,10 +58,10 @@ def chardiff_file(fname1, fname2, print_all_lines=True, hfile1='', \
             len_line = max(len(line1),len(line2))
             if (len(line1)<len_line):
                 badline = True  # signal break after this line
-                line1 = line1(len_line.ljust)  # pad the line
+                line1 = line1.ljust(len_line)  # pad the line
             if (len(line2)<len_line):
                 badline = True  # signal break after this line
-                line2 = line2(len_line.ljust)  # pad the line
+                line2 = line2.ljust(len_line)  # pad the line
 
             toggle = []   # keep track of indices in string where there's a 
                           # switch between matching and non-matching substrings

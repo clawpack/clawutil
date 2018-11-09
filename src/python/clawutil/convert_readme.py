@@ -1,14 +1,23 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-from docutils.core import publish_string
 import glob, os, sys
+
+try:
+    from docutils.core import publish_string
+except:
+    print('*** Install docutils to convert README.rst')
+    sys.exit(0)
 
 if not os.path.isfile('README.rst'):
     print('*** README.rst file not found in %s' % os.getcwd())
     sys.exit()
 
-html_string=publish_string(open('README.rst').read(),writer_name='html')
+if (sys.version_info > (3,0)):
+    html_string=publish_string(open('README.rst').read(),writer_name='html',
+                settings_overrides={'output_encoding': 'unicode'})
+else:
+    html_string=publish_string(open('README.rst').read(),writer_name='html')
 
 make_files = glob.glob("Makefile")
 f_files = glob.glob("*.f") + glob.glob("*.f90")
@@ -74,8 +83,8 @@ new_text = """
 # If README.rst contains a section labelled "Version", insert the list of
 # files before this section.  Otherwise put list of files at end...
 
-version_loc = html_string.find(r'<h1>Version</h1>')
-end_body = html_string.find("</body>\n</html>")
+version_loc = html_string.find(r"<h1>Version</h1>")
+end_body = html_string.find(r"</body>\n</html>")
 
 if version_loc > -1:
     html_string = html_string[:version_loc] + new_text + html_string[version_loc:]
