@@ -178,9 +178,9 @@ ifeq ($(USE_CUDA),TRUE)
 	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else
-	ALL_FFLAGS   += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda8.0 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_FFLAGS   += -Mcuda=cuda9.2,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda9.2,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda9.2,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     endif
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
@@ -327,6 +327,8 @@ ifeq ($(USE_CUDA), TRUE)
 	ALL_NVCCFLAGS += --generate-code arch=compute_60,code=compute_60
 	ALL_NVCCFLAGS += --generate-code arch=compute_61,code=compute_61
     else ifeq ($(machine_name), rhea)
+	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
+    else
 	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
     endif
     ifeq ($(VERBOSE), TRUE)
