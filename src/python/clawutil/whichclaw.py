@@ -53,10 +53,12 @@ print("\nThe following easy-install.pth files list clawpack:")
 for p in ppath:
     if 'site-packages' in p:
         if os.path.isfile(os.path.join(p, 'easy-install.pth')):
-            f = open(os.path.join(p, 'easy-install.pth')).readlines()
+            fname = os.path.join(p, 'easy-install.pth')
+            f = open(fname).readlines()
             for line in f:
                 if 'clawpack' in line:
-                    print('    %s \n        (points to %s)' % (p,line.strip()))
+                    print('    %s \n        (points to %s)' \
+                          % (fname,line.strip()))
         else:
             continue
 
