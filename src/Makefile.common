@@ -178,9 +178,9 @@ ifeq ($(USE_CUDA),TRUE)
 	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else
-	ALL_FFLAGS   += -Mcuda=cuda9.0,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.0,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.0,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_FFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     endif
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
