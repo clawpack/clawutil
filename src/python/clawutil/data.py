@@ -525,7 +525,7 @@ class ClawRunData(ClawData):
                 if self.clawdata.abldata.abltype == 0:
                     data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux)
                 else:
-                    data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux+self.clawdata.num_dim)
+                    data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux+2*self.clawdata.num_dim)
             else:
                 data_object.write()
 
@@ -640,7 +640,7 @@ class ClawInputData(ClawData):
             self.data_write('', value=lower, alt_name='lower')
             self.data_write('', value=upper, alt_name='upper')
             self.data_write('', value=num_cells, alt_name='num_cells')
-            num_aux += self.num_dim
+            num_aux += 2*self.num_dim
 
         self.data_write()  # writes blank line
         self.data_write('num_eqn')
