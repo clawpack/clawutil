@@ -462,6 +462,10 @@ class ClawRunData(ClawData):
             self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
             self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
             self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
+            try:
+                self.add_data(amrclaw.AdjointData(num_dim=num_dim),'adjointdata')
+            except:
+                pass # for backward compatibility
 
         elif pkg.lower() in ['geoclaw']:
 
