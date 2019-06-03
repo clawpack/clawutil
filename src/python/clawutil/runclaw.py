@@ -259,6 +259,8 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
 
     if returncode != 0:
         print('==> runclaw: *** fortran returncode = ', returncode, '   aborting')
+        
+    return returncode
     
 
 #----------------------------------------------------------
