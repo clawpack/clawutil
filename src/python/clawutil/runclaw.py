@@ -14,10 +14,13 @@ import os
 import sys
 import glob
 import shutil
+import shlex
+import subprocess
 from clawpack.clawutil.claw_git_status import make_git_status_file
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
-            rundir=None, print_git_status=False, nohup=False, nice=None):
+            rundir=None, print_git_status=False, nohup=False, nice=None,
+            stdout=None, stderr=None):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
     typically set to 'xclaw', 'xamr', etc.
@@ -45,6 +48,10 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
 
     If type(nice) is int, runs the code using "nice -n "
     with this nice value so it doesn't hog computer resources.
+    
+    if stdout or stderr are not None, they must be open python file handles.
+    The stdout and stderr from the call to CLAW_EXE will be written to
+    them.
 
     """
     
@@ -234,20 +241,26 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
                 else:
                     cmd = "nohup time %s " % xclawcmd
                 print("\n==> Running with command:\n   ", cmd)
-                returncode = os.system(cmd)
             else:
                 if type(nice) is int:
                     cmd = "nice -n %s %s " % (nice,xclawcmd)
                 else:
                     cmd = xclawcmd
                 print("\n==> Running with command:\n   ", cmd)
-                returncode = os.system(cmd)
+            
+            cmd_split = shlex.split(cmd)
+            p = subprocess.Popen(cmd_split,
+                                 stdout=stdout,
+                                 stderr=stderr,
+                                 encoding='latin-1',
+                                 bufsize=1)
+            p.communicate()
     
-            if returncode == 0:
+            if p.returncode == 0:
                 print("\n==> runclaw: Finished executing\n")
             else:
                 print("\n ==> runclaw: *** Runtime error: return code = %s\n "\
-                        % returncode)
+                        % p.returncode)
             print('==> runclaw: Done executing %s via clawutil.runclaw.py' %\
                         xclawcmd)
             print('==> runclaw: Output is in ', outdir)
@@ -257,8 +270,10 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     
         os.chdir(startdir)
 
-    if returncode != 0:
-        print('==> runclaw: *** fortran returncode = ', returncode, '   aborting')
+    if p.returncode != 0:
+        print('==> runclaw: *** fortran returncode = ', p.returncode, '   aborting')
+        
+    return p.returncode
     
 
 #----------------------------------------------------------
