@@ -215,12 +215,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         if path is None:
             path = self.temp_path
-        # need to cwd b/c setrun.py files contain
-        # relative paths to topofiles and fgmax files
-        cwd = os.getcwd()
-        os.chdir(path)
         self.rundata.write(out_dir=path)
-        os.chdir(cwd)
 
 
     def run_code(self):
