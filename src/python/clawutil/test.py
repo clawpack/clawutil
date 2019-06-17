@@ -215,14 +215,17 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         if path is None:
             path = self.temp_path
+        # need to cwd b/c setrun.py files contain
+        # relative paths to topofiles and fgmax files
+        cwd = os.getcwd()
+        os.chdir(path)
         self.rundata.write(out_dir=path)
+        os.chdir(cwd)
 
 
     def run_code(self):
         r"""Run test code given an already compiled executable"""
-        
-        cwd = os.getcwd()
-        os.chdir(self.temp_path)
+
         runclaw.runclaw(xclawcmd=os.path.join(self.temp_path,self.executable_name),
                         rundir=self.temp_path,
                         outdir=self.temp_path,
@@ -230,7 +233,6 @@ class ClawpackRegressionTest(unittest.TestCase):
                         restart=False,
                         xclawout=self.stdout,
                         xclawerr=self.stderr)
-        os.chdir(cwd)
         
         self.stdout.flush()
         self.stderr.flush()
@@ -251,14 +253,11 @@ class ClawpackRegressionTest(unittest.TestCase):
         """
 
         # Write out data files
-        cwd = os.getcwd()
-        os.chdir(self.temp_path)
         self.load_rundata()
         self.write_rundata_objects()
 
         # Run code
         self.run_code()
-        os.chdir(cwd)
         
         # Perform tests
         # Override this class to perform data checks, as is this class will
