@@ -220,19 +220,8 @@ class ClawpackRegressionTest(unittest.TestCase):
 
     def run_code(self):
         r"""Run test code given an already compiled executable"""
-
-#         runclaw_cmd = " ".join((
-#                             "cd %s ;" % self.temp_path,
-#                             "python",
-#                             "$CLAW/clawutil/src/python/clawutil/runclaw.py",
-#                             self.executable_name,
-#                             self.temp_path,
-#                             "True",
-#                             "False",
-#                             self.temp_path,
-#                             os.path.join(self.temp_path,'geoclaw.out'),
-#                             os.path.join(self.temp_path,'geoclaw.err')))
-        this_dir = os.getcwd()
+        
+        cwd = os.getcwd()
         os.chdir(self.temp_path)
         runclaw.runclaw(xclawcmd=os.path.join(self.temp_path,self.executable_name),
                         rundir=self.temp_path,
@@ -241,10 +230,8 @@ class ClawpackRegressionTest(unittest.TestCase):
                         restart=False,
                         xclawout=self.stdout,
                         xclawerr=self.stderr)
-        os.chdir(this_dir)
-#         subprocess.check_call(runclaw_cmd, stdout=self.stdout, 
-#                                            stderr=self.stderr,
-#                                            shell=True)
+        os.chdir(cwd)
+        
         self.stdout.flush()
         self.stderr.flush()
 
@@ -264,12 +251,15 @@ class ClawpackRegressionTest(unittest.TestCase):
         """
 
         # Write out data files
+        cwd = os.getcwd()
+        os.chdir(self.temp_path)
         self.load_rundata()
         self.write_rundata_objects()
 
         # Run code
         self.run_code()
-
+        os.chdir(cwd)
+        
         # Perform tests
         # Override this class to perform data checks, as is this class will
         # simply check that a test runs to completion
