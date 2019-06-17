@@ -528,10 +528,7 @@ class ClawRunData(ClawData):
             if isinstance(data_object, UserData):
                 fname = data_object.__fname__
             else:
-                try:
-                    fname = signature(data_object.write).parameters['out_file'].default
-                except:
-                    raise ValueError(type(data_object))
+                fname = signature(data_object.write).parameters['out_file'].default
             fpath = os.path.join(out_dir,fname)
             if isinstance(data_object, amrclaw.GaugeData):
                 data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux, out_file=fpath)
