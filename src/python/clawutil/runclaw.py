@@ -205,16 +205,17 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
 
     cmd_split = shlex.split(cmd)
     if isinstance(xclawout,str):
-        xclawout = open(xclawout,'w', encoding='utf-8')
+        xclawout = open(xclawout,'w', encoding='utf-8',
+                        buffering=1)
     if isinstance(xclawerr,str):
-        xclawerr = open(xclawerr,'w', encoding='utf-8')
+        xclawerr = open(xclawerr,'w', encoding='utf-8',
+                        buffering=1)
     try:
         p = subprocess.run(cmd_split,
                            cwd=outdir,
                            stdout=xclawout,
                            stderr=xclawerr,
                            encoding='utf-8',
-                           bufsize=1,
                            check=True)
     except subprocess.CalledProcessError as cpe:
         raise ClawExeError('error', cpe.returncode, cpe.cmd,
