@@ -25,6 +25,7 @@ import clawpack.geoclaw.util
 import clawpack.pyclaw.gauges as gauges
 import clawpack.pyclaw.solution as solution
 import clawpack.clawutil.claw_git_status as claw_git_status
+from clawpack.clawutil import runclaw
 
 # Support for WIP decorator
 from functools import wraps
@@ -214,28 +215,20 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         if path is None:
             path = self.temp_path
-
-        orig_path = os.getcwd()
-        os.chdir(path)
-        self.rundata.write()
-        os.chdir(orig_path)
+        self.rundata.write(out_dir=path)
 
 
     def run_code(self):
         r"""Run test code given an already compiled executable"""
 
-        runclaw_cmd = " ".join((
-                            "cd %s ;" % self.temp_path,
-                            "python",
-                            "$CLAW/clawutil/src/python/clawutil/runclaw.py",
-                            self.executable_name,
-                            self.temp_path,
-                            "True",
-                            "False",
-                            self.temp_path))
-        subprocess.check_call(runclaw_cmd, stdout=self.stdout, 
-                                           stderr=self.stderr,
-                                           shell=True)
+        runclaw.runclaw(xclawcmd=os.path.join(self.temp_path,self.executable_name),
+                        rundir=self.temp_path,
+                        outdir=self.temp_path,
+                        overwrite=True,
+                        restart=False,
+                        xclawout=self.stdout,
+                        xclawerr=self.stderr)
+        
         self.stdout.flush()
         self.stderr.flush()
 
@@ -260,7 +253,7 @@ class ClawpackRegressionTest(unittest.TestCase):
 
         # Run code
         self.run_code()
-
+        
         # Perform tests
         # Override this class to perform data checks, as is this class will
         # simply check that a test runs to completion

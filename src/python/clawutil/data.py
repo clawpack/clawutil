@@ -14,6 +14,8 @@ Changes in 5.0:
 from __future__ import absolute_import
 from __future__ import print_function
 import os
+from inspect import signature
+
 try:
     from urllib.request import urlopen
 except ImportError:
@@ -458,7 +460,6 @@ class ClawRunData(ClawData):
             import clawpack.amrclaw.data as amrclaw
 
             self.xclawcmd = 'xamr'
-            self.add_data(ClawInputData(num_dim),'clawdata')
             self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
             self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
             self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
@@ -517,16 +518,22 @@ class ClawRunData(ClawData):
         return data
 
 
-    def write(self):
+    def write(self, out_dir = ''):
         r"""Write out each data objects in datalist """
         
         import clawpack.amrclaw.data as amrclaw
 
         for data_object in self.data_list:
-            if isinstance(data_object, amrclaw.GaugeData):
-                data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux)
+            # UserData doesn't naturally have an "out_file" parameter
+            if isinstance(data_object, UserData):
+                fname = data_object.__fname__
             else:
-                data_object.write()
+                fname = signature(data_object.write).parameters['out_file'].default
+            fpath = os.path.join(out_dir,fname)
+            if isinstance(data_object, amrclaw.GaugeData):
+                data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux, out_file=fpath)
+            else:
+                data_object.write(out_file=fpath)
 
 
 
@@ -841,6 +848,8 @@ class UserData(ClawData):
          descr_dict = self.__descr__
          descr_dict[name] = descr
 
-    def write(self,data_source='setrun.py'):
-        super(UserData,self).write(self.__fname__, data_source)
+    def write(self, data_source='setrun.py', out_file=None):
+        if out_file is None:
+            out_file = self.__fname__
+        super(UserData,self).write(out_file, data_source)
         self.close_data_file()

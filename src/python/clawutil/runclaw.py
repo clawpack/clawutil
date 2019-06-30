@@ -14,10 +14,23 @@ import os
 import sys
 import glob
 import shutil
+import shlex
+import subprocess
 from clawpack.clawutil.claw_git_status import make_git_status_file
 
+# define an execution error class that returns a
+# message as well as the rest of the subprocess exceptions
+class ClawExeError(subprocess.CalledProcessError):
+    def __init__(self, msg, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.msg = msg
+        
+    def __str__(self):
+        return self.msg
+
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
-            rundir=None, print_git_status=False, nohup=False, nice=None):
+            rundir=None, print_git_status=False, nohup=False, nice=None,
+            xclawout=subprocess.PIPE, xclawerr=subprocess.PIPE):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
     typically set to 'xclaw', 'xamr', etc.
@@ -45,15 +58,18 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
 
     If type(nice) is int, runs the code using "nice -n "
     with this nice value so it doesn't hog computer resources.
+    
+    xclawout and xclawerr define the locations of stdout and stderr for the 
+    execution of CLAW_EXE. They should be strings to filepaths or open file
+    objects or ``subprocess.PIPE`` or ``subprocess.STDOUT``. To pass both
+    to the same file, specify ``xclawout`` as the filepath and 
+    ``xclawerr=subprocess.STDOUT``.
 
     """
-    
     from clawpack.clawutil.data import ClawData
     import os,glob,shutil,time
     verbose = True
-    xclawout = None
-    xclawerr = None
-
+    
     try:
         nice = int(nice)
     except:
@@ -81,7 +97,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
 
     if outdir is None:
         outdir = '.'
-        
+
     if rundir is None:
         rundir = os.getcwd()
     rundir = os.path.abspath(rundir)
@@ -96,169 +112,121 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         clawdata = ClawData()
         clawdata.read(os.path.join(rundir,'claw.data'), force=True) 
         restart = clawdata.restart
-        #print '+++ From claw.data determined restart = %s' % restart
-
-    
-    #returncode = clawjob.runxclaw()
-
-    if 1:
-        startdir = os.getcwd()
-        xdir = os.path.abspath(startdir)
-        outdir = os.path.abspath(outdir)
-        rundir = os.path.abspath(rundir)
-        xclawcmd = os.path.join(xdir,xclawcmd)
         
-        try:
-            os.chdir(xdir)
-        except:
-            raise Exception( "==> runclaw: Cannot change to directory xdir = %s" %xdir)
-            return 
-    
-    
-        if os.path.isfile(outdir):
-            print("==> runclaw: Error: outdir specified is a file")
-            return
-        
-        if (os.path.isdir(outdir) & (not overwrite)):
-            # copy the old outdir before possibly overwriting
-            tm = time.localtime(os.path.getmtime(outdir))
-            year = str(tm[0]).zfill(4)
-            month = str(tm[1]).zfill(2)
-            day = str(tm[2]).zfill(2)
-            hour = str(tm[3]).zfill(2)
-            minute = str(tm[4]).zfill(2)
-            second = str(tm[5]).zfill(2)
-            outdir_backup = outdir + '_%s-%s-%s-%s%s%s' \
-                  % (year,month,day,hour,minute,second)
-            if verbose:
-                print("==> runclaw: Directory already exists: ",os.path.split(outdir)[1])
-                if restart:
-                    print("==> runclaw: Copying directory to:      ",os.path.split(outdir_backup)[1])
-                else:
-                    print("==> runclaw: Moving directory to:      ",os.path.split(outdir_backup)[1])
-                time.sleep(1)
-            
-            try:
-                shutil.move(outdir,outdir_backup)
-                if restart:
-                    shutil.copytree(outdir_backup,outdir)
-            except:
-                print("==> runclaw: Could not move directory... copy already exists?")
-            
-            
-        if (not os.path.isdir(outdir)):
-            try:
-                os.mkdir(outdir)
-            except:
-                print("Cannot make directory ",outdir)
-                return
-    
-        try:
-            os.chdir(outdir)
-        except:
-            print('==> runclaw: *** Error in runxclaw: cannot move to outdir = ',\
-                  outdir)
-            raise
-            return
-    
-        if print_git_status not in [False,'False']:
-            # create files claw_git_status.txt and claw_git_diffs.txt in
-            # outdir:
-            make_git_status_file()
+    xclawcmd = os.path.abspath(xclawcmd)
 
-        # old fort.* files to be removed for new run?
-        fortfiles = glob.glob(os.path.join(outdir,'fort.*'))
-        # also need to remove gauge*.txt output files now that the gauge
-        # output is no longer in fort.gauge  (but don't remove new gauges.data)
-        gaugefiles = glob.glob(os.path.join(outdir,'gauge*.txt'))
+    if os.path.isfile(outdir):
+        print("==> runclaw: Error: outdir specified is a file")
+        return
 
-        if (overwrite and (not restart)):
-            # remove any old versions:
-            if verbose:
-                print("==> runclaw: Removing all old fort/gauge files in ", outdir)
-            for file in fortfiles + gaugefiles:
-                os.remove(file)
-        elif restart:
-            if verbose:
-                print("==> runclaw: Restart: leaving original fort/gauge files in ", outdir)
-        else:
-            # this should never be reached: 
-            # if overwrite==False then outdir has already been moved
-            if len(fortfiles+gaugefiles) > 1:
-                print("==> runclaw: *** Remove fort.* and gauge*.txt")
-                print("  from output directory %s and try again," % outdir)
-                print("  or use overwrite=True in call to runclaw")
-                print("  e.g., by setting OVERWRITE = True in Makefile")
-                return
-            
-        
-        try:
-            os.chdir(rundir)
-        except:
-            raise Exception("Cannot change to directory %s" % rundir)
-            return 
-    
-        datafiles = glob.glob('*.data')
-        if datafiles == ():
-            print("==> runclaw: Warning: no data files found in directory ",rundir)
-        else:
-            if rundir != outdir:
-                for file in datafiles:
-                    shutil.copy(file,os.path.join(outdir,file))
-    
-        if xclawout:
-            xclawout = open(xclawout,'wb')
-        if xclawerr:
-            xclawerr = open(xclawerr,'wb')
-    
-        os.chdir(outdir)
-    
-        #print "\nIn directory outdir = ",outdir,"\n"
-    
-        # execute command to run fortran program:
-    
-        try:
-            #print "\nExecuting ",xclawcmd, "  ...  "
-            #pclaw = subprocess.Popen(xclawcmd,stdout=xclawout,stderr=xclawerr)
-            #print '+++ pclaw started'
-                #pclaw.wait()   # wait for code to run
-            #returncode = pclaw.returncode
-            #print '+++ pclaw done'
-            
-            if nohup:
-                # run in nohup mode:
-                print("\n==> Running in nohup mode, output will be sent to:")
-                print("      %s/nohup.out" % outdir)
-                if type(nice) is int:
-                    cmd = "nohup time nice -n %s %s " % (nice,xclawcmd)
-                else:
-                    cmd = "nohup time %s " % xclawcmd
-                print("\n==> Running with command:\n   ", cmd)
-                returncode = os.system(cmd)
+    if (os.path.isdir(outdir) & (not overwrite)):
+        # copy the old outdir before possibly overwriting
+        tm = time.localtime(os.path.getmtime(outdir))
+        year = str(tm[0]).zfill(4)
+        month = str(tm[1]).zfill(2)
+        day = str(tm[2]).zfill(2)
+        hour = str(tm[3]).zfill(2)
+        minute = str(tm[4]).zfill(2)
+        second = str(tm[5]).zfill(2)
+        outdir_backup = outdir + '_%s-%s-%s-%s%s%s' \
+              % (year,month,day,hour,minute,second)
+        if verbose:
+            print("==> runclaw: Directory already exists: ",os.path.split(outdir)[1])
+            if restart:
+                print("==> runclaw: Copying directory to:      ",os.path.split(outdir_backup)[1])
             else:
-                if type(nice) is int:
-                    cmd = "nice -n %s %s " % (nice,xclawcmd)
-                else:
-                    cmd = xclawcmd
-                print("\n==> Running with command:\n   ", cmd)
-                returncode = os.system(cmd)
-    
-            if returncode == 0:
-                print("\n==> runclaw: Finished executing\n")
-            else:
-                print("\n ==> runclaw: *** Runtime error: return code = %s\n "\
-                        % returncode)
-            print('==> runclaw: Done executing %s via clawutil.runclaw.py' %\
-                        xclawcmd)
-            print('==> runclaw: Output is in ', outdir)
-            
-        except:
-            raise Exception("Could not execute command %s" % xclawcmd)
-    
-        os.chdir(startdir)
+                print("==> runclaw: Moving directory to:      ",os.path.split(outdir_backup)[1])
+            time.sleep(1)
 
-    if returncode != 0:
-        print('==> runclaw: *** fortran returncode = ', returncode, '   aborting')
+        try:
+            shutil.move(outdir,outdir_backup)
+            if restart:
+                shutil.copytree(outdir_backup,outdir)
+        except:
+            print("==> runclaw: Could not move directory... copy already exists?")
+
+    
+    os.makedirs(outdir, exist_ok=True)
+
+    if print_git_status not in [False,'False']:
+        # create files claw_git_status.txt and claw_git_diffs.txt in
+        # outdir:
+        make_git_status_file(outdir=outdir)
+
+    # old fort.* files to be removed for new run?
+    fortfiles = glob.glob(os.path.join(outdir,'fort.*'))
+    # also need to remove gauge*.txt output files now that the gauge
+    # output is no longer in fort.gauge  (but don't remove new gauges.data)
+    gaugefiles = glob.glob(os.path.join(outdir,'gauge*.txt'))
+
+    if (overwrite and (not restart)):
+        # remove any old versions:
+        if verbose:
+            print("==> runclaw: Removing all old fort/gauge files in ", outdir)
+        for file in fortfiles + gaugefiles:
+            os.remove(file)
+    elif restart:
+        if verbose:
+            print("==> runclaw: Restart: leaving original fort/gauge files in ", outdir)
+    else:
+        # this should never be reached: 
+        # if overwrite==False then outdir has already been moved
+        if len(fortfiles+gaugefiles) > 1:
+            print("==> runclaw: *** Remove fort.* and gauge*.txt")
+            print("  from output directory %s and try again," % outdir)
+            print("  or use overwrite=True in call to runclaw")
+            print("  e.g., by setting OVERWRITE = True in Makefile")
+            return
+
+    datafiles = glob.glob(os.path.join(rundir,'*.data'))
+    if datafiles == ():
+        print("==> runclaw: Warning: no data files found in directory ",rundir)
+    else:
+        if rundir != outdir:
+            for file in datafiles:
+                shutil.copy(file,os.path.join(outdir,os.path.basename(file)))
+
+    # execute command to run fortran program:
+    if nohup:
+        # run in nohup mode:
+        print("\n==> Running in nohup mode, output will be sent to:")
+        print("      %s/nohup.out" % outdir)
+        if type(nice) is int:
+            cmd = "nohup time nice -n %s %s " % (nice,xclawcmd)
+        else:
+            cmd = "nohup time %s " % xclawcmd
+        print("\n==> Running with command:\n   ", cmd)
+    else:
+        if type(nice) is int:
+            cmd = "nice -n %s %s " % (nice,xclawcmd)
+        else:
+            cmd = xclawcmd
+        print("\n==> Running with command:\n   ", cmd)
+
+    cmd_split = shlex.split(cmd)
+    if isinstance(xclawout,str):
+        xclawout = open(xclawout,'w', encoding='utf-8',
+                        buffering=1)
+    if isinstance(xclawerr,str):
+        xclawerr = open(xclawerr,'w', encoding='utf-8',
+                        buffering=1)
+    try:
+        p = subprocess.run(cmd_split,
+                           cwd=outdir,
+                           stdout=xclawout,
+                           stderr=xclawerr,
+                           encoding='utf-8',
+                           check=True)
+    except subprocess.CalledProcessError as cpe:
+        raise ClawExeError('error', cpe.returncode, cpe.cmd,
+                           output=cpe.output, 
+                           stderr=cpe.stderr) from cpe
+    
+    print('==> runclaw: Done executing %s via clawutil.runclaw.py' %\
+                xclawcmd)
+    print('==> runclaw: Output is in ', outdir)
+
+    return p
     
 
 #----------------------------------------------------------
