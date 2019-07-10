@@ -302,7 +302,7 @@ class ClawData(object):
         self._out_file = None
 
 
-    def write(self,out_file,data_source='setrun.py'):
+    def write(self, out_file, data_source='setrun.py'):
         r"""Write out all data files in this ClawData object"""
 
         # Open data file
@@ -530,7 +530,9 @@ class ClawRunData(ClawData):
             else:
                 if six.PY2:
                     argspec = inspect.getargspec(data_object.write)
-                    fname = argspec.defaults[0]
+                    index = argspec.args.index('out_file') - (len(argspec.args) 
+                                                        - len(argspec.defaults))
+                    fname = argspec.defaults[index]
                 else:
                     argspec = inspect.signature(data_object.write)
                     fname = argspec.parameters['out_file'].default
