@@ -145,7 +145,9 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         except:
             print("==> runclaw: Could not move directory... copy already exists?")
 
-    
+    ###
+    ### TODO: Modify to work with 2.*
+    ###
     os.makedirs(outdir, exist_ok=True)
 
     if print_git_status not in [False,'False']:
@@ -218,6 +220,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
                            encoding='utf-8',
                            check=True)
     except subprocess.CalledProcessError as cpe:
+        #### TODO: REWORK for 2.x
         raise ClawExeError('error', cpe.returncode, cpe.cmd,
                            output=cpe.output, 
                            stderr=cpe.stderr) from cpe
