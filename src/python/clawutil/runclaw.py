@@ -227,6 +227,9 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
                                      stderr=xclawerr)
 
     except subprocess.CalledProcessError as cpe:
+        print("")
+        print("*** FORTRAN EXE FAILED ***")
+        print("")
         raise ClawExeError('error', cpe.returncode, cpe.cmd,
                            output=cpe.output, 
                            stderr=cpe.stderr)
