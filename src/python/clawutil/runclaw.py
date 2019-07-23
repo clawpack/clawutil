@@ -10,12 +10,17 @@ from a directory that contains a claw.data file and a Clawpack executable.
 
 from __future__ import absolute_import
 from __future__ import print_function
+import six
+
 import os
 import sys
 import glob
 import shutil
 import shlex
 import subprocess
+import time
+
+from clawpack.clawutil.data import ClawData
 from clawpack.clawutil.claw_git_status import make_git_status_file
 
 # define an execution error class that returns a
@@ -30,7 +35,7 @@ class ClawExeError(subprocess.CalledProcessError):
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
             rundir=None, print_git_status=False, nohup=False, nice=None,
-            xclawout=subprocess.PIPE, xclawerr=subprocess.PIPE):
+            xclawout=None, xclawerr=None, verbose=True):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
     typically set to 'xclaw', 'xamr', etc.
@@ -66,14 +71,12 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     ``xclawerr=subprocess.STDOUT``.
 
     """
-    from clawpack.clawutil.data import ClawData
-    import os,glob,shutil,time
-    verbose = True
     
-    try:
-        nice = int(nice)
-    except:
-        nice = None
+    if nice is not None:
+        try:
+            nice = int(nice)
+        except:
+            nice = None
 
     # convert strings passed in from Makefile to boolean:
     if type(overwrite) is str:
@@ -145,8 +148,15 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         except:
             print("==> runclaw: Could not move directory... copy already exists?")
 
-    
-    os.makedirs(outdir, exist_ok=True)
+    if six.PY2:
+        if (not os.path.isdir(outdir)):
+            try:
+                os.mkdir(outdir)
+            except:
+                print("Cannot make directory ",outdir)
+                return
+    else:
+        os.makedirs(outdir, exist_ok=True)
 
     if print_git_status not in [False,'False']:
         # create files claw_git_status.txt and claw_git_diffs.txt in
@@ -184,7 +194,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     else:
         if rundir != outdir:
             for file in datafiles:
-                shutil.copy(file,os.path.join(outdir,os.path.basename(file)))
+                shutil.copy(file, os.path.join(outdir,os.path.basename(file)))
 
     # execute command to run fortran program:
     if nohup:
@@ -204,29 +214,29 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         print("\n==> Running with command:\n   ", cmd)
 
     cmd_split = shlex.split(cmd)
-    if isinstance(xclawout,str):
+    if isinstance(xclawout, str):
         xclawout = open(xclawout,'w', encoding='utf-8',
                         buffering=1)
-    if isinstance(xclawerr,str):
+    if isinstance(xclawerr, str):
         xclawerr = open(xclawerr,'w', encoding='utf-8',
                         buffering=1)
     try:
-        p = subprocess.run(cmd_split,
-                           cwd=outdir,
-                           stdout=xclawout,
-                           stderr=xclawerr,
-                           encoding='utf-8',
-                           check=True)
+        proc = subprocess.check_call(cmd_split,
+                                     cwd=outdir,
+                                     stdout=xclawout,
+                                     stderr=xclawerr)
+
     except subprocess.CalledProcessError as cpe:
-        raise ClawExeError('error', cpe.returncode, cpe.cmd,
+        exe_error_str = "\n\n*** FORTRAN EXE FAILED ***\n"
+        raise ClawExeError(exe_error_str, cpe.returncode, cpe.cmd,
                            output=cpe.output, 
-                           stderr=cpe.stderr) from cpe
+                           stderr=cpe.stderr)
     
     print('==> runclaw: Done executing %s via clawutil.runclaw.py' %\
                 xclawcmd)
     print('==> runclaw: Output is in ', outdir)
 
-    return p
+    return proc
     
 
 #----------------------------------------------------------

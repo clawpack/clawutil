@@ -14,7 +14,14 @@ Changes in 5.0:
 from __future__ import absolute_import
 from __future__ import print_function
 import os
-from inspect import signature
+import sys
+import inspect
+import tarfile
+import zipfile
+import string
+import six
+from six.moves import range
+from six.moves import input
 
 try:
     from urllib.request import urlopen
@@ -22,14 +29,7 @@ except ImportError:
     # Fall back to Python 2's urllib2
     from urllib2 import urlopen
 
-import tarfile
-import zipfile
-import string
-
 import numpy as np
-import six
-from six.moves import range
-from six.moves import input
 
 # ======================
 #  Remote file handling
@@ -302,7 +302,7 @@ class ClawData(object):
         self._out_file = None
 
 
-    def write(self,out_file,data_source='setrun.py'):
+    def write(self, out_file, data_source='setrun.py'):
         r"""Write out all data files in this ClawData object"""
 
         # Open data file
@@ -528,7 +528,14 @@ class ClawRunData(ClawData):
             if isinstance(data_object, UserData):
                 fname = data_object.__fname__
             else:
-                fname = signature(data_object.write).parameters['out_file'].default
+                if six.PY2:
+                    argspec = inspect.getargspec(data_object.write)
+                    index = argspec.args.index('out_file') - (len(argspec.args) 
+                                                        - len(argspec.defaults))
+                    fname = argspec.defaults[index]
+                else:
+                    argspec = inspect.signature(data_object.write)
+                    fname = argspec.parameters['out_file'].default
             fpath = os.path.join(out_dir,fname)
             if isinstance(data_object, amrclaw.GaugeData):
                 data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux, out_file=fpath)
