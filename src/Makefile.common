@@ -10,56 +10,20 @@ SHELL = /bin/sh
 INSTALL_PROGRAM ?= $(INSTALL)
 INSTALL_DATA ?= $(INSTALL) -m 644
 
-host_name := $(shell hostname -f)
-ifeq ($(findstring titan, $(host_name)), titan)
-    machine_name := titan
-else ifeq ($(findstring doppio, $(host_name)), doppio)
-    machine_name := doppio
-else ifeq ($(findstring rhea, $(host_name)), rhea)
-    machine_name := rhea
-endif
-
 # Fortran compiler:  FC may be set as an environment variable or in make
 # file that 'includes' this one.  Otherwise assume gfortran.
 FC ?= gfortran
-# CPP compiler
-CC ?= g++
-
 ifeq ($(FC),f77)
 	# make sometimes sets FC=f77 if it is not set as environment variable
 	# reset to gfortran since f77 will not work.  
 	FC = gfortran
 endif
 
-# if FC is set to pgi, we use pgi compiler
-ifeq ($(FC),pgi)
-    ifeq ($(machine_name), titan)
-	CLAW_FC ?= ftn
-    else ifeq ($(machine_name), rhea)
-	CLAW_FC ?= pgfortran
-    else
-        CLAW_FC ?= pgfortran
-    endif
+ifeq ($(USE_CUDA), TRUE)
+include $(CLAW)/clawutil/src/Makefile.common.GPU
 else
-    CLAW_FC ?= $(FC)
-endif
-# if CC is set to pgi, we use pgi compiler
-ifeq ($(CC),pgi)
-    ifeq ($(machine_name), titan)
-	CLAW_CC ?= CC
-    else ifeq ($(machine_name), rhea)
-	CLAW_CC ?= pgc++
-    else
-	CLAW_CC ?= pgc++
-    endif
-else
-    CLAW_CC ?= $(CC)
-endif
 
-# CUDA nvcc compiler
-CLAW_NVCC ?= $(CUDA_PATH)/bin/nvcc
-
-
+CLAW_FC ?= $(FC)
 LINK ?= $(CLAW_FC)
 
 # Path to version of python to use:  May need to use something other than
@@ -92,8 +56,6 @@ SOURCES ?=
 MODULES ?=
 EXCLUDE_SOURCES ?=
 EXCLUDE_MODULES ?=
-CPP_SOURCES ?=
-CPP_HEADERS ?=
 
 # Consolidate custom and common sources into a single list for compilations
 SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
@@ -112,16 +74,6 @@ MODULE_FILES = $(subst .F,.mod, $(subst .F90,.mod, $(subst .f,.mod, $(subst .f90
 MODULE_PATHS = $(sort $(dir $(MODULE_FILES)))
 MODULE_OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(MODULES)))))
 
-ifeq ($(USE_CPP), TRUE)
-    ifeq ($(USE_CUDA), TRUE)
-	CPP_OBJECTS = $(subst .cu,.o, $(subst .cpp,.o, $(CPP_SOURCES)))
-    else
-	CPP_OBJECTS = $(subst .cpp,.o, $(CPP_SOURCES))
-    endif
-else
-    CPP_OBJECTS = 
-endif
-
 #----------------------------------------------------------------------------
 # Compiling, linking, and include flags
 # User set flags, empty if not set
@@ -129,7 +81,6 @@ INCLUDE ?=
 FFLAGS ?=
 LFLAGS ?= $(FFLAGS)
 PPFLAGS ?=
-CPPFLAGS ?=
 
 # These will be included in all actual compilation and linking, one could
 # actually overwrite these before hand but that is not the intent of these
@@ -137,217 +88,30 @@ CPPFLAGS ?=
 ALL_INCLUDE ?=
 ALL_FFLAGS ?=
 ALL_LFLAGS ?=
-ALL_DEFINES ?=
-ALL_LIBRARIES ?=
 
 # Add includes, the module search paths and library search paths are appended
 # at the end of the ALL_INCLUDE variable so that INCLUDE can override any of
 # the default settings
 ALL_INCLUDE += $(addprefix -I,$(INCLUDE))
 ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -L,$(LIB_PATHS))
-ifeq ($(USE_CUDA), TRUE)
-    ifndef CUDA_PATH
-        $(error CUDA_PATH Environment variable is undefined)
-    endif
-    ALL_INCLUDE += -I$(CUDA_PATH)/include
-    ALL_LIBRARIES += -L$(CUDA_PATH)/lib64
-endif
 
 # ALL_FFLAGS and ALL_LFLAGS currently only includes the user defined flags
 ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
-ALL_CPPFLAGS += $(CPPFLAGS)
 
-# -----------------------------------------------------------------------------
-#  GPU configurations 
-ifeq ($(USE_CUDA),TRUE)
-    ifneq ($(FC),pgi)
-	$(error You must set FC to pgi to use CUDA)
-    endif
-    ALL_DEFINES += -DCUDA
-    ifeq ($(machine_name), titan)
-	ALL_FFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    else ifeq ($(machine_name), doppio)
-	ALL_FFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    else ifeq ($(machine_name), rhea)
-	ALL_FFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    else
-	ALL_FFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    endif
-    ALL_LIBRARIES += -lcudafor -lcuda
-    ifeq ($(VERBOSE), TRUE)
-	ALL_FFLAGS   += -Mcuda=ptxinfo
-	ALL_LFLAGS   += -Mcuda=ptxinfo
-	ALL_CPPFLAGS += -Mcuda=ptxinfo
-    endif
-endif
-# -----------------------------------------------------------------------------
- 
-# by default, use double precision
-ifeq ($(USE_DOUBLE_PRECISION),FALSE)
-    ALL_DEFINES += -DCLAW_REAL=4
-else
-    ALL_DEFINES += -DCLAW_REAL=8
-endif
-
-ifndef DIM
-    $(warning DIM is not set. 2 is used for DIM by default.)
-    DIM := 2
-else
-    DIM := $(strip $(DIM))
-    ALL_DEFINES += -DSPACEDIM=$(DIM)
-endif
-
-ifndef NUM_EQUATIONS
-    $(error NUM_EQUATIONS is not set)
-else
-    NUM_EQUATIONS := $(strip $(NUM_EQUATIONS))
-    ALL_DEFINES += -DNEQNS=$(NUM_EQUATIONS)
-endif
-
-ifndef NUM_WAVES
-    $(error NUM_WAVES is not set)
-else
-    NUM_WAVES := $(strip $(NUM_WAVES))
-    ALL_DEFINES += -DNWAVES=$(NUM_WAVES)
-endif
-
-ifndef NUM_COEFFS
-    $(error NUM_COEFFS is not set)
-else
-    NUM_COEFFS := $(strip $(NUM_COEFFS))
-    ALL_DEFINES += -DNCOEFFS=$(NUM_COEFFS)
-endif
-
-ifeq ($(USE_FWAVES),TRUE)
-    ALL_DEFINES += -DUSE_FWAVES
-endif
-
-ifeq ($(USE_CAPA),TRUE)
-    ALL_DEFINES += -DUSE_CAPA
-endif
-
-ifeq ($(findstring geoclaw, $(CLAW_PKG)), geoclaw)
-    ALL_DEFINES += -DGEOCLAW
-endif
-
-ifeq ($(DEBUG),TRUE)
-    ALL_DEFINES += -DDEBUG
-else
-    ALL_DEFINES += -DNDEBUG
-endif
-
-ifeq ($(PROFILE),TRUE)
-    ALL_DEFINES += -DPROFILE
-    ifeq ($(USE_CUDA), TRUE)
-    ALL_LIBRARIES += -lnvToolsExt
-    endif
-endif
-
-# Fortran module flag setting, please add other compilers here as necessary
-ifeq ($(CLAW_FC),gfortran)
+# Module flag setting, please add other compilers here as necessary
+ifeq ($(findstring gfortran,$(CLAW_FC)),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
-	ifeq ($(DEBUG),TRUE)
-	    ALL_FFLAGS += -g -O0 -ggdb -fbacktrace -Wall -pedantic -fbounds-check -ffpe-trap=invalid,overflow,zero  
-	else
-	    ALL_FFLAGS += -O3 
-	endif
-	ifeq ($(USE_OPENMP), TRUE)
-	    ALL_FFLAGS += -fopenmp
-	    ALL_LFLAGS += -fopenmp
-	endif
 else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
-	# TODO: add flags for the intel compiler
-else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pgfortran or ftn
-	# Note that there shoud be a space after this flag
-	MODULE_FLAG = -module 
-	ifeq ($(DEBUG),TRUE)
-	    # ALL_FFLAGS += -g -O0 -Mbounds -Ktrap=inv,denorm,divz,ovf,unf -Mchkptr -Mchkstk -Kieee
-	    ALL_FFLAGS += -g -O0 -Mpreprocess -Mbounds -Ktrap=fp -Mchkstk -Kieee -Mchkptr 
-	else
-	    ALL_FFLAGS += -O4 -fast -Mpreprocess -Minline # -Mipa=inline,reshape,safeall
-	endif
-	ALL_LFLAGS += -Mcuda=charstring -Minform=inform -O4 -fast -Minline # -Mipa=inline,reshape,safeall 
-	ifeq ($(USE_OPENMP), TRUE)
-	    ALL_FFLAGS += -mp -Minfo=mp
-	endif
-	ifeq ($(VERBOSE), TRUE)
-	    ALL_FFLAGS += -Manno -Mkeepasm
-	endif
-	ifeq ($(machine_name), rhea)
-	    ALL_LIBRARIES += -L/ccs/compilers/gcc/rhel6-x86_64/5.3.0/lib64
-	endif
 else
-    $(error Unrecognized compiler: $(CLAW_FC))
-endif
-
-# cpp compile flag setting, please add other compilers here as necessary
-ifeq ($(CLAW_CC),$(filter $(CLAW_CC),pgc++ CC)) # CLAW_CC is either pgc++ or CC 
-    ifeq ($(DEBUG),TRUE)
-	ALL_CPPFLAGS += -g -O0 -Mbounds -Mpreprocess
-    else
-	ALL_CPPFLAGS += -O4 -fast -Minline -Mpreprocess # -Mipa=inline,reshape,safeall
-    endif
-    ALL_CPPFLAGS += --c++11
-    ALL_LIBRARIES += -lstdc++
-    ifeq ($(USE_OPENMP), TRUE)
-	ALL_CPPFLAGS += -mp -Minfo=mp
-    endif
-    ifeq ($(VERBOSE), TRUE)
-	ALL_CPPFLAGS += -Manno -Mkeepasm
-    endif
-else
-    $(error Only pgc++ can be used for cpp files at this time.)
-endif
-
-ifeq ($(USE_CUDA), TRUE)
-    ALL_NVCCFLAGS = -ccbin g++ -std=c++11 -m64 -rdc=true -lineinfo
-    ifneq ($(DEBUG),TRUE)
-	ALL_NVCCFLAGS += -O3 -Xcompiler='-O3'
-    endif
-    ifeq ($(machine_name), titan)
-	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
-	# below are equivalant to the line above
-	# ALL_NVCCFLAGS += --gpu-architecture=compute_35
-	# ALL_NVCCFLAGS += --gpu-code=sm_35
-    else ifeq ($(machine_name), doppio)
-	ALL_NVCCFLAGS += --generate-code arch=compute_60,code=compute_60
-	ALL_NVCCFLAGS += --generate-code arch=compute_61,code=compute_61
-    else ifeq ($(machine_name), rhea)
-	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
-    else
-	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
-    endif
-    ifeq ($(VERBOSE), TRUE)
-	ALL_NVCCFLAGS += -keep --resource-usage -Xptxas=--verbose
-	ALL_NVCCFLAGS += -keep-dir built.tmp
-    endif
-endif
-
-ifeq ($(USE_CUDA), TRUE)
-ifeq ($(VERBOSE), TRUE)
-$(shell if [ -d built.tmp ]; then rm -rf built.tmp; fi)
-$(shell mkdir -p built.tmp)
-endif
-endif
-
-ifeq ($(machine_name), doppio)
-    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4 on Doppio
-    # We should get rid of this eventually 
-    ALL_CPPFLAGS += -D__CUDACC__ 
+	# Assume gcc like flagging, probably should raise an error here
+	MODULE_FLAG = -J
+	OMP_FLAG = -fopenmp
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -360,78 +124,24 @@ endif
 
 # Reset suffixes that we understand
 .SUFFIXES:
-.SUFFIXES: .f90 .f .mod .o .cpp .cu
+.SUFFIXES: .f90 .f .mod .o
 
-#-----------------------------------------------------------------------------
-# the f90.depends ensure some f90 files are compiled before others that 
-# depend on them
-MODDEP = $(CLAW)/clawutil/src/python/clawutil/f90_build_dep.py
-DEPENDENCY_BUILD_OPTS = 
-ALL_SOURCES_TMP = $(SOURCES) $(MODULES)
-
-f90.depends: $(ALL_SOURCES_TMP)
-	@echo "Building f90 dependency file ..."
-	@rm -f f90.depends
-	@$(MODDEP) $(DEPENDENCY_BUILD_OPTS) \
-	    $^ > f90.depends
-
-ifneq "$(strip $(ALL_SOURCES_TMP))" ""
--include f90.depends
-endif
-
-# the cpp.depends ensure correct dependencies of cpp files
-ifeq ($(USE_CPP), TRUE)
-
-ifeq ($(USE_CUDA), TRUE)
-cpp.depends: $(CPP_SOURCES)
-	@echo "Building cpp dependency file ..."
-	@rm -f cpp.depends
-	@for CPP_FILE in $(CPP_SOURCES); do \
-	    	TMP_PATH=$$(dirname $$CPP_FILE); \
-		$(CLAW_NVCC) -M -odir $$(dirname $$CPP_FILE) $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) >> cpp.depends; \
-	done
-else
-# this has not been tested
-# note that only gnu c++ compiler has the -M option
-cpp.depends: $(CPP_SOURCES)
-	@echo "Building cpp dependency file ..."
-	@rm -f cpp.depends
-	@for CPP_FILE in $(CPP_SOURCES); do \
- 		g++ -M $$CPP_FILE $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) >> cpp.depends; \
-	done
-endif
--include cpp.depends
-endif
-#-----------------------------------------------------------------------------
-
-
-#-----------------------------------------------------------------------------
 # Default Rules, the module rule should be executed first in most instances,
+# this way the .mod file ends up always in the correct spot
+%.mod : %.f90 ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
+%.mod : %.f   ; touch $@; $(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $*.o
 
-%.o : %.f90
-	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
-%.o : %.f
-	$(CLAW_FC) -c -cpp $< $(MODULE_FLAG)$(@D) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
-
-%.o : %.cpp
-	$(CLAW_CC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_CPPFLAGS) -o $@
-
-ifeq ($(USE_CUDA), TRUE)
-    %.o : %.cu
-	    $(CLAW_NVCC) -c $< $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_NVCCFLAGS) -o $@
-endif
-#-----------------------------------------------------------------------------
-
+%.o : %.f90 ;             $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
+%.o : %.f ;               $(CLAW_FC) -c -cpp $< 					$(ALL_INCLUDE) $(ALL_FFLAGS) -o $@
 
 #----------------------------------------------------------------------------
 # Executable:
 
-.objs:  $(MODULE_OBJECTS) $(OBJECTS) $(CPP_OBJECTS);
+.objs:  $(MODULE_FILES) $(OBJECTS);
 
 # The order here is to again build the module files correctly
-
-$(EXE): $(MODULE_OBJECTS) $(OBJECTS) $(CPP_OBJECTS) $(MAKEFILE_LIST) ;
-	$(LINK) -o $(EXE) $(MODULE_OBJECTS) $(OBJECTS) $(CPP_OBJECTS) $(ALL_DEFINES) $(ALL_INCLUDE) $(ALL_LFLAGS) $(ALL_LIBRARIES)
+$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
 .exe: $(EXE)
 
@@ -451,7 +161,6 @@ debug:
 	@echo 'for additional information and solutions.'
 
 #----------------------------------------------------------------------------
-
 
 # Command to create *.html files from *.f etc:
 CC2HTML = $(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/clawcode2html.py --force 
@@ -549,7 +258,6 @@ plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
 # preprocessor flags correctly
 new: $(MAKEFILE_LIST)
 	-rm -f  $(OBJECTS)
-	-rm -f  $(CPP_OBJECTS)
 	-rm -f  $(MODULE_OBJECTS)
 	-rm -f  $(MODULE_FILES)
 	-rm -f  $(EXE)
@@ -559,17 +267,15 @@ new: $(MAKEFILE_LIST)
 # Clean up options:
 clean:
 	-rm -f $(EXE) $(HTML)
-	-rm -f .data .output .plots .htmls f90.depends cpp.depends
+	-rm -f .data .output .plots .htmls 
 
 clobber:
 	$(MAKE) clean -f $(MAKEFILE_LIST)
 	-rm -f $(OBJECTS)
-	-rm -f $(CPP_OBJECTS)
 	-rm -f $(MODULE_OBJECTS)
 	-rm -f $(MODULE_FILES)
 	-rm -f fort.*  *.pyc pyclaw.log 
 	-rm -f -r $(OUTDIR) $(PLOTDIR)
-	-if [ -d built.tmp ]; then rm -rf built.tmp; fi
 
 #----------------------------------------------------------------------------
 
@@ -596,19 +302,4 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
-
-
-
-#-----------------------------------------------------------------------------
-# for debugging.  To see the value of a Makefile variable,
-# e.g. libraries, simply do "make print-libraries".  This will
-# print out the value:
-# its value
-# how it was defined, e.g. from environment or file
-# the flavor of the variable, either simple or recursive
-# the unexpanded value of the variable
-print-%:
-	@echo $* is '$($*)'
-	@echo '  origin = $(origin $*)'
-	@echo '  flavor = $(flavor $*)'
-	@echo '   value = $(value  $*)'
+endif # end USE_CUDA
