@@ -19,6 +19,10 @@ ifeq ($(FC),f77)
 	FC = gfortran
 endif
 
+ifeq ($(USE_CUDA), TRUE)
+include $(CLAW)/clawutil/src/Makefile.common.GPU
+else
+
 CLAW_FC ?= $(FC)
 LINK ?= $(CLAW_FC)
 
@@ -298,4 +302,4 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
-
+endif # end USE_CUDA

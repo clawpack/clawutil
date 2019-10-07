@@ -449,6 +449,10 @@ class ClawRunData(ClawData):
         # Always need the basic clawpack data object
         self.add_data(ClawInputData(num_dim),'clawdata')
 
+        # GPU
+        self.add_data(GPUInputData(),'gpudata')
+
+
         # Add package specific data objects
         if pkg.lower() in ['classic', 'classicclaw']:
             self.xclawcmd = 'xclaw'
@@ -571,7 +575,7 @@ class ClawInputData(ClawData):
         self.add_attribute('t0',0.)
         self.add_attribute('num_ghost',2)
         self.add_attribute('use_fwaves',False)
-        
+
         if num_dim == 1:
             self.add_attribute('lower',[0.])
             self.add_attribute('upper',[1.])
@@ -841,4 +845,26 @@ class UserData(ClawData):
 
     def write(self,data_source='setrun.py'):
         super(UserData,self).write(self.__fname__, data_source)
+        self.close_data_file()
+
+class GPUInputData(ClawData):
+    r"""
+    Object containing all input data specific for GPU, usually written to 'gpu.data'.
+
+
+    """
+
+    def __init__(self):
+        super(GPUInputData,self).__init__()
+
+        # Set default values:
+        self.add_attribute('which_gpu',0)
+
+    def write(self, out_file='gpu.data', data_source='setrun.py'):
+        r"""Write input data to a file"""
+        self.open_data_file(out_file,data_source)
+
+        self.data_write('which_gpu')
+
+        self.data_write()
         self.close_data_file()
