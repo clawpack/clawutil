@@ -70,6 +70,25 @@ MODULE_FILES = $(subst .F,.mod, $(subst .F90,.mod, $(subst .f,.mod, $(subst .f90
 MODULE_PATHS = $(sort $(dir $(MODULE_FILES)))
 MODULE_OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(MODULES)))))
 
+# list of all paths containing sources:
+SOURCE_PATHS = $(sort $(dir $(SOURCES)))
+# list of all .mod files on these paths (to remove with 'make new'):
+RM_MODULE_FILES = $(addsuffix *_module.mod,$(MODULE_PATHS))
+RM_MODULE_FILES += $(addsuffix *_module.mod,$(SOURCE_PATHS))
+ALL_MODULE_FILES = $(sort $(RM_MODULE_FILES))
+RM_MODULE_OBJECTS = $(addsuffix *_module.o,$(MODULE_PATHS))
+RM_MODULE_OBJECTS += $(addsuffix *_module.o,$(SOURCE_PATHS))
+ALL_MODULE_OBJECTS = $(sort $(RM_MODULE_OBJECTS))
+
+# This doesn't seem to work:
+#ALL_MODULE_OBJECTS = $(subst .mod, .o, $(ALL_MODULE_FILES))
+
+# note that this should contain everything in MODULE_FILES but maybe 
+# additional ones if the user has a local version of some module in a
+# different directory.  Previously the library version of .mod was not removed 
+# in that case, and was wrongly used by library routines that "use" the module.
+
+
 #----------------------------------------------------------------------------
 # Compiling, linking, and include flags
 # User set flags, empty if not set
@@ -116,7 +135,7 @@ endif
 
 #----------------------------------------------------------------------------
 # Targets that do not correspond to file names:
-.PHONY: .objs .exe clean clobber new all output plots;
+.PHONY: .objs .exe clean clobber new all output plots debug_new;
 
 # Reset suffixes that we understand
 .SUFFIXES:
@@ -255,9 +274,16 @@ plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
 new: $(MAKEFILE_LIST)
 	-rm -f  $(OBJECTS)
 	-rm -f  $(MODULE_OBJECTS)
-	-rm -f  $(MODULE_FILES)
+	-rm -f  $(ALL_MODULE_FILES)
 	-rm -f  $(EXE)
 	$(MAKE) $(EXE) MAKELEVEL=0 -f $(MAKEFILE_LIST)
+
+debug_new:
+	@echo MODULE_PATHS: $(MODULE_PATHS)
+	@echo SOURCE_PATHS: $(SOURCE_PATHS)
+	@echo ALL_MODULE_FILES: $(ALL_MODULE_FILES)
+	@echo ALL_MODULE_OBJECTS: $(ALL_MODULE_OBJECTS)
+
 
 
 # Clean up options:
