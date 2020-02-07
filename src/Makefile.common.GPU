@@ -152,9 +152,9 @@ ifeq ($(USE_CUDA),TRUE)
 	ALL_LFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_CPPFLAGS += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else ifeq ($(machine_name), doppio)
-	ALL_FFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_FFLAGS   += -Mcuda=cuda10.0,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda10.0,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda10.0,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else ifeq ($(machine_name), rhea)
 	ALL_FFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
