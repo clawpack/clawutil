@@ -41,6 +41,8 @@ endif
 # CUDA nvcc compiler
 CLAW_NVCC ?= $(CUDA_PATH)/bin/nvcc
 
+CUDA_VER ?= $(CUDA_VERSION)
+
 
 LINK ?= $(CLAW_FC)
 
@@ -160,9 +162,9 @@ ifeq ($(USE_CUDA),TRUE)
 	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
 	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     else # default compilation flags if the machine is none of the above
-	ALL_FFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_FFLAGS   += -Mcuda=$(CUDA_VER),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=$(CUDA_VER),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=$(CUDA_VER),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     endif
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
