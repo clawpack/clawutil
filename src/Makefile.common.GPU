@@ -41,9 +41,6 @@ endif
 # CUDA nvcc compiler
 CLAW_NVCC ?= $(CUDA_PATH)/bin/nvcc
 
-CUDA_VER ?= $(CUDA_VERSION)
-
-
 LINK ?= $(CLAW_FC)
 
 # Path to version of python to use:  May need to use something other than
@@ -150,21 +147,26 @@ ifeq ($(USE_CUDA),TRUE)
     endif
     ALL_DEFINES += -DCUDA
     ifeq ($(machine_name), titan)
-	ALL_FFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    	CUDA_VERSION ?= 9.1
+	CUDA_CC ?= cc35
     else ifeq ($(machine_name), doppio)
-	ALL_FFLAGS   += -Mcuda=cuda10.0,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda10.0,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda10.0,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    	CUDA_VERSION ?= 10.0
+	CUDA_CC ?= cc60
     else ifeq ($(machine_name), rhea)
-	ALL_FFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    	CUDA_VERSION ?= 8.0
+	CUDA_CC ?= cc35
     else # default compilation flags if the machine is none of the above
-	ALL_FFLAGS   += -Mcuda=$(CUDA_VER),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=$(CUDA_VER),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=$(CUDA_VER),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    	CUDA_VERSION ?=  10.0
+    endif
+    ifeq ($(origin CUDA_CC),undefined) # check if CUDA_CC is defined in bash environment
+    	# don't specify compute capability if CUDA_CC is not set
+	ALL_FFLAGS   += -Mcuda=cuda$(CUDA_VERSION),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda$(CUDA_VERSION),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda$(CUDA_VERSION),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    else
+	ALL_FFLAGS   += -Mcuda=cuda$(CUDA_VERSION),$(CUDA_CC),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_LFLAGS   += -Mcuda=cuda$(CUDA_VERSION),$(CUDA_CC),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+	ALL_CPPFLAGS += -Mcuda=cuda$(CUDA_VERSION),$(CUDA_CC),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     endif
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
