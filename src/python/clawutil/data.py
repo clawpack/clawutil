@@ -462,6 +462,10 @@ class ClawRunData(ClawData):
             self.xclawcmd = 'xamr'
             self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
             self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
+            try:
+                self.add_data(amrclaw.FlagRegionData(num_dim=num_dim),'flagregiondata')
+            except:
+                pass # if not yet merged into amrclaw, for testing PRs
             self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
             self.add_data(amrclaw.AdjointData(num_dim=num_dim),'adjointdata')
 
