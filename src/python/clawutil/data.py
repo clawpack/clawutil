@@ -15,9 +15,12 @@ from __future__ import absolute_import
 from __future__ import print_function
 import os
 import sys
+import shutil
 import inspect
 import tarfile
 import zipfile
+import gzip
+import bz2
 import string
 import six
 from six.moves import range
@@ -112,7 +115,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
             print("Downloading %s to %s..." % (url, output_path))
         with open(output_path, "wb") as output_file:
             remote_file = urlopen(url)
-            output_file.write(remote_file.read())
+            shutil.copyfileobj(remote_file, output_file)
         if verbose:
             print("Done downloading.")
         # elif verbose:
@@ -136,6 +139,16 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                 extension = os.path.splitext(zip_file.namelist()[0])[-1]
                 unarchived_output_path = "".join((unarchived_output_path,
                                                   extension))
+            if verbose:
+                print("Done un-archiving.")
+        elif os.path.splitext(output_path)[-1] in [".gz",".bz2"] and unpack:
+            unzipper = gzip if output_path[-2:] == "gz" else bz2
+            if verbose:
+                print("Un-archiving %s to %s..." % (output_path,
+                                                    unarchived_output_path))
+            with unzipper.open(output_path, "r") as f_in:
+                with open(unarchived_output_path, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
             if verbose:
                 print("Done un-archiving.")
 
