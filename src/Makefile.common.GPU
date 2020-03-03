@@ -1,46 +1,21 @@
 # CPP compiler
 CC ?= g++
 
-# for using some pre-set compiler options on specific machines
-# you can add your own here
-host_name := $(shell hostname -f)
-ifeq ($(findstring titan, $(host_name)), titan)
-    machine_name := titan
-else ifeq ($(findstring doppio, $(host_name)), doppio)
-    machine_name := doppio
-else ifeq ($(findstring rhea, $(host_name)), rhea)
-    machine_name := rhea
-endif
-
-
 # if FC is set to pgi, we use pgi compiler
 ifeq ($(FC),pgi)
-    ifeq ($(machine_name), titan)
-	CLAW_FC ?= ftn
-    else ifeq ($(machine_name), rhea)
-	CLAW_FC ?= pgfortran
-    else
-        CLAW_FC ?= pgfortran
-    endif
+    CLAW_FC ?= pgfortran
 else
     CLAW_FC ?= $(FC)
 endif
 # if CC is set to pgi, we use pgi compiler
 ifeq ($(CC),pgi)
-    ifeq ($(machine_name), titan)
-	CLAW_CC ?= CC
-    else ifeq ($(machine_name), rhea)
-	CLAW_CC ?= pgc++
-    else
-	CLAW_CC ?= pgc++
-    endif
+    CLAW_CC ?= pgc++
 else
     CLAW_CC ?= $(CC)
 endif
 
 # CUDA nvcc compiler
 CLAW_NVCC ?= $(CUDA_PATH)/bin/nvcc
-
 
 LINK ?= $(CLAW_FC)
 
@@ -129,7 +104,7 @@ ALL_INCLUDE += $(addprefix -I,$(INCLUDE))
 ALL_INCLUDE += $(addprefix -I,$(MODULE_PATHS)) $(addprefix -L,$(LIB_PATHS))
 ifeq ($(USE_CUDA), TRUE)
     ifndef CUDA_PATH
-        $(error CUDA_PATH Environment variable is undefined)
+        $(error CUDA_PATH is not defined)
     endif
     ALL_INCLUDE += -I$(CUDA_PATH)/include
     ALL_LIBRARIES += -L$(CUDA_PATH)/lib64
@@ -147,23 +122,9 @@ ifeq ($(USE_CUDA),TRUE)
 	$(error You must set FC to pgi to use CUDA)
     endif
     ALL_DEFINES += -DCUDA
-    ifeq ($(machine_name), titan)
-	ALL_FFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.1,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    else ifeq ($(machine_name), doppio)
-	ALL_FFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.2,cc60,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    else ifeq ($(machine_name), rhea)
-	ALL_FFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda8.0,cc35,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    else # default compilation flags if the machine is none of the above
-	ALL_FFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_LFLAGS   += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-	ALL_CPPFLAGS += -Mcuda=cuda9.2,maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
-    endif
+    ALL_FFLAGS   += -Mcuda=cuda$(CUDA_VERSION),$(CUDA_CC),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_LFLAGS   += -Mcuda=cuda$(CUDA_VERSION),$(CUDA_CC),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
+    ALL_CPPFLAGS += -Mcuda=cuda$(CUDA_VERSION),$(CUDA_CC),maxregcount:80 -Mcuda=lineinfo -Mcuda=rdc
     ALL_LIBRARIES += -lcudafor -lcuda
     ifeq ($(VERBOSE), TRUE)
 	ALL_FFLAGS   += -Mcuda=ptxinfo
@@ -253,7 +214,7 @@ else ifeq ($(CLAW_FC),ifort)
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
 	# TODO: add flags for the intel compiler
-else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pgfortran or ftn
+else ifeq ($(CLAW_FC),pgfortran)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	ifeq ($(DEBUG),TRUE)
@@ -268,9 +229,6 @@ else ifeq ($(CLAW_FC),$(filter $(CLAW_FC),pgfortran ftn)) # CLAW_FC is either pg
 	endif
 	ifeq ($(VERBOSE), TRUE)
 	    ALL_FFLAGS += -Manno -Mkeepasm
-	endif
-	ifeq ($(machine_name), rhea)
-	    ALL_LIBRARIES += -L/ccs/compilers/gcc/rhel6-x86_64/5.3.0/lib64
 	endif
 else
     $(error Unrecognized compiler: $(CLAW_FC))
@@ -300,19 +258,11 @@ ifeq ($(USE_CUDA), TRUE)
     ifneq ($(DEBUG),TRUE)
 	ALL_NVCCFLAGS += -O3 -Xcompiler='-O3'
     endif
-    ifeq ($(machine_name), titan)
-	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
-	# below are equivalant to the line above
-	# ALL_NVCCFLAGS += --gpu-architecture=compute_35
-	# ALL_NVCCFLAGS += --gpu-code=sm_35
-    else ifeq ($(machine_name), doppio)
-	ALL_NVCCFLAGS += --generate-code arch=compute_60,code=compute_60
-	ALL_NVCCFLAGS += --generate-code arch=compute_61,code=compute_61
-    else ifeq ($(machine_name), rhea)
-	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
-    else
-	ALL_NVCCFLAGS += --generate-code arch=compute_35,code=compute_35
-    endif
+    # uncomment these lines and change them accordingly to obtain potential
+    # better optimization if you know the CUDA compute capability for the 
+    # machine this code is compiled for
+    # ALL_NVCCFLAGS += --generate-code arch=compute_60,code=compute_60
+    # ALL_NVCCFLAGS += --generate-code arch=compute_61,code=compute_61
     ifeq ($(VERBOSE), TRUE)
 	ALL_NVCCFLAGS += -keep --resource-usage -Xptxas=--verbose
 	ALL_NVCCFLAGS += -keep-dir built.tmp
@@ -326,11 +276,6 @@ $(shell mkdir -p built.tmp)
 endif
 endif
 
-ifeq ($(machine_name), doppio)
-    # TODO: this is just a workaround for imcompatibility of pgi 18.4 and ubuntu 18.4 on Doppio
-    # We should get rid of this eventually 
-    ALL_CPPFLAGS += -D__CUDACC__ 
-endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
 # not the first level (the original calling Makefile should be MAKELEVEL = 0)
