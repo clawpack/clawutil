@@ -216,7 +216,7 @@ for infilename in infiles:
           <head>
           <link type="text/css" rel="stylesheet"
           href="%s/eagleclaw/eagleclaw.css">
-          <link rel="icon" href="%s/clawicon.ico" />
+          <link rel="icon" href="%s/_static/clawicon_new.ico" />
           </head> 
           <body>
         """ % (clawaddr,clawaddr))
@@ -225,7 +225,7 @@ for infilename in infiles:
           <head>
           <link type="text/css" rel="stylesheet"
           href="%s/%s">
-          <link rel="icon" href="%s/clawicon.ico" />
+          <link rel="icon" href="%s/_static/clawicon_new.ico" />
           </head> 
           <body>
         """ % (clawaddr, cssfile, clawaddr))
@@ -233,7 +233,7 @@ for infilename in infiles:
         ofile.write(
            """
           <head>
-           <link rel="icon" href="%s/clawicon.ico" />
+           <link rel="icon" href="%s/_static/clawicon_new.ico" />
           </head> 
            <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000FF" 
                  VLINK="#5500DD" ALINK="#FF0000">
@@ -261,8 +261,8 @@ for infilename in infiles:
     
         ofile.write("""
             <td><a href="http://www.clawpack.org/index.html"><img
-            src="%s/clawlogo.jpg"
-            width=100 alt="CLAWPACK"></a>""" % clawaddr)
+            src="%s/_static/clawlogo_border.jpg"
+            width=150 alt="CLAWPACK"></a>""" % clawaddr)
 
         ofile.write('&nbsp;&nbsp; </td> </tr> <tr> <td>\n')
     
