@@ -116,7 +116,7 @@ endif
 
 #----------------------------------------------------------------------------
 # Targets that do not correspond to file names:
-.PHONY: .objs .exe clean clobber new all output plots;
+.PHONY: .objs .exe clean clobber new all output plots notebook_htmls;
 
 # Reset suffixes that we understand
 .SUFFIXES:
@@ -160,6 +160,7 @@ debug:
 
 # Command to create *.html files from *.f etc:
 CC2HTML = $(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/clawcode2html.py --force 
+NBCONVERT = jupyter nbconvert --to html --execute --ExecutePreprocessor.kernel_name=python3 --ExecutePreprocessor.timeout=1200 
 
 # make list of html files to be created by 'make .htmls':
 HTML = \
@@ -173,6 +174,9 @@ HTML = \
   $(subst .sh,.sh.html,$(wildcard *.sh)) \
   Makefile.html
 
+NOTEBOOK_HTML = \
+  $(subst .ipynb,.ipynb.html,$(wildcard *.ipynb)) \
+
 # Rules to make html files:  
 # e.g. qinit.f --> qinit.f.html
 %.f.html : %.f ; $(CC2HTML) $<              
@@ -185,9 +189,14 @@ HTML = \
 Makefile.html : Makefile ; $(CC2HTML) $<    
 # drop .txt extension, e.g. README.txt --> README.html
 %.html : %.txt ; $(CC2HTML) --dropext $<    
+%.ipynb.html: %.ipynb ; $(NBCONVERT) $<
 
-.htmls: $(HTML) ;
+README.html:
 	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/convert_readme.py
+
+.htmls: $(HTML) README.html;
+
+notebook_htmls: $(NOTEBOOK_HTML) README.html ;
 
 #----------------------------------------------------------------------------
 
@@ -235,6 +244,7 @@ plots: $(SETPLOT_FILE) $(MAKEFILE_LIST);
 	-rm -f .plots
 	$(PLOTCMD) $(OUTDIR) $(PLOTDIR) $(SETPLOT_FILE)
 	@echo $(PLOTDIR) > .plots
+
 
 #----------------------------------------------------------------------------
 
