@@ -116,7 +116,7 @@ endif
 
 #----------------------------------------------------------------------------
 # Targets that do not correspond to file names:
-.PHONY: .objs .exe clean clobber new all output plots notebook_htmls;
+.PHONY: .objs .exe clean clobber new all output plots notebook_htmls readme;
 
 # Reset suffixes that we understand
 .SUFFIXES:
@@ -187,16 +187,20 @@ NOTEBOOK_HTML = \
 %.data.html : %.data ; $(CC2HTML) $<
 %.sh.html : %.sh ; $(CC2HTML) $<
 Makefile.html : Makefile ; $(CC2HTML) $<    
-# drop .txt extension, e.g. README.txt --> README.html
-%.html : %.txt ; $(CC2HTML) --dropext $<    
+# drop .txt extension on any .txt files when converting:
+#%.html : %.txt ; $(CC2HTML) --dropext $<    
 %.ipynb.html: %.ipynb ; $(NBCONVERT) $<
 
-README.html:
+# to create README.html:
+readme: 
+	@echo Converting README.rst...
 	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/convert_readme.py
 
-.htmls: $(HTML) README.html;
+.htmls: $(HTML) readme;
 
-notebook_htmls: $(NOTEBOOK_HTML) README.html ;
+# make .html files from .ipynb notebooks using nbconvert, 
+# and also remake README.html in case it links these in:
+notebook_htmls: $(NOTEBOOK_HTML) readme;
 
 #----------------------------------------------------------------------------
 
