@@ -188,7 +188,7 @@ NOTEBOOK_HTML = \
 %.sh.html : %.sh ; $(CC2HTML) $<
 Makefile.html : Makefile ; $(CC2HTML) $<    
 # drop .txt extension on any .txt files when converting:
-#%.html : %.txt ; $(CC2HTML) --dropext $<    
+%.html : %.txt ; $(CC2HTML) --dropext $<    
 %.ipynb.html: %.ipynb ; $(NBCONVERT) $<
 
 # to create README.html:
