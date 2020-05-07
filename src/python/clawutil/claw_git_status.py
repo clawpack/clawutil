@@ -15,7 +15,7 @@ if sys.version_info < (3, 0):
 else:
     from io import StringIO
 
-repos_list = ['classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
+repos_list = ['', 'classic', 'amrclaw', 'clawutil', 'pyclaw', 'visclaw', 'riemann',
               'geoclaw']
 
 def make_git_status_file(outdir=None):
@@ -78,11 +78,15 @@ def repository_status(repository):
     
     # Construct output string
     output = StringIO()
-    output.write("\n\n===========\n%s\n===========\n" % repository)
+
+    if repository == '':
+        output.write("\n\n===========\n%s\n===========\n" % 'clawpack')
+    else:
+        output.write("\n\n===========\n%s\n===========\n" % repository)
     output.write("%s\n\n" % repo_path)
 
     output.write("--- last commit ---\n")
-    cmd = "cd %s ; git log -1 --oneline" % repo_path
+    cmd = "cd %s ; git log -1 --oneline --decorate" % repo_path
     output.write(subprocess.check_output(cmd, shell=True,
                  universal_newlines=True))
     output.write("\n")
@@ -114,8 +118,13 @@ def repository_diff(repository):
     
     # Construct output string
     output = StringIO()
-    output.write("\n\n===========\n%s\n===========\n" % repository)
+
+    if repository == '':
+        output.write("\n\n===========\n%s\n===========\n" % 'clawpack')
+    else:
+        output.write("\n\n===========\n%s\n===========\n" % repository)
     output.write("%s\n\n" % repo_path)
+
     cmd = 'cd %s ; git diff --no-ext-diff' % repo_path
     output.write(subprocess.check_output(cmd, shell=True,
                  universal_newlines=True))
