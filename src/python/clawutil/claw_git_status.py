@@ -86,7 +86,7 @@ def repository_status(repository):
     output.write("%s\n\n" % repo_path)
 
     output.write("--- last commit ---\n")
-    cmd = "cd %s ; git log -1 --oneline" % repo_path
+    cmd = "cd %s ; git log -1 --oneline --decorate" % repo_path
     output.write(subprocess.check_output(cmd, shell=True,
                  universal_newlines=True))
     output.write("\n")
