@@ -1,8 +1,10 @@
 """
-Sample b4run.py file.  If a file like this is in the rundir directory 
-used by runclaw.py (e.g. the application directory from which you
-execute 'make .output') this will be executed after creating the
-outdir and before running the Clawpack code.
+Sample b4run.py file, defining a function b4run(rundir,outdir).  
+
+If a file like this is in the rundir directory used by runclaw.py 
+(e.g. the application directory from which you execute 'make .output'),
+this will be executed after creating the outdir and before running 
+the Clawpack code.
 
 If no b4run.py file is found in the rundir then the environment variable B4RUN,
 if set, is used to locate a file to be used more globally, e.g. you could
