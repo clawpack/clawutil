@@ -196,6 +196,25 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
             for file in datafiles:
                 shutil.copy(file, os.path.join(outdir,os.path.basename(file)))
 
+    b4run = None
+    if os.path.isfile('b4run.py'):
+        b4run_file = os.path.abspath('b4run.py')
+    else:
+        b4run_file = os.environ.get('B4RUN', '')
+
+    if os.path.isfile(b4run_file):
+        import runpy
+        file_globals = runpy.run_path(b4run_file)
+        b4run = file_globals.get('b4run', None)
+        
+    if b4run is not None:
+        try:
+            b4run(rundir, outdir)
+            print('Executed b4run function from ', b4run_file)
+        except:
+            print('*** Warning: problem executing b4run')
+            #raise   # don't raise an exception, just print warning
+
     # execute command to run fortran program:
     if nohup:
         # run in nohup mode:
