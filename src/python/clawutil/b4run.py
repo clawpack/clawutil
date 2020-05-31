@@ -1,20 +1,21 @@
 """
-Sample b4run.py file.  If a file  like this is in the rundir directory 
+Sample b4run.py file.  If a file like this is in the rundir directory 
 used by runclaw.py (e.g. the application directory from which you
 execute 'make .output') this will be executed after creating the
 outdir and before running the Clawpack code.
 
-If no b4run.py file is found in the rundir then the environment variable
-B4RUN, if set, is used to locate a file used more globally, e.g. you could
+If no b4run.py file is found in the rundir then the environment variable B4RUN,
+if set, is used to locate a file to be used more globally, e.g. you could
 set this to point to $HOME/b4ruon.py for a default version to use if there
-is no local version, or you can use this version by setting B4RUN to
+is no local version, or you can use this version globally by setting B4RUN to
 $CLAW/clawutil/src/python/clawutil/b4run.py
 
-Use this, for example, to copy any files you want to the outdir,
+Use this capability, for example, to copy any files you want to the outdir,
 either because they are needed for the run or to archive them along
 with the output.
 
 This sample version copies the Makefile and any Python or Fortran codes.
+Note that *.data files are automatically copied by runclaw.
 
 It also creates (or appends to) a runlog.txt file containing information 
 about this run: the rundir and the time/date the run started.

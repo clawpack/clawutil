@@ -19,6 +19,8 @@ import shutil
 import shlex
 import subprocess
 import time
+import warnings
+import runpy
 
 from clawpack.clawutil.data import ClawData
 from clawpack.clawutil.claw_git_status import make_git_status_file
@@ -203,17 +205,21 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         b4run_file = os.environ.get('B4RUN', '')
 
     if os.path.isfile(b4run_file):
-        import runpy
-        file_globals = runpy.run_path(b4run_file)
-        b4run = file_globals.get('b4run', None)
+        try:
+            file_globals = runpy.run_path(b4run_file)
+            b4run = file_globals.get('b4run', None)
+        except:
+            w = r"*** WARNING: problem running b4run_file = %s" % b4run_file
+            warnings.warn(w, UserWarning)
+            b4run = None
         
     if b4run is not None:
         try:
             b4run(rundir, outdir)
-            print('Executed b4run function from ', b4run_file)
+            print('Executed b4run function from %s' % b4run_file)
         except:
-            print('*** Warning: problem executing b4run')
-            #raise   # don't raise an exception, just print warning
+            w = r"*** WARNING: problem executing b4run from %s" % b4run_file
+            warnings.warn(w, UserWarning)
 
     # execute command to run fortran program:
     if nohup:
