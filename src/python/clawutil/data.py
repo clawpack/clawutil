@@ -55,15 +55,15 @@ def strip_archive_extensions(path,
         return path
 
 
-def get_remote_file(url, output_dir=None, file_name=None, force=False,  
+def get_remote_file(url, output_dir=None, file_name=None, force=False,
                          verbose=False, ask_user=False, unpack=True):
     r"""Fetch file located at *url* and store at *output_dir*.
 
     :Input:
-    
+
      - *url* (path) - URL to file to be downloaded.
      - *output_dir* (path) - Directory that the remote file will be downloaded
-       to.  Defaults to the GeoClaw sratch directory defined by 
+       to.  Defaults to the GeoClaw sratch directory defined by
        *os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')*.
      - *file_name* (string) - Name of local file.  This defaults to the name of
        the remote file.
@@ -74,7 +74,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
        file before proceeding.  Default is *False*
 
     :Raises:
-     
+
     Exceptions are raised from the *urllib* module having to do with errors
     fetching the remote file.  Please see its documentation for more details of
     the exceptions that can be raised.
@@ -93,7 +93,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
 
     if file_name is None:
         file_name = os.path.basename(url)
-        
+
     output_path = os.path.join(output_dir, file_name)
     unarchived_output_path = strip_archive_extensions(output_path)
 
@@ -123,7 +123,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
 
         if tarfile.is_tarfile(output_path) and unpack:
             if verbose:
-                print("Un-archiving %s to %s..." % (output_path, 
+                print("Un-archiving %s to %s..." % (output_path,
                                                     unarchived_output_path))
             with tarfile.open(output_path, mode="r:*") as tar_file:
                 tar_file.extractall(path=output_dir)
@@ -176,14 +176,14 @@ class ClawData(object):
     but new attributes can only be added using the method add_attribute.
 
     Trying to set a nonexistent attribute will raise an AttributeError
-    exception, except for those starting with '_'.   
+    exception, except for those starting with '_'.
     """
 
 
     def __init__(self, attributes=None):
-        
-        # Attribute to store a list of the allowed attributes, 
-        # appended to when add_attribute is used: 
+
+        # Attribute to store a list of the allowed attributes,
+        # appended to when add_attribute is used:
         object.__setattr__(self,'_attributes',[])
 
         # Output file handle
@@ -207,7 +207,7 @@ class ClawData(object):
             print("*** Perhaps a typo?")
             print("*** Add new attributes using add_attribute method")
             raise AttributeError("Unrecognized attribute: %s" % name)
-        
+
         # attribute exists, ok to set:
         object.__setattr__(self,name,value)
 
@@ -275,7 +275,7 @@ class ClawData(object):
         """
         return name in self._attributes
 
-        
+
     def iteritems(self):
         r"""
         Returns an iterator of attributes and values from this object
@@ -371,12 +371,12 @@ class ClawData(object):
             padded_value = string_value.ljust(20)
             padded_name = alt_name.ljust(20)
             if description != '':
-                self._out_file.write('%s =: %s # %s \n' % 
+                self._out_file.write('%s =: %s # %s \n' %
                                         (padded_value, padded_name, description))
             else:
-                self._out_file.write('%s =: %s\n' % 
+                self._out_file.write('%s =: %s\n' %
                                     (padded_value, padded_name))
-  
+
 
     def read(self,path,force=False):
         r"""Read and fill applicable data attributes.
@@ -402,7 +402,7 @@ class ClawData(object):
                     self.add_attribute(varname,value)
                 else:
                     setattr(self,varname,value)
-    
+
 
     def _parse_value(self,value):
         r"""
@@ -535,7 +535,7 @@ class ClawRunData(ClawData):
 
     def write(self, out_dir = ''):
         r"""Write out each data objects in datalist """
-        
+
         import clawpack.amrclaw.data as amrclaw
 
         for data_object in self.data_list:
@@ -569,6 +569,10 @@ class ClawInputData(ClawData):
     def __init__(self, num_dim):
         super(ClawInputData,self).__init__()
 
+        # Add absorbing boundary layer data object
+        abldata = ClawABLData(num_dim)
+        self.add_attribute('abldata',abldata)
+
         # Set default values:
         self.add_attribute('num_dim',num_dim)
         self.add_attribute('num_eqn',1)
@@ -585,7 +589,7 @@ class ClawInputData(ClawData):
         self.add_attribute('output_q_components','all')
         self.add_attribute('output_aux_components','none')
         self.add_attribute('output_aux_onlyonce',True)
-        
+
         self.add_attribute('dt_initial',1.e-5)
         self.add_attribute('dt_max',1.e99)
         self.add_attribute('dt_variable',True)
@@ -602,7 +606,7 @@ class ClawInputData(ClawData):
         self.add_attribute('t0',0.)
         self.add_attribute('num_ghost',2)
         self.add_attribute('use_fwaves',False)
-        
+
         if num_dim == 1:
             self.add_attribute('lower',[0.])
             self.add_attribute('upper',[1.])
@@ -641,13 +645,34 @@ class ClawInputData(ClawData):
         self.open_data_file(out_file,data_source)
 
         self.data_write('num_dim')
-        self.data_write('lower')
-        self.data_write('upper')
-        self.data_write('num_cells')
+
+        # If necessary, adjust data for absorbing boundary layer
+        num_aux = self.num_aux
+        if self.abldata.abltype == 0:
+            self.data_write('lower')
+            self.data_write('upper')
+            self.data_write('num_cells')
+        else:
+            upper = np.array(self.upper)
+            lower = np.array(self.lower)
+            num_cells = np.array(self.num_cells)
+            depth_lower = np.array(self.abldata.depth_lower)
+            depth_upper = np.array(self.abldata.depth_upper)
+            dx = (upper-lower)/num_cells
+            num_cells_abl_lower = np.ceil(depth_lower/dx)
+            num_cells_abl_upper = np.ceil(depth_upper/dx)
+            for j in range(self.num_dim):
+              num_cells[j] += int(num_cells_abl_lower[j]) + int(num_cells_abl_upper[j])
+            lower -= num_cells_abl_lower*dx
+            upper += num_cells_abl_upper*dx
+            self.data_write('', value=lower, alt_name='lower')
+            self.data_write('', value=upper, alt_name='upper')
+            self.data_write('', value=num_cells, alt_name='num_cells')
+
         self.data_write()  # writes blank line
         self.data_write('num_eqn')
         self.data_write('num_waves')
-        self.data_write('num_aux')
+        self.data_write('', value=num_aux, alt_name='num_aux')
         self.data_write()  # writes blank line
 
         self.data_write('t0')
@@ -683,7 +708,7 @@ class ClawInputData(ClawData):
         else:
             raise ValueError("*** Error in data parameter: " + \
                   "output_format unrecognized: ",self.output_format)
-            
+
         self.data_write('output_format')
 
         if self.output_q_components == 'all':
@@ -695,24 +720,24 @@ class ClawInputData(ClawData):
             print("*** WARNING: Selective output_q_components not implemented")
             print("***          Will output all components of q")
             iout_q = self.num_eqn * [1]
-    
+
 
         # Write out local value of iout_q rather than a data member
         self.data_write('', value=iout_q, alt_name='iout_q')
 
-        if self.num_aux > 0:
+        if num_aux > 0:
             if isinstance(self.output_aux_components,six.string_types):
                 if self.output_aux_components.lower() == 'all':
-                    iout_aux = self.num_aux * [1]
+                    iout_aux = num_aux * [1]
                 elif self.output_aux_components.lower() == 'none':
-                    iout_aux = self.num_aux * [0]
+                    iout_aux = num_aux * [0]
                 else:
                     raise ValueError("Invalid aux array component option.")
             else:
                 iout_aux = np.where(self.output_aux_components, 1, 0)
                 print("*** WARNING: Selective output_aux_components not implemented")
                 print("***          Will output all components of aux")
-                iout_aux = self.num_aux * [1]
+                iout_aux = num_aux * [1]
             self.data_write(name='', value=iout_aux, alt_name='iout_aux')
             self.data_write('output_aux_onlyonce')
 
@@ -732,32 +757,32 @@ class ClawInputData(ClawData):
         else:
             # Transverse options different in 2D and 3D
             if self.num_dim == 2:
-                if self.transverse_waves in [0,'none']:  
+                if self.transverse_waves in [0,'none']:
                     self.transverse_waves = 0
-                elif self.transverse_waves in [1,'increment']:  
+                elif self.transverse_waves in [1,'increment']:
                     self.transverse_waves = 1
-                elif self.transverse_waves in [2,'all']:  
+                elif self.transverse_waves in [2,'all']:
                     self.transverse_waves = 2
                 else:
                     raise AttributeError("Unrecognized transverse_waves: %s" \
                                              % self.transverse_waves)
             else:    # 3D
-                if self.transverse_waves in [0,'none']:  
+                if self.transverse_waves in [0,'none']:
                     self.transverse_waves = 0
-                elif self.transverse_waves in [1,'increment']:  
+                elif self.transverse_waves in [1,'increment']:
                     self.transverse_waves = 11
-                elif self.transverse_waves in [2,'all']:  
+                elif self.transverse_waves in [2,'all']:
                     self.transverse_waves = 22
                 if not (self.transverse_waves in [0, 10, 11, 20, 21, 22]):
                     raise AttributeError("Unrecognized transverse_waves: %s" \
                                              % self.transverse_waves)
             self.data_write(None, self.transverse_waves, 'transverse_waves')
 
-            if self.dimensional_split in [0,'unsplit']:  
+            if self.dimensional_split in [0,'unsplit']:
                 self.dimensional_split = 0
-            elif self.dimensional_split in [1,'godunov']:  
+            elif self.dimensional_split in [1,'godunov']:
                 self.dimensional_split = 1
-            elif self.dimensional_split in [2,'strang']:  
+            elif self.dimensional_split in [2,'strang']:
                 if self.num_dim == 3:
                     raise AttributeError("Strang dimensional splitting not supported in 3D")
                 else:
@@ -766,14 +791,14 @@ class ClawInputData(ClawData):
                 raise AttributeError("Unrecognized dimensional_split: %s" \
                       % self.dimensional_split)
             self.data_write('dimensional_split')
-            
+
         self.data_write('verbosity')
 
-        if self.source_split in [0,'none']:  
+        if self.source_split in [0,'none']:
             self.source_split = 0
-        elif self.source_split in [1,'godunov']:  
+        elif self.source_split in [1,'godunov']:
             self.source_split = 1
-        elif self.source_split in [2,'strang']:  
+        elif self.source_split in [2,'strang']:
             self.source_split = 2
         else:
             raise AttributeError("Unrecognized source_split: %s" \
@@ -845,6 +870,77 @@ class ClawInputData(ClawData):
 
         self.data_write()
         self.close_data_file()
+
+        self.abldata.write()
+
+class ClawABLData(ClawData):
+    r"""
+    Object containing absorbing boundary layer input data, usually written to 'abl.data'.
+
+
+    """
+
+    def __init__(self, num_dim):
+        super(ClawABLData,self).__init__()
+
+        # Set default values:
+        self.add_attribute('abltype',0)
+        self.add_attribute('parameters',{})
+
+        if num_dim == 1:
+            self.add_attribute('depth_lower',[0.])
+            self.add_attribute('depth_upper',[0.])
+        elif num_dim == 2:
+            self.add_attribute('depth_lower',[0.,0.])
+            self.add_attribute('depth_upper',[0.,0.])
+        elif num_dim == 3:
+            self.add_attribute('depth_lower',[0.,0.,0.])
+            self.add_attribute('depth_upper',[0.,0.,0.])
+        else:
+            raise ValueError("Only num_dim=1, 2, or 3 supported ")
+
+
+
+    def write(self, out_file='abl.data', data_source='setrun.py'):
+        r"""Write input data to a file"""
+        self.open_data_file(out_file,data_source)
+
+        if self.abltype == 'trigonometric':
+            self.data_write('', value=1, alt_name='abltype')
+
+        elif self.abltype == 'appelo_colonius':
+            self.data_write('', value=2, alt_name='abltype')
+            if 'epsilon' in self.parameters.keys():
+                self.data_write('', value=self.parameters['epsilon'], alt_name='epsilon')
+            else:
+                raise ValueError("Use of Appello/Colonius ABL requires value for epsilon.")
+            if 'p' in self.parameters.keys():
+                self.data_write('', value=self.parameters['p'], alt_name='p')
+            else:
+                raise ValueError("Use of Appello/Colonius ABL requires value for p.")
+            if 'q' in self.parameters.keys():
+                self.data_write('', value=self.parameters['q'], alt_name='q')
+            else:
+                raise ValueError("Use of Appello/Colonius ABL requires value for q.")
+
+        elif self.abltype == 'petersson_sjogreen':
+            self.data_write('', value=3, alt_name='abltype')
+            if 'epsilon' in self.parameters.keys():
+                self.data_write('', value=self.parameters['epsilon'], alt_name='epsilon')
+            else:
+                raise ValueError("Use of Petersson/Sjogreen ABL requires value for epsilon.")
+
+        else:
+            self.data_write('abltype')
+            for key in self.parameters.keys():
+                self.data_write('', value=self.parameters[key], alt_name=key)
+
+        self.data_write('depth_lower')
+        self.data_write('depth_upper')
+
+        self.data_write()
+        self.close_data_file()
+
 
 
 class UserData(ClawData):
