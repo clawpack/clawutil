@@ -98,6 +98,7 @@ def make_all(examples_dir = '.',make_clean_first=False, env=None):
         ferr.write("\n=============================================\n")
 
         os.chdir(directory)
+        print(directory)
 
         # flush I/O buffers:
         fout.flush()
