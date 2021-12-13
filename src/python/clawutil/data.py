@@ -496,7 +496,7 @@ class ClawRunData(ClawData):
             self.add_data(geoclaw.TopographyData(),'topo_data')
             self.add_data(geoclaw.DTopoData(),'dtopo_data')
             self.add_data(geoclaw.RefinementData(),'refinement_data')
-            self.add_data(geoclaw.FixedGridData(),'fixed_grid_data')
+            self.add_data(geoclaw.FGoutData(),'fgout_data')
             self.add_data(geoclaw.QinitData(),'qinit_data')
             self.add_data(geoclaw.FGmaxData(),'fgmax_data')
             self.add_data(geoclaw.SurgeData(),'surge_data')
