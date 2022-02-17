@@ -37,11 +37,12 @@ def list_examples(examples_dir):
 
     for (dirpath, subdirs, files) in os.walk('.',topdown=False):
 
-        # By convention we assume that a setrun.py file indicates this is an
-        # example directory.
-        files = os.listdir(os.path.abspath(dirpath))
-        if 'setrun.py' in files:
-            dirlist.append(os.path.abspath(dirpath))
+        if '_output' not in dirpath:
+            # By convention we assume that a setrun.py file indicates this is an
+            # example directory.
+            files = os.listdir(os.path.abspath(dirpath))
+            if 'setrun.py' in files:
+                dirlist.append(os.path.abspath(dirpath))
 
     os.chdir(current_dir)
 
