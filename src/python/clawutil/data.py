@@ -496,7 +496,8 @@ class ClawRunData(ClawData):
             self.add_data(geoclaw.TopographyData(),'topo_data')
             self.add_data(geoclaw.DTopoData(),'dtopo_data')
             self.add_data(geoclaw.RefinementData(),'refinement_data')
-            self.add_data(geoclaw.FixedGridData(),'fixed_grid_data')
+            self.add_data(geoclaw.FGoutData(),'fgout_data')
+            self.add_data(geoclaw.FixedGridData(),'fixed_grid_data') # deprecated
             self.add_data(geoclaw.QinitData(),'qinit_data')
             self.add_data(geoclaw.FGmaxData(),'fgmax_data')
             self.add_data(geoclaw.SurgeData(),'surge_data')
@@ -676,13 +677,15 @@ class ClawInputData(ClawData):
         self.data_write()
         if self.output_format in [1,'ascii']:
             self.output_format = 1
-        elif self.output_format in [2,'netcdf']:
+        elif self.output_format in [2,'binary32']:
             self.output_format = 2
-        elif self.output_format in [3,'binary']:
+        elif self.output_format in [3,'binary64','binary']:
             self.output_format = 3
         else:
-            raise ValueError("*** Error in data parameter: " + \
-                  "output_format unrecognized: ",self.output_format)
+            errmsg = "*** Error in data parameter: " + \
+                     "output_format unrecognized: %s " % self.output_format + \
+                     "\n     *** Expecting ascii, binary32, or binary64"
+            raise ValueError(errmsg)
             
         self.data_write('output_format')
 
