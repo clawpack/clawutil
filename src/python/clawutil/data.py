@@ -142,7 +142,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                         if not is_within_directory(path, member_path):
                             raise Exception("Attempted Path Traversal in Tar File")
                 
-                    tar.extractall(path, members, numeric_owner) 
+                    tar.extractall(path, members, numeric_owner=numeric_owner) 
                     
                 
                 safe_extract(tar_file, path=output_dir)
