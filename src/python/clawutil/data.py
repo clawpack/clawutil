@@ -126,7 +126,26 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
                 print("Un-archiving %s to %s..." % (output_path, 
                                                     unarchived_output_path))
             with tarfile.open(output_path, mode="r:*") as tar_file:
-                tar_file.extractall(path=output_dir)
+                def is_within_directory(directory, target):
+                    
+                    abs_directory = os.path.abspath(directory)
+                    abs_target = os.path.abspath(target)
+                
+                    prefix = os.path.commonprefix([abs_directory, abs_target])
+                    
+                    return prefix == abs_directory
+                
+                def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                
+                    for member in tar.getmembers():
+                        member_path = os.path.join(path, member.name)
+                        if not is_within_directory(path, member_path):
+                            raise Exception("Attempted Path Traversal in Tar File")
+                
+                    tar.extractall(path, members, numeric_owner=numeric_owner) 
+                    
+                
+                safe_extract(tar_file, path=output_dir)
             if verbose:
                 print("Done un-archiving.")
         elif zipfile.is_zipfile(output_path) and unpack:
