@@ -31,6 +31,7 @@ CLAW_PYTHON ?= $(PYTHON)
 # Variables below should be set in Makefile that "includes" this one.
 # Default values if not set:
 EXE ?= xclaw
+RUNEXE ?= $(EXE)  # executable command is just file name by default
 CLAW_PKG ?= classic
 OUTDIR ?= _output
 PLOTDIR ?= _plots
@@ -224,7 +225,8 @@ data: $(MAKEFILE_LIST);
 # Run the code without checking dependencies:
 output: $(MAKEFILE_LIST);
 	-rm -f .output
-	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
+	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py \
+	$(RUNEXE) $(OUTDIR) \
 	$(OVERWRITE) $(RESTART) . $(GIT_STATUS) $(NOHUP) $(NICE)
 	@echo $(OUTDIR) > .output
 

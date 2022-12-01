@@ -45,6 +45,15 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
     If it is not set by the call, get it from the environment variable
     CLAW_EXE.  Default to 'xclaw' if that's not set.
 
+    xclawcmd is typically just the filename of executable, e.g. 'xclaw'
+    In this case it's replaced by os.path.abspath(xclawcmd) below, since
+    this will be exectuted in the outdir.
+
+    xclawcmd could also be a longer command like 
+        '/path/to/mpiexec -n 4 /path/to/xclaw_mpi'
+    In this case, the full absolute path to the executable is needed since
+    this will be executed in the outdir.
+
     If overwrite is True, it's ok to zap current contents of the outdir.
     If overwrite is False, move the outdir (or copy in the case of a restart)
     to a backup directory with a unique name based on time executed.
@@ -118,7 +127,10 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         clawdata.read(os.path.join(rundir,'claw.data'), force=True) 
         restart = clawdata.restart
         
-    xclawcmd = os.path.abspath(xclawcmd)
+    if os.path.isfile(xclawcmd):
+        # replace executable file name by full path to file, if not already
+        # specified:
+        xclawcmd = os.path.abspath(xclawcmd)
 
     if os.path.isfile(outdir):
         print("==> runclaw: Error: outdir specified is a file")
