@@ -523,6 +523,10 @@ class ClawRunData(ClawData):
             self.add_data(geoclaw.FrictionData(),'friction_data')
             self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
 
+            if num_dim == 1:
+                self.add_data(geoclaw.GridData1D(), 'grid_data')
+                self.add_data(geoclaw.BoussData1D(), 'bouss_data')
+
         else:
             raise AttributeError("Unrecognized Clawpack pkg = %s" % pkg)
 
@@ -812,6 +816,7 @@ class ClawInputData(ClawData):
             elif self.limiter[i] in [2,'superbee']:  self.limiter[i] = 2
             elif self.limiter[i] in [3,'vanleer']:   self.limiter[i] = 3
             elif self.limiter[i] in [4,'mc']:        self.limiter[i] = 4
+            elif self.limiter[i] in [5,'bw']:        self.limiter[i] = 5
             else:
                 raise AttributeError("Unrecognized limiter: %s" \
                       % self.limiter[i])
