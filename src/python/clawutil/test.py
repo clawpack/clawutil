@@ -1,6 +1,8 @@
 r"""
-Execute nosetests in all subdirectories, to run a series of quick
-regression tests.
+Defines base class for setting up regression tests for Clawpack code.
+    class ClawpackRegressionTest(unittest.TestCase)
+This may be further modified in src/python/.../test.py 
+within other submodules of Clawpack.
 
 Sends output and result/errors to separate files to simplify checking
 results and looking for errors.
@@ -27,29 +29,14 @@ import clawpack.pyclaw.solution as solution
 import clawpack.clawutil.claw_git_status as claw_git_status
 from clawpack.clawutil import runclaw
 
-# Support for WIP decorator
-from functools import wraps
-from nose.plugins.attrib import attr
-from nose.plugins.skip import SkipTest
-
-# Work in progress test decorator
-def fail(message):
-    raise SkipTest(message)
- 
-# Work in progress decorator - will test but skips the test on failure
-def wip(f):
-    @wraps(f)
-    def run_test(*args, **kwargs):
-        try:
-            # Set to success so we don't save out the output when we know things
-            # are awry
-            args[0].success = True
-            f(*args, **kwargs)
-        except Exception as e:
-            raise SkipTest("WIP test failed: " + str(e))
-        fail("test passed but marked as work in progress")
-    
-    return attr('wip')(run_test)
+# Support for WIP decorator removed
+# It did not seem to be used in any examples, so simplify for converting
+# from nose to pytest.   Note that for pytest one can use one of these
+# decorators instead:
+#     import pytest
+#     @pytest.mark.xfail(reason='WIP')  # for 'expected to fail'
+#     @pytest.mark.skip(reason='WIP')   # to skip entirely
+# 
 
 
 class ClawpackRegressionTest(unittest.TestCase):
