@@ -510,7 +510,7 @@ class ClawRunData(ClawData):
             self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
             self.add_data(geoclaw.TopographyData(),'topo_data')
             self.add_data(geoclaw.DTopoData(),'dtopo_data')
-            #self.add_data(geoclaw.BoussData(), 'bouss_data') # to be added
+            #self.add_data(geoclaw.BoussData(), 'bouss_data') # add to setrun
 
             if num_dim == 2:
                 # options not available in 1d:
@@ -530,7 +530,8 @@ class ClawRunData(ClawData):
 
             elif num_dim == 1:
                 self.add_data(geoclaw.GridData1D(), 'grid_data')
-                self.add_data(geoclaw.BoussData1D(), 'bouss_data')
+                #self.add_data(geoclaw.BoussData1D(), 'bouss_data')
+                # explicitly add bouss_data in setrun when needed
 
             else:
                 msg = 'Unexpected num_dim=%s for GeoClaw' % num_dim
