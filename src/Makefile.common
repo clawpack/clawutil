@@ -25,8 +25,7 @@ LINK ?= $(CLAW_FC)
 # Path to version of python to use:  May need to use something other than
 # the system default in order for plotting to work.  Can set CLAW_PYTHON as
 # environment variable or in make file that 'includes' this one.
-PYTHON ?= python
-CLAW_PYTHON ?= $(PYTHON)
+CLAW_PYTHON ?= python
 
 # Variables below should be set in Makefile that "includes" this one.
 # Default values if not set:
@@ -54,14 +53,14 @@ EXCLUDE_SOURCES ?=
 EXCLUDE_MODULES ?=
 
 # Consolidate custom and common sources into a single list for compilations
-SOURCES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
+SOURCES := $(shell $(CLAW_PYTHON) $(CLAW)/clawutil/src/check_src.py consolidate \
 		$(SOURCES) ";" $(COMMON_SOURCES) ";" $(EXCLUDE_SOURCES))
-MODULES := $(shell python $(CLAW)/clawutil/src/check_src.py consolidate \
+MODULES := $(shell $(CLAW_PYTHON) $(CLAW)/clawutil/src/check_src.py consolidate \
 		$(MODULES) ";" $(COMMON_MODULES) ";" $(EXCLUDE_MODULES))
 
 # Create list of possible file name conflicts
-SOURCE_CONFLICTS := $(shell python $(CLAW)/clawutil/src/check_src.py conflicts $(SOURCES))
-MODULES_CONFLICTS := $(shell python $(CLAW)/clawutil/src/check_src.py conflicts $(MODULES))
+SOURCE_CONFLICTS := $(shell $(CLAW_PYTHON) $(CLAW)/clawutil/src/check_src.py conflicts $(SOURCES))
+MODULES_CONFLICTS := $(shell $(CLAW_PYTHON) $(CLAW)/clawutil/src/check_src.py conflicts $(MODULES))
 
 # Make list of .o files required from the sources above:
 OBJECTS = $(subst .F,.o, $(subst .F90,.o, $(subst .f,.o, $(subst .f90,.o, $(SOURCES)))))
@@ -96,7 +95,7 @@ ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
 # Module flag setting, please add other compilers here as necessary
-ifeq ($(findstring gfortran,$(CLAW_FC)),gfortran)
+ifeq ($(CLAW_FC),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
@@ -104,8 +103,12 @@ else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
+else ifeq ($(CLAW_FC),pgfortran)
+    MODULE_FLAG = -module
+    OMP_FLAG = -mp
 else
 	# Assume gcc like flagging, probably should raise an error here
+	@echo 'Warning : Default compiler flags will be used. '
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
 endif
