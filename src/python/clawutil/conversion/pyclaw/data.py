@@ -25,15 +25,11 @@ objects.
 #                     http://www.opensource.org/licenses/
 # ============================================================================
 
-from __future__ import absolute_import
-from __future__ import print_function
 import shutil
 import os
 import copy
 import re
 import logging
-import six
-from six.moves import range
 
 # ========== Parse Value Utility Function ====================================
 def _parse_value(value):
@@ -115,7 +111,7 @@ class Data(object):
                 self.add_attribute(attr,None,None)
 
         # Read data files from data_files list
-        if isinstance(data_files, six.string_types):
+        if isinstance(data_files, str):
             data_files = [data_files]
         elif not isinstance(data_files, list):
             raise Exception("data_files must be a list of strings")
@@ -127,7 +123,7 @@ class Data(object):
     def __str__(self):
         output = "%s%s%s\n" % ("Name".ljust(25),"Value".ljust(12),
                                     "Owner".ljust(12))
-        for (k,v) in six.iteritems(self):
+        for (k,v) in self.items():
             output += "%s%s%s\n" % (str(k).ljust(25),
                                     str(v).ljust(12),
                                     str(self.__owners[k]).ljust(12))
@@ -220,7 +216,7 @@ class Data(object):
          - (list) - Returns a list of owners
         """
         owners = []
-        for (key,owner) in six.iteritems(self.__owners):
+        for (key,owner) in self.__owners.items():
             if owner is None:
                 self.__owners[key] = supplementary_file
             # This simultaneously finds one instance of an owner and tests
@@ -255,7 +251,7 @@ class Data(object):
         data_paths : Path to a data file to be read in, can also be a list
                     of files to be read in.
         """
-        if isinstance(data_paths, six.string_types):
+        if isinstance(data_paths, str):
             data_paths = [data_paths]
 
         for filename in data_paths:
@@ -1277,7 +1273,7 @@ class GaugeData(Data):
         ndim = self.ndim
 
         # write a line for each gauge:
-        for (gaugeno, gdata) in six.iteritems(self.__gauge_dict):
+        for (gaugeno, gdata) in self.__gauge_dict.items():
             tmin = gdata[2][0]
             tmax = gdata[2][1]
             if isinstance(gdata[1],(list,tuple)):

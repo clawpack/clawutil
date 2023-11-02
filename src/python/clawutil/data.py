@@ -11,8 +11,6 @@ Changes in 5.0:
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import os
 import sys
 import shutil
@@ -22,9 +20,6 @@ import zipfile
 import gzip
 import bz2
 import string
-import six
-from six.moves import range
-from six.moves import input
 
 try:
     from urllib.request import urlopen
@@ -234,7 +229,7 @@ class ClawData(object):
     def __str__(self):
         r"""Returns string representation of this object"""
         output = "%s%s\n" % ("Name".ljust(25),"Value".ljust(12))
-        for (k,v) in six.iteritems(self):
+        for (k,v) in self.items():
             output += "%s%s\n" % (str(k).ljust(25),str(v).ljust(12))
         return output
 
@@ -563,14 +558,8 @@ class ClawRunData(ClawData):
             if isinstance(data_object, UserData):
                 fname = data_object.__fname__
             else:
-                if six.PY2:
-                    argspec = inspect.getargspec(data_object.write)
-                    index = argspec.args.index('out_file') - (len(argspec.args) 
-                                                        - len(argspec.defaults))
-                    fname = argspec.defaults[index]
-                else:
-                    argspec = inspect.signature(data_object.write)
-                    fname = argspec.parameters['out_file'].default
+                argspec = inspect.signature(data_object.write)
+                fname = argspec.parameters['out_file'].default
             fpath = os.path.join(out_dir,fname)
             if isinstance(data_object, amrclaw.GaugeData):
                 data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux, out_file=fpath)
@@ -723,7 +712,7 @@ class ClawInputData(ClawData):
         self.data_write('', value=iout_q, alt_name='iout_q')
 
         if self.num_aux > 0:
-            if isinstance(self.output_aux_components,six.string_types):
+            if isinstance(self.output_aux_components,str):
                 if self.output_aux_components.lower() == 'all':
                     iout_aux = self.num_aux * [1]
                 elif self.output_aux_components.lower() == 'none':

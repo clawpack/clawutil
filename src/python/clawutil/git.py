@@ -11,14 +11,11 @@ and checking the status of the local repositories.
     clone - Clones git repositories from GitHub
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import sys
 import os
 import subprocess
 import tempfile
 import getopt
-from six.moves import input
 
 # These environment variables, if they exist, point to the paths
 # of the repositories
