@@ -523,13 +523,44 @@ class ClawRunData(ClawData):
                 self.add_data(geoclaw.FrictionData(),'friction_data')
                 self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
 
-            elif num_dim == 1:
-                self.add_data(geoclaw.GridData1D(), 'grid_data')
-                #self.add_data(geoclaw.BoussData1D(), 'bouss_data')
-                # explicitly add bouss_data in setrun when needed
+        elif pkg.lower() in ['dclaw']:
+
+            import clawpack.amrclaw.data as amrclaw
+            import clawpack.geoclaw.data as geoclaw
+            import clawpack.dclaw.data as dclaw
+
+            self.xclawcmd = 'xgeoclaw'
+
+            # Required data set for basic run parameters:
+            self.add_data(geoclaw.GeoClawData(),('geo_data'))
+            self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
+            self.add_data(geoclaw.TopographyData(),'topo_data')
+            self.add_data(geoclaw.DTopoData(),'dtopo_data')
+
+            if num_dim == 2:
+                # options not available in 1d:
+                self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
+                # self.add_data(amrclaw.AdjointData(num_dim=num_dim),
+                #               'adjointdata')
+                self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
+                self.add_data(amrclaw.FlagRegionData(num_dim=num_dim),
+                              'flagregiondata')
+                self.add_data(geoclaw.RefinementData(),'refinement_data')
+                self.add_data(geoclaw.FGoutData(),'fgout_data')
+                self.add_data(geoclaw.FGmaxData(),'fgmax_data')
+                # self.add_data(geoclaw.QinitData(),'qinit_data')
+                # self.add_data(geoclaw.SurgeData(),'surge_data')
+                # self.add_data(geoclaw.FrictionData(),'friction_data')
+                # self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
+
+                self.add_data(dclaw.DClawInputData(),'dclaw_data')
+                self.add_data(dclaw.QinitDClawData(),'qinitdclaw_data')
+                self.add_data(dclaw.AuxInitDClawData(),'auxinitdclaw_data')
+                self.add_data(dclaw.PInitDClawInputData(),'pinitdclaw_data')
+                self.add_data(dclaw.FlowGradesData(),'flowgrades_data')
 
             else:
-                msg = 'Unexpected num_dim=%s for GeoClaw' % num_dim
+                msg = 'Unexpected num_dim=%s for DClaw' % num_dim
                 raise ValueError(msg)
                 
 
