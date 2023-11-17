@@ -107,8 +107,8 @@ else ifeq ($(CLAW_FC),pgfortran)
     MODULE_FLAG = -module
     OMP_FLAG = -mp
 else
-	# Assume gcc like flagging, probably should raise an error here
-	@echo 'Warning : Default compiler flags will be used. '
+	# echo doesn't work here.  Could use $(warning ...) but safer to quit
+    $(error Error : Proper compiler flags unknown for FC=$(FC))
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
 endif
@@ -315,4 +315,3 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
-
