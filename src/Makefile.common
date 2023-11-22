@@ -139,10 +139,16 @@ endif
 .objs:  $(MODULE_FILES) $(OBJECTS);
 
 # The order here is to again build the module files correctly
-$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+#$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+#	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
+$(EXE): EXE1 EXE2;
 	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
+EXE1: $(MODULE_FILES) $(MODULE_OBJECTS)  $(MAKEFILE_LIST) ;
+EXE2: $(OBJECTS)  $(MAKEFILE_LIST) ;
 
-.exe: $(EXE)
+#.exe: $(EXE)
+.exe:   $(EXE1)
+	$(MAKE) -j $(EXE2)
 
 debug:
 	@echo 'debugging -- MODULES:'
