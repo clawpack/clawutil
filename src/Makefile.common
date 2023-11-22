@@ -138,17 +138,15 @@ endif
 
 .objs:  $(MODULE_FILES) $(OBJECTS);
 
-# The order here is to again build the module files correctly
-#$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
-#	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
-$(EXE): EXE1 EXE2;
-	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
-EXE1: $(MODULE_FILES) $(MODULE_OBJECTS)  $(MAKEFILE_LIST) ;
-EXE2: $(OBJECTS)  $(MAKEFILE_LIST) ;
+# The order here is to again build the module files correctly first
 
-#.exe: $(EXE)
-.exe:   $(EXE1)
-	$(MAKE) -j $(EXE2)
+$(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+	# after checking dependencies above are up-to-date, link the objects...
+	@echo 
+	@echo DONE COMPILING, NOW LINKING....
+	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
+
+.exe: $(EXE)
 
 debug:
 	@echo 'debugging -- MODULES:'
@@ -280,7 +278,13 @@ new: $(MAKEFILE_LIST)
 	-rm -f  $(MODULE_OBJECTS)
 	-rm -f  $(MODULE_FILES)
 	-rm -f  $(EXE)
-	$(MAKE) $(EXE) MAKELEVEL=0 -f $(MAKEFILE_LIST)
+	$(MAKE) $(MODULE_FILES)  # also makes MODULE_OBJECTS
+	@echo DONE COMPILING MODULES
+	$(MAKE) -j $(OBJECTS)
+	@echo DONE COMPILING OTHER .o FILES IN PARALLEL
+	@echo 
+	@echo DONE COMPILING, NOW LINKING....
+	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
 
 # Clean up options:
