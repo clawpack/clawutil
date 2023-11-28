@@ -522,6 +522,13 @@ class ClawRunData(ClawData):
                 self.add_data(geoclaw.SurgeData(),'surge_data')
                 self.add_data(geoclaw.FrictionData(),'friction_data')
                 self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
+            elif num_dim == 1:
+                self.add_data(geoclaw.GridData1D(), 'grid_data')
+                #self.add_data(geoclaw.BoussData1D(), 'bouss_data')
+                # explicitly add bouss_data in setrun when needed
+            else:
+                msg = 'Unexpected num_dim=%s for GeoClaw' % num_dim
+                raise ValueError(msg)
 
         elif pkg.lower() in ['dclaw']:
 
