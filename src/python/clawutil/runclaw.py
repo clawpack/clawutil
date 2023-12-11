@@ -8,10 +8,6 @@ Execute via
 from a directory that contains a claw.data file and a Clawpack executable.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-import six
-
 import os
 import sys
 import glob
@@ -151,15 +147,7 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
         except:
             print("==> runclaw: Could not move directory... copy already exists?")
 
-    if six.PY2:
-        if (not os.path.isdir(outdir)):
-            try:
-                os.mkdir(outdir)
-            except:
-                print("Cannot make directory ",outdir)
-                return
-    else:
-        os.makedirs(outdir, exist_ok=True)
+    os.makedirs(outdir, exist_ok=True)
 
     if print_git_status not in [False,'False']:
         # create files claw_git_status.txt and claw_git_diffs.txt in

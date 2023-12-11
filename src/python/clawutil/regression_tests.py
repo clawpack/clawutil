@@ -20,11 +20,8 @@ $CLAW/clawpack.github.com/doc/_static.
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import os, subprocess
 from clawpack.clawutil import imagediff
-from six.moves import input
 
 
 def test_subdirs(compare_dir=None,examples_dir='.',\

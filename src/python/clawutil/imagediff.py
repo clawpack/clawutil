@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
-from __future__ import print_function
-from six.moves import input
 __doc__ = r"""
 Module to diff two images or directories full of images.
 

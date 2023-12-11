@@ -11,8 +11,6 @@ Changes in 5.0:
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import os
 import sys
 import shutil
@@ -22,9 +20,6 @@ import zipfile
 import gzip
 import bz2
 import string
-import six
-from six.moves import range
-from six.moves import input
 
 try:
     from urllib.request import urlopen
@@ -234,7 +229,7 @@ class ClawData(object):
     def __str__(self):
         r"""Returns string representation of this object"""
         output = "%s%s\n" % ("Name".ljust(25),"Value".ljust(12))
-        for (k,v) in six.iteritems(self):
+        for (k,v) in self.items():
             output += "%s%s\n" % (str(k).ljust(25),str(v).ljust(12))
         return output
 
@@ -527,14 +522,52 @@ class ClawRunData(ClawData):
                 self.add_data(geoclaw.SurgeData(),'surge_data')
                 self.add_data(geoclaw.FrictionData(),'friction_data')
                 self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
-
             elif num_dim == 1:
                 self.add_data(geoclaw.GridData1D(), 'grid_data')
                 #self.add_data(geoclaw.BoussData1D(), 'bouss_data')
                 # explicitly add bouss_data in setrun when needed
-
             else:
                 msg = 'Unexpected num_dim=%s for GeoClaw' % num_dim
+                raise ValueError(msg)
+
+        elif pkg.lower() in ['dclaw']:
+
+            import clawpack.amrclaw.data as amrclaw
+            import clawpack.geoclaw.data as geoclaw
+            import clawpack.dclaw.data as dclaw
+
+            self.xclawcmd = 'xgeoclaw'
+
+            # Required data set for basic run parameters:
+            self.add_data(geoclaw.GeoClawData(),('geo_data'))
+            self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
+            self.add_data(geoclaw.TopographyData(),'topo_data')
+            self.add_data(geoclaw.DTopoData(),'dtopo_data')
+
+            if num_dim == 2:
+                # options not available in 1d:
+                self.add_data(amrclaw.AmrclawInputData(self.clawdata),'amrdata')
+                # self.add_data(amrclaw.AdjointData(num_dim=num_dim),
+                #               'adjointdata')
+                self.add_data(amrclaw.RegionData(num_dim=num_dim),'regiondata')
+                self.add_data(amrclaw.FlagRegionData(num_dim=num_dim),
+                              'flagregiondata')
+                self.add_data(geoclaw.RefinementData(),'refinement_data')
+                self.add_data(geoclaw.FGoutData(),'fgout_data')
+                self.add_data(geoclaw.FGmaxData(),'fgmax_data')
+                # self.add_data(geoclaw.QinitData(),'qinit_data')
+                # self.add_data(geoclaw.SurgeData(),'surge_data')
+                # self.add_data(geoclaw.FrictionData(),'friction_data')
+                # self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
+
+                self.add_data(dclaw.DClawInputData(),'dclaw_data')
+                self.add_data(dclaw.QinitDClawData(),'qinitdclaw_data')
+                self.add_data(dclaw.AuxInitDClawData(),'auxinitdclaw_data')
+                self.add_data(dclaw.PInitDClawInputData(),'pinitdclaw_data')
+                self.add_data(dclaw.FlowGradesData(),'flowgrades_data')
+
+            else:
+                msg = 'Unexpected num_dim=%s for DClaw' % num_dim
                 raise ValueError(msg)
                 
 
@@ -578,14 +611,8 @@ class ClawRunData(ClawData):
             if isinstance(data_object, UserData):
                 fname = data_object.__fname__
             else:
-                if six.PY2:
-                    argspec = inspect.getargspec(data_object.write)
-                    index = argspec.args.index('out_file') - (len(argspec.args) 
-                                                        - len(argspec.defaults))
-                    fname = argspec.defaults[index]
-                else:
-                    argspec = inspect.signature(data_object.write)
-                    fname = argspec.parameters['out_file'].default
+                argspec = inspect.signature(data_object.write)
+                fname = argspec.parameters['out_file'].default
             fpath = os.path.join(out_dir,fname)
             if isinstance(data_object, amrclaw.GaugeData):
                 data_object.write(self.clawdata.num_eqn, self.clawdata.num_aux, out_file=fpath)
@@ -738,7 +765,7 @@ class ClawInputData(ClawData):
         self.data_write('', value=iout_q, alt_name='iout_q')
 
         if self.num_aux > 0:
-            if isinstance(self.output_aux_components,six.string_types):
+            if isinstance(self.output_aux_components,str):
                 if self.output_aux_components.lower() == 'all':
                     iout_aux = self.num_aux * [1]
                 elif self.output_aux_components.lower() == 'none':
@@ -877,7 +904,7 @@ class ClawInputData(ClawData):
             self.data_write('checkpt_times')
         elif self.checkpt_style in [-3,3]:
             self.data_write('checkpt_interval')
-        elif self.checkpt_style not in [0,1,-1]:
+        elif self.checkpt_style not in [0,1,-1,-4,4]:
             raise AttributeError("*** Unrecognized checkpt_style: %s"\
                   % self.checkpt_style)
 

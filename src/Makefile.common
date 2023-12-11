@@ -95,7 +95,7 @@ ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
 # Module flag setting, please add other compilers here as necessary
-ifeq ($(CLAW_FC),gfortran)
+ifeq ($(findstring gfortran, $(CLAW_FC)),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
@@ -107,10 +107,15 @@ else ifeq ($(CLAW_FC),pgfortran)
     MODULE_FLAG = -module
     OMP_FLAG = -mp
 else
-	# Assume gcc like flagging, probably should raise an error here
-	@echo 'Warning : Default compiler flags will be used. '
-	MODULE_FLAG = -J
-	OMP_FLAG = -fopenmp
+    $(warning Warning : Proper compiler flags unknown for FC=$(FC))
+    ifndef MODULE_FLAG
+        MODULE_FLAG = -J
+        $(warning Warning : Using -J for MODULE_FLAG)
+    endif
+    ifndef OMP_FLAG
+        OMP_FLAG = -fopenmp
+        $(warning Warning : Using -fopenmp for OMP_FLAG)
+    endif
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -138,8 +143,12 @@ endif
 
 .objs:  $(MODULE_FILES) $(OBJECTS);
 
-# The order here is to again build the module files correctly
+# The order here is to again build the module files correctly first
+
 $(EXE): $(MODULE_FILES) $(MODULE_OBJECTS) $(OBJECTS) $(MAKEFILE_LIST) ;
+	# after checking dependencies above are up-to-date, link the objects...
+	@echo 
+	@echo DONE COMPILING, NOW LINKING....
 	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
 .exe: $(EXE)
@@ -274,7 +283,13 @@ new: $(MAKEFILE_LIST)
 	-rm -f  $(MODULE_OBJECTS)
 	-rm -f  $(MODULE_FILES)
 	-rm -f  $(EXE)
-	$(MAKE) $(EXE) MAKELEVEL=0 -f $(MAKEFILE_LIST)
+	$(MAKE) $(MODULE_FILES)  # also makes MODULE_OBJECTS
+	@echo DONE COMPILING MODULES
+	$(MAKE) -j $(OBJECTS)
+	@echo DONE COMPILING OTHER .o FILES IN PARALLEL
+	@echo 
+	@echo DONE COMPILING, NOW LINKING....
+	$(LINK) $(MODULE_OBJECTS) $(OBJECTS) $(ALL_INCLUDE) $(ALL_LFLAGS) -o $(EXE)
 
 
 # Clean up options:
@@ -315,4 +330,3 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
-

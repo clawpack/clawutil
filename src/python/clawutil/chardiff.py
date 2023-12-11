@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
-from __future__ import print_function
-from six.moves import range
-from six.moves import input
 __doc__ = r"""
 Module to perform charcter-wise diff of two files or a set of identically
 named files in two directories.  

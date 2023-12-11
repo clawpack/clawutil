@@ -3,11 +3,7 @@
 
 # Written by @gradylemoine
 
-from __future__ import absolute_import
-from __future__ import print_function
 import re, sys
-from six.moves import range
-
 
 def permute_file(infile, outfile, permute_list, write_header=True):
     '''permute_file(INFILE, OUTFILE, PERMUTE_LIST):
