@@ -95,7 +95,7 @@ ALL_FFLAGS += $(FFLAGS) $(PPFLAGS)
 ALL_LFLAGS += $(LFLAGS)
 
 # Module flag setting, please add other compilers here as necessary
-ifeq ($(CLAW_FC),gfortran)
+ifeq ($(findstring gfortran, $(CLAW_FC)),gfortran)
 	# There should be no space between this flag and the argument
 	MODULE_FLAG = -J
 	OMP_FLAG = -fopenmp
@@ -107,10 +107,15 @@ else ifeq ($(CLAW_FC),pgfortran)
     MODULE_FLAG = -module
     OMP_FLAG = -mp
 else
-	# Assume gcc like flagging, probably should raise an error here
-	@echo 'Warning : Default compiler flags will be used. '
-	MODULE_FLAG = -J
-	OMP_FLAG = -fopenmp
+    $(warning Warning : Proper compiler flags unknown for FC=$(FC))
+    ifndef MODULE_FLAG
+        MODULE_FLAG = -J
+        $(warning Warning : Using -J for MODULE_FLAG)
+    endif
+    ifndef OMP_FLAG
+        OMP_FLAG = -fopenmp
+        $(warning Warning : Using -fopenmp for OMP_FLAG)
+    endif
 endif
 
 # We may want to set MAKELEVEL here as it is not always set but we know we are
@@ -325,4 +330,3 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
-
