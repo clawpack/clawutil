@@ -237,7 +237,7 @@ data: $(MAKEFILE_LIST);
 output: $(MAKEFILE_LIST);
 	-rm -f .output
 	$(CLAW_PYTHON) $(CLAW)/clawutil/src/python/clawutil/runclaw.py $(EXE) $(OUTDIR) \
-	$(OVERWRITE) $(RESTART) . $(GIT_STATUS) $(NOHUP) $(NICE)
+	$(OVERWRITE) $(RESTART) . $(GIT_STATUS) $(NOHUP) $(NICE) $(RUNEXE)
 	@echo $(OUTDIR) > .output
 
 #----------------------------------------------------------------------------

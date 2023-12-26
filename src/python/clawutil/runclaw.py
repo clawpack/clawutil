@@ -33,6 +33,7 @@ class ClawExeError(subprocess.CalledProcessError):
 
 def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None, 
             rundir=None, print_git_status=False, nohup=False, nice=None,
+            runexe=None,
             xclawout=None, xclawerr=None, verbose=True):
     """
     Run the Fortran version of Clawpack using executable xclawcmd, which is
@@ -210,6 +211,10 @@ def runclaw(xclawcmd=None, outdir=None, overwrite=True, restart=None,
             warnings.warn(w, UserWarning)
 
     # execute command to run fortran program:
+
+    if runexe is not None:
+        xclawcmd = runexe + ' ' + xclawcmd
+
     if nohup:
         # run in nohup mode:
         print("\n==> Running in nohup mode, output will be sent to:")
