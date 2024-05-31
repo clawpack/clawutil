@@ -55,7 +55,7 @@ def make_imagediff(fname1,fname2,fname3='', verbose=False):
     if fname3 == '':
         fname3 = "_image_diff" + ext1
     
-    os.system("convert %s %s -compose subtract -composite -threshold 0.001 -negate %s" \
+    os.system("convert %s %s -compose subtract -composite -black-threshold 0.01 -negate %s" \
          % (fname1, fname2, fname3))
     
     if verbose:     
