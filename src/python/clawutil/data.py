@@ -20,6 +20,7 @@ import zipfile
 import gzip
 import bz2
 import string
+from pathlib import Path
 
 try:
     from urllib.request import urlopen
@@ -369,19 +370,18 @@ class ClawData(object):
                 value = self.__getattribute__(name)
 
             # Convert value to an appropriate string repr
-            if isinstance(value,np.ndarray):
-                value = list(value)
-            if isinstance(value,tuple) | isinstance(value,list):
+            if (isinstance(value,tuple) | isinstance(value,list) | isinstance(value, np.ndarray)):
                 # Remove [], (), and ','
-                string_value = repr(value)[1:-1]
-                string_value = string_value.replace(',','')
+                string_value = str(value)[1:-1].replace(',', '')
             elif isinstance(value,bool):
                 if value:
                     string_value = 'T'
                 else:
                     string_value = 'F'
+            elif isinstance(value, Path):
+                string_value = f"'{value}'"
             else:
-                string_value = repr(value)
+                string_value = str(value)
             padded_value = string_value.ljust(20)
             padded_name = alt_name.ljust(20)
             if description != '':
