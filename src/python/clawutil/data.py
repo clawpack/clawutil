@@ -341,7 +341,7 @@ class ClawData(object):
             self.data_write(name)
 
 
-    def data_write(self, name=None, value=None, alt_name=None, description=''):
+    def data_write(self, name=None, value=None, alt_name=None, description=None):
         r"""
         Write out value to data file, in the form ::
 
@@ -369,28 +369,32 @@ class ClawData(object):
             if value is None:
                 value = self.__getattribute__(name)
 
-            # Convert value to an appropriate string repr
-            if (isinstance(value,tuple) | isinstance(value,list) | isinstance(value, np.ndarray)):
+            # Convert value to an appropriate string
+            # :TODO: maybe handle other types of array looking things such as
+            #        pandas.DataFrame or xarray.DataArray
+            if (isinstance(value, tuple) | isinstance(value, list) 
+                                         | isinstance(value, np.ndarray)):
                 # Remove [], (), and ','
                 string_value = str(value)[1:-1].replace(',', '')
-            elif isinstance(value,bool):
+            elif isinstance(value, bool):
                 if value:
                     string_value = 'T'
                 else:
                     string_value = 'F'
             elif isinstance(value, Path):
+                # pathlib.Path object, put quotes around it for reading
                 string_value = f"'{value}'"
             else:
                 string_value = str(value)
-            padded_value = string_value.ljust(20)
-            padded_name = alt_name.ljust(20)
-            if description != '':
-                self._out_file.write('%s =: %s # %s \n' % 
-                                        (padded_value, padded_name, description))
+
+            if description is not None:
+                description = f"# {description}"
             else:
-                self._out_file.write('%s =: %s\n' % 
-                                    (padded_value, padded_name))
-  
+                description = ''
+            self._out_file.write(f"{string_value.ljust(20)} " + 
+                                 f"=: {alt_name.ljust(20)} " + 
+                                 f"{description} \n")
+
 
     def read(self,path,force=False):
         r"""Read and fill applicable data attributes.
