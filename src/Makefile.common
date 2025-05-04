@@ -341,3 +341,19 @@ help:
 	@echo '   "make help"     to print this message'
 
 .help: help
+
+#----------------------------------------------------------------------------
+
+check:
+	@echo ===================
+	@echo CLAW = $(CLAW)
+	@echo OMP_NUM_THREADS = $(OMP_NUM_THREADS)
+	@echo RUNEXE = $(RUNEXE)
+	@echo EXE = $(EXE)
+	@echo FC = $(FC)
+	@echo FFLAGS = $(FFLAGS)
+	@echo LFLAGS = $(LFLAGS)
+	@echo OUTDIR = $(OUTDIR)
+	@echo PLOTDIR = $(PLOTDIR)
+	@echo ===================
+
