@@ -381,7 +381,7 @@ class ClawData(object):
                     string_value = 'T'
                 else:
                     string_value = 'F'
-            elif isinstance(value, Path):
+            elif isinstance(value, Path) or isinstance(value, str):
                 # pathlib.Path object, put quotes around it for reading
                 string_value = f"'{value}'"
             else:
