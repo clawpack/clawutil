@@ -369,9 +369,25 @@ class ClawData(object):
             if value is None:
                 value = self.__getattribute__(name)
 
+            # Convert pandas DataFrame or xarray DataArray
+            try:
+                import pandas as pd
+                if isinstance(value, pd.DataFrame):
+                    # This may not always be the right thing to do, but works
+                    # for a basic 1D array
+                    value = value.to_numpy().flatten()
+            except ImportError as e:
+                if "pandas" not in e.msg:
+                    raise e
+            try:
+                import xarray as xr
+                if isinstance(value, xr.DataArray):
+                    value = value.data
+            except ImportError as e:
+                if "xarray" not in e.msg:
+                    raise e
+
             # Convert value to an appropriate string
-            # :TODO: maybe handle other types of array looking things such as
-            #        pandas.DataFrame or xarray.DataArray
             if (isinstance(value, tuple) | isinstance(value, list)
                                          | isinstance(value, np.ndarray)):
                 # Remove [], (), and ','
