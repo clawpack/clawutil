@@ -372,7 +372,7 @@ class ClawData(object):
             # Convert value to an appropriate string
             # :TODO: maybe handle other types of array looking things such as
             #        pandas.DataFrame or xarray.DataArray
-            if (isinstance(value, tuple) | isinstance(value, list) 
+            if (isinstance(value, tuple) | isinstance(value, list)
                                          | isinstance(value, np.ndarray)):
                 # Remove [], (), and ','
                 string_value = str(value)[1:-1].replace(',', '')
@@ -388,13 +388,11 @@ class ClawData(object):
                 string_value = str(value)
 
             if description is not None:
-                description = f"# {description}"
+                description = f" # {description} "
             else:
                 description = ''
-            self._out_file.write(f"{string_value.ljust(20)} " + 
-                                 f"=: {alt_name.ljust(20)} " + 
-                                 f"{description} \n")
-
+            self._out_file.write(f"{string_value.ljust(20)} =: " +
+                                 f"{alt_name.ljust(20)}{description}\n")
 
     def read(self,path,force=False):
         r"""Read and fill applicable data attributes.
