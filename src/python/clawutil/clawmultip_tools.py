@@ -94,14 +94,7 @@ def run_one_case_clawpack(case):
     from multiprocessing import current_process
     from clawpack.clawutil.runclaw import runclaw
     from clawpack.clawutil import multip_tools
-
-    #from clawpack.visclaw.plotclaw import plotclaw
-    # for now use local version:
-    import os,sys
-    CLAW = os.environ['CLAW']
-    sys.path.insert(0, CLAW + '/clawmultip/src/python/clawmultip')
-    from plotclaw import plotclaw
-    sys.path.pop(0)
+    from clawpack.visclaw.plotclaw import plotclaw
 
     p = current_process()
 
