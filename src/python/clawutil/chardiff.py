@@ -197,7 +197,7 @@ def chardiff_dir(dir1, dir2, dir3="_char_diff", file_pattern='all',
     list files.
     """
     import filecmp, glob
-    from numpy import alltrue
+    from numpy import all as alltrue
     
     ignored_extensions = ['.o','.pdf','.ps','.chk','']
     

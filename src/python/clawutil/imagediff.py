@@ -68,7 +68,7 @@ def imagediff_dir(dir1, dir2, dir3="_image_diff", ext='.png', \
                   relocatable=False, overwrite=False, verbose=False):
     
     import filecmp,glob
-    from numpy import alltrue
+    from numpy import all as alltrue
     
     if dir1[-1] == '/': dir1 = dir1[:-1]
     if dir2[-1] == '/': dir2 = dir2[:-1]
