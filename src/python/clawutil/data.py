@@ -20,6 +20,7 @@ import zipfile
 import gzip
 import bz2
 import string
+from pathlib import Path
 
 try:
     from urllib.request import urlopen
@@ -340,7 +341,7 @@ class ClawData(object):
             self.data_write(name)
 
 
-    def data_write(self, name=None, value=None, alt_name=None, description=''):
+    def data_write(self, name=None, value=None, alt_name=None, description=None):
         r"""
         Write out value to data file, in the form ::
 
@@ -368,29 +369,46 @@ class ClawData(object):
             if value is None:
                 value = self.__getattribute__(name)
 
-            # Convert value to an appropriate string repr
-            if isinstance(value,np.ndarray):
-                value = list(value)
-            if isinstance(value,tuple) | isinstance(value,list):
+            # Convert pandas DataFrame or xarray DataArray
+            try:
+                import pandas as pd
+                if isinstance(value, pd.DataFrame):
+                    # This may not always be the right thing to do, but works
+                    # for a basic 1D array
+                    value = value.to_numpy().flatten()
+            except ImportError as e:
+                if "pandas" not in e.msg:
+                    raise e
+            try:
+                import xarray as xr
+                if isinstance(value, xr.DataArray):
+                    value = value.data
+            except ImportError as e:
+                if "xarray" not in e.msg:
+                    raise e
+
+            # Convert value to an appropriate string
+            if (isinstance(value, tuple) | isinstance(value, list)
+                                         | isinstance(value, np.ndarray)):
                 # Remove [], (), and ','
-                string_value = repr(value)[1:-1]
-                string_value = string_value.replace(',','')
-            elif isinstance(value,bool):
+                string_value = str(value)[1:-1].replace(',', '')
+            elif isinstance(value, bool):
                 if value:
                     string_value = 'T'
                 else:
                     string_value = 'F'
+            elif isinstance(value, Path) or isinstance(value, str):
+                # pathlib.Path object, put quotes around it for reading
+                string_value = f"'{value}'"
             else:
-                string_value = repr(value)
-            padded_value = string_value.ljust(20)
-            padded_name = alt_name.ljust(20)
-            if description != '':
-                self._out_file.write('%s =: %s # %s \n' % 
-                                        (padded_value, padded_name, description))
+                string_value = str(value)
+
+            if description is not None:
+                description = f" # {description} "
             else:
-                self._out_file.write('%s =: %s\n' % 
-                                    (padded_value, padded_name))
-  
+                description = ''
+            self._out_file.write(f"{string_value.ljust(20)} =: " +
+                                 f"{alt_name.ljust(20)}{description}\n")
 
     def read(self,path,force=False):
         r"""Read and fill applicable data attributes.
