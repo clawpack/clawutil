@@ -4,7 +4,7 @@ Useful tools for running Clawpack from an IPython notebook.
 
 from __future__ import absolute_import
 from __future__ import print_function
-from IPython.core.display import display
+from IPython.display import display
 try:
     from IPython.display import FileLink
 except:
