@@ -9,6 +9,8 @@ Provides general utility functions.
 
 """
 
+import os, sys, importlib
+
 def fullpath_import(fullpath, verbose=True):
     """
     Return a module imported from a full path name, e.g. if you have
@@ -30,7 +32,6 @@ def fullpath_import(fullpath, verbose=True):
     (rather than using importlib.reload).
     """
 
-    import os, sys, importlib
     fname = os.path.split(fullpath)[1]
     modname = os.path.splitext(fname)[0]
     spec = importlib.util.spec_from_file_location(modname, fullpath)
