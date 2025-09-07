@@ -24,22 +24,28 @@ def fullpath_import(fullpath, verbose=True):
         from clawpack.clawutil.util import fullpath_import
         topotools = fullpath_import('/full/path/to/topotools.py')
 
-    Relative imports also work, e.g. 
+    Relative imports also work, e.g.
 
         topotools = fullpath_import('../topotools.py')
-        
+
     To reload the module if you make changes to it, use this function again
     (rather than using importlib.reload).
+
+    Input `fullpath` can also be a `pathlib.Path` object instead of a string.
     """
 
-    fname = os.path.split(fullpath)[1]
-    modname = os.path.splitext(fname)[0]
-    spec = importlib.util.spec_from_file_location(modname, fullpath)
+    from pathlib import Path
+    fullPath = Path(fullpath)  # convert to a pathlib.Path object if not already
+    fullPath = fullPath.resolve()  # replace relative path by absolute
+    assert fullPath.suffix == '.py', '*** Expecting path to .py file'
+
+    fname = fullPath.name     # should be modname.py
+    modname = fullPath.stem   # without extension
+
+    spec = importlib.util.spec_from_file_location(modname, fullPath)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     sys.modules[modname] = module
     if verbose:
         print('loaded module from file: ',module.__file__)
     return module
-
-
