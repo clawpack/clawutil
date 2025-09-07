@@ -10,6 +10,8 @@ Provides general utility functions.
 """
 
 import os, sys, importlib
+from pathlib import Path
+
 
 def fullpath_import(fullpath, verbose=True):
     """
@@ -32,9 +34,28 @@ def fullpath_import(fullpath, verbose=True):
     (rather than using importlib.reload).
 
     Input `fullpath` can also be a `pathlib.Path` object instead of a string.
+
+    If `fullpath` is a string that starts with `$`, then the path is assumed
+    to start with an environment variable and this is resolved, if possible,
+    from `os.environ`.  For example, this works:
+
+        setrun_file = '$CLAW/amrclaw/examples/advection_2d_swirl/setrun.py'
+        setrun = util.fullpath_import(setrun_file)
+
     """
 
-    from pathlib import Path
+    if type(fullpath) is str and fullpath[0] == '$':
+        # path appears to be relative to an environment variable:
+        env_var = fullpath.split('/')[0][1:]
+        try:
+            path1 = os.environ[env_var]
+        except:
+            #raise
+            raise ValueError('fullpath appears to start with environment ' \
+                    + 'variable, but %s not in os.environ' % env_var)
+        fullpath = fullpath.replace('$%s' % env_var, path1)
+
+
     fullPath = Path(fullpath)  # convert to a pathlib.Path object if not already
     fullPath = fullPath.resolve()  # replace relative path by absolute
     assert fullPath.suffix == '.py', '*** Expecting path to .py file'
