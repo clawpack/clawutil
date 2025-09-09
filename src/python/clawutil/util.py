@@ -13,7 +13,7 @@ import os, sys, importlib
 from pathlib import Path
 
 
-def fullpath_import(fullpath, verbose=True):
+def fullpath_import(fullpath, verbose=False):
     """
     Return a module imported from a full path name, e.g. if you have
     a personal enhanced version of the geoclaw topotools module at
