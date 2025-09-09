@@ -42,22 +42,16 @@ def fullpath_import(fullpath, verbose=True):
         setrun_file = '$CLAW/amrclaw/examples/advection_2d_swirl/setrun.py'
         setrun = util.fullpath_import(setrun_file)
 
+    It also expands `~` and `~user` constructs and resolves symlinks.
     """
 
-    if type(fullpath) is str and fullpath[0] == '$':
-        # path appears to be relative to an environment variable:
-        env_var = fullpath.split('/')[0][1:]
-        try:
-            path1 = os.environ[env_var]
-        except:
-            #raise
-            raise ValueError('fullpath appears to start with environment ' \
-                    + 'variable, but %s not in os.environ' % env_var)
-        fullpath = fullpath.replace('$%s' % env_var, path1)
+    # expand any environment variables:
+    fullpath = os.path.expandvars(fullpath)
 
+    # convert to a Path object if necessary, expand user prefix `~`,
+    # and convert to absolute path, resolving any symlinks:
+    fullPath = Path(fullpath).expanduser().resolve()
 
-    fullPath = Path(fullpath)  # convert to a pathlib.Path object if not already
-    fullPath = fullPath.resolve()  # replace relative path by absolute
     assert fullPath.suffix == '.py', '*** Expecting path to .py file'
 
     fname = fullPath.name     # should be modname.py
