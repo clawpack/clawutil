@@ -38,14 +38,24 @@ import glob
 class ClawpackTestRunner:
     r"""Base Clawpcak regression test runner
 
+    
+    Hints on use of pytest
+     - *-s* will not capture output and allows for pdb use
+     - *--basetemp=* sets the output directory
+     - 
     """
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, test_path: Optional[Path]=None):
         r""""""
 
         self.temp_path = path
-        # Is this fragile?
-        self.test_path = Path(Path(inspect.stack()[2].filename).absolute()).parent
+        # This works if the originating caller is in the right spot in the stack
+        # If this is not the case, we provide a way to set it manually
+        if test_path:
+            self.test_path = test_path
+        else:
+            self.test_path = Path(Path(inspect.stack()[2].filename).absolute()
+                                                                    ).parent
         self.executable_name = 'xclaw'
 
         # Do we want to set this?
@@ -82,7 +92,8 @@ class ClawpackTestRunner:
 
     def build_executable(self, make_level: str='default', 
                                FFLAGS: Optional[str]=None, 
-                               LFLAGS: Optional[str]=None):
+                               LFLAGS: Optional[str]=None,
+                               verbose: bool=False):
         r"""Build executable for test"""
 
         # Assumes GCC CLI
@@ -102,7 +113,6 @@ class ClawpackTestRunner:
                 path.unlink()
             cmd = "".join((f"cd {self.test_path} ; make .exe ",
                            f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
-
         elif make_level.lower() == "exe":
             cmd = "".join((f"cd {self.test_path} ; make .exe ",
                            f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
@@ -110,19 +120,14 @@ class ClawpackTestRunner:
             raise ValueError(f"Invaled make_level={make_level} given.")
 
         try:
+            if verbose:
+                print(f"Build command: {cmd}")
             subprocess.run(cmd, shell=True, check=True)
         except subprocess.CalledProcessError as e:
-            self.clean_up()
+            self.clean()
             raise e
 
         shutil.move(self.test_path / self.executable_name, self.temp_path)
-
-
-    def clean_up(self):
-        r"""Clean up the test
-        
-        Does nothing unless overriden."""
-        pass
 
 
     def run_code(self):
@@ -132,6 +137,10 @@ class ClawpackTestRunner:
                         outdir=self.temp_path,
                         overwrite=True,
                         restart=False)
+
+    def clean(self):
+        """"""
+        pass
 
 
     def check_frame(self, frame: int, indices: Iterable=(0,), 
@@ -185,6 +194,8 @@ class ClawpackTestRunner:
 
         # Load test output data
         gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
+        if gauge.q.shape[1] == 0:
+            raise AssertionError(f"Empty gauge {gauge_id}.")
 
         # Load regression data
         if save:
@@ -192,6 +203,11 @@ class ClawpackTestRunner:
                         regression_path)
             claw_git_status.make_git_status_file(outdir=regression_path)
         regression_gauge = gauges.GaugeSolution(gauge_id, path=regression_path)
+
+        if gauge.q.shape[1] != regression_gauge.q.shape[1]:
+            raise AssertionError( "Gauges have different sizes, regression" + 
+                                 f" gauge = {regression_gauge.q.shape}, " +
+                                 f"test gauge = {gauge.q.shape}")
 
         # Compare data
         kwargs.setdefault('rtol', 1e-14)
