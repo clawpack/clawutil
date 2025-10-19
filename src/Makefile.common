@@ -110,6 +110,10 @@ else ifeq ($(CLAW_FC),ifort)
 	# Note that there shoud be a space after this flag
 	MODULE_FLAG = -module 
 	OMP_FLAG = -openmp
+else ifeq ($(CLAW_FC),ifx)
+	# Note that there shoud be a space after this flag
+	MODULE_FLAG = -module 
+	OMP_FLAG = -qopenmp
 else ifeq ($(CLAW_FC),pgfortran)
     MODULE_FLAG = -module
     OMP_FLAG = -mp
