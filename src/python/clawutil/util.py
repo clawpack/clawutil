@@ -9,7 +9,8 @@ Provides general utility functions.
 
 """
 
-import os, sys, importlib
+import os, sys
+import importlib.util
 from pathlib import Path
 
 
