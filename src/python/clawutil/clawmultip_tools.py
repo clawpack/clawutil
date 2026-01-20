@@ -285,20 +285,21 @@ def make_cases_template():
         case['xclawcmd'] = 'xclaw'  # executable created by 'make .exe'
 
         # setrun parameters:
-        case['setrun_file'] = 'setrun_cases.py'
+        case['setrun_file'] = 'setrun_case.py'
         # setrun_case.py should contain a setrun function with case
         # as a keyword argument so we can pass in parameters
 
         #case['plotdir'] = None  # if None, will not make plots
         case['plotdir'] = '_plots_%s' % case_name
 
-        case['setplot_file'] = 'setplot_cases.py'
+        case['setplot_file'] = 'setplot_case.py'
         # setplot_case.py might contain a setplot function with case
         # as a keyword argument so we can pass in parameters
 
         # ADD CASE ENTRIES for any setrun or setplot parameters that
-        # are case-dependent, and then use these in setrun / setplot, via:
+        # are case-dependent, using this format:
         # case[key] = value   # for each parameter
+        # and then modify setrun_case.py and/or setplot_case.py to use them
 
         caselist.append(case)
 

@@ -10,7 +10,7 @@ def make_cases():
 
     """
     Create a list of the cases to be run, varying a couple rundata parameters
-    after setting common parameters from setrun_cases.py.
+    after setting common parameters from setrun_case.py.
 
     The parameters set for each case (as dictionary keys) are determined by
     the fact that we will use clawmultip_tools.run_one_case_clawpack()
@@ -31,9 +31,9 @@ def make_cases():
             case['xclawcmd'] = 'xclaw'  # executable created by 'make .exe'
 
             # setrun parameters:
-            case['setrun_file'] = 'setrun_cases.py'
+            case['setrun_file'] = 'setrun_case.py'
 
-            # setrun_cases.py should contain a setrun function with case
+            # setrun_case.py should contain a setrun function with case
             # as a keyword argument so we can pass in the following values:
 
             case['order'] = order
@@ -42,9 +42,9 @@ def make_cases():
             #case['plotdir'] = None  # if None, will not make plots
             case['plotdir'] = '_plots_%s' % case_name
 
-            case['setplot_file'] = 'setplot_cases.py'
+            case['setplot_file'] = 'setplot_case.py'
 
-            # setplot_cases.py should contain a setplot function with case
+            # setplot_case.py should contain a setplot function with case
             # as a keyword argument so we can pass in the parameters,
             # so that outdir and case_name can be used in the title of figures
 
