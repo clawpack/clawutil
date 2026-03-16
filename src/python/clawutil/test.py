@@ -158,6 +158,8 @@ class ClawpackTestRunner:
         # Load regression data
         regression_data = regression_path / f"frame{str(frame).zfill(4)}.txt"
         if save:
+            if not regression_data.parent.exists():
+                regression_data.parent.mkdir(parents=True)
             np.savetxt(regression_data, sol_sums)
             claw_git_status.make_git_status_file(outdir=regression_path)
         regression_sum = np.loadtxt(regression_data)
