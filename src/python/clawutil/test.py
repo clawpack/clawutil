@@ -90,7 +90,7 @@ class ClawpackTestRunner:
         self.rundata.write(out_dir=path)
 
 
-    def build_executable(self, make_level: str='default', 
+    def build_executable(self, make_level: str='new', 
                                FFLAGS: Optional[str]=None, 
                                LFLAGS: Optional[str]=None,
                                verbose: bool=False):
