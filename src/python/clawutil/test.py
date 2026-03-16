@@ -195,7 +195,8 @@ class ClawpackTestRunner:
     def build_executable(self, make_level: str='new', 
                                FFLAGS: Optional[str]=None, 
                                LFLAGS: Optional[str]=None,
-                               verbose: bool=False):
+                               verbose: bool=False,
+                               make_vars: Optional[dict[str, str]]=None):
         r"""
         Build the example executable using the local ``Makefile``.
 
@@ -220,6 +221,8 @@ class ClawpackTestRunner:
             the ``LFLAGS`` environment variable, or defaults to ``FFLAGS``.
         verbose : bool, default False
             If True, print the shell command before executing it.
+        make_vars : dict of str to str, optional
+            Additional variables to pass to the ``make`` command.
 
         Notes
         -----
@@ -261,6 +264,11 @@ class ClawpackTestRunner:
                            f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
         else:
             raise ValueError(f"Invaled make_level={make_level} given.")
+
+        # Append make variables
+        if make_vars:
+            for key, value in make_vars.items():
+                cmd += f" {key}={value}"
 
         try:
             if verbose:
