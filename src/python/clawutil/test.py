@@ -1,11 +1,40 @@
 r"""
-Defines base class for setting up regression tests for Clawpack code.
-    class ClawpackRegressionTest(unittest.TestCase)
-This may be further modified in src/python/.../test.py
-within other submodules of Clawpack.
+Utilities for regression testing Clawpack examples.
 
-Sends output and result/errors to separate files to simplify checking
-results and looking for errors.
+This module currently contains two testing interfaces:
+
+1. ``ClawpackTestRunner``
+   A lightweight pytest-oriented runner for new regression tests.  This is
+   the preferred interface for new example tests.  It is designed to work
+   naturally with pytest fixtures such as ``tmp_path`` and optional command
+   line flags such as ``--save`` defined in ``conftest.py``.
+
+2. ``ClawpackRegressionTest``
+   The older unittest-based regression framework.  This remains available
+   for compatibility with existing tests, but new tests should prefer
+   ``ClawpackTestRunner``.
+
+The intended workflow for new tests is:
+
+- create a runner for a temporary output directory,
+- load or modify ``rundata`` from a local ``setrun.py``,
+- write data files into the temporary directory,
+- build the example executable using the example ``Makefile``,
+- run the code in the temporary directory,
+- compare selected frames or gauges against saved regression data.
+
+By default, regression data is stored in a ``regression_data/`` directory
+next to the test file or example directory.
+
+Notes
+-----
+- ``ClawpackTestRunner`` is designed for example-based regression tests,
+  not as a general-purpose unit test framework for arbitrary solver
+  internals.
+- The runner intentionally exercises the normal example build workflow
+  through ``make`` rather than bypassing it using the `make new` target.
+- Temporary simulation output should be written to pytest-managed temporary
+  directories such as ``tmp_path``.
 """
 
 from pathlib import Path
@@ -36,17 +65,62 @@ import glob
 
 # TODO: Update documentation
 class ClawpackTestRunner:
-    r"""Base Clawpcak regression test runner
+    r"""
+    Helper for pytest-based Clawpack regression tests.
 
-    
-    Hints on use of pytest
-     - *-s* will not capture output and allows for pdb use
-     - *--basetemp=* sets the output directory
-     - 
+    Parameters
+    ----------
+    path : pathlib.Path
+        Temporary directory used for generated data files, build products,
+        executable placement, and simulation output.  In pytest-based tests
+        this is typically the ``tmp_path`` fixture or a subdirectory of it.
+    test_path : pathlib.Path, optional
+        Directory containing the example under test.  This directory is used
+        to locate the local ``Makefile``, the default ``setrun.py``, and the
+        default ``regression_data/`` directory.  If not provided, the runner
+        attempts to infer it from the calling test file.
+
+    Attributes
+    ----------
+    temp_path : pathlib.Path
+        Temporary working directory used by the test run.
+    test_path : pathlib.Path
+        Example or test directory containing the build and regression inputs.
+    executable_name : str
+        Name of the executable produced by the example ``Makefile``.
+        Defaults to ``"xclaw"``.
+    rundata : object
+        Run-time data object returned by ``setrun.setrun()`` after
+        :meth:`set_data` is called.
+
+    Notes
+    -----
+    The runner is intentionally small.  It orchestrates the existing Clawpack
+    example workflow rather than replacing it.  A typical test sequence is::
+
+        runner = ClawpackTestRunner(tmp_path, test_path=Path(__file__).parent)
+        runner.set_data()
+        runner.write_data()
+        runner.build_executable()
+        runner.run_code()
+        runner.check_frame(1)
+
+    For new tests, prefer explicit setup in the test itself so that the test
+    remains easy to read and modify.
     """
 
     def __init__(self, path: Path, test_path: Optional[Path]=None):
-        r""""""
+        r"""
+        Initialize a regression test runner for a single example run.
+
+        Parameters
+        ----------
+        path : pathlib.Path
+            Temporary working directory for this test.
+        test_path : pathlib.Path, optional
+            Directory containing the example under test.  If omitted, the runner
+            infers this from the calling test file.
+        """
 
         self.temp_path = path
         # This works if the originating caller is in the right spot in the stack
@@ -63,10 +137,24 @@ class ClawpackTestRunner:
 
 
     def set_data(self, setrun_path: Optional[Path]=None):
-        r"""Set the rundata for the test.
-        
-        :Input:
-         - setrun_path (Path) -  path to setrun file to be run
+        r"""
+        Load ``rundata`` from a ``setrun.py`` file.
+
+        Parameters
+        ----------
+        setrun_path : pathlib.Path, optional
+            Path to the ``setrun.py`` file to import.  If omitted, the runner
+            uses ``test_path / "setrun.py"``.
+
+        Notes
+        -----
+        The ``setrun`` module is imported under a unique temporary module name
+        so that multiple tests can load different ``setrun.py`` files in the
+        same Python session without clashing in ``sys.modules``.
+
+        After this method completes, the resulting run-time data object is
+        available as ``self.rundata`` and may be modified by the test before
+        calling :meth:`write_data`.
         """
 
         if not setrun_path:
@@ -83,7 +171,21 @@ class ClawpackTestRunner:
 
 
     def write_data(self, path: Optional[Path]=None):
-        r"""Write out the data contained in *rundata*."""
+        r"""
+        Write the current ``rundata`` object to disk.
+
+        Parameters
+        ----------
+        path : pathlib.Path, optional
+            Output directory for generated data files.  If omitted, data files
+            are written to ``self.temp_path``.
+
+        Notes
+        -----
+        This method expects :meth:`set_data` to have been called already.  Tests
+        commonly modify values in ``self.rundata`` before calling this method in
+        order to reduce run time or adjust output times for regression checks.
+        """
         
         if not path:
             path = self.temp_path
@@ -94,7 +196,48 @@ class ClawpackTestRunner:
                                FFLAGS: Optional[str]=None, 
                                LFLAGS: Optional[str]=None,
                                verbose: bool=False):
-        r"""Build executable for test"""
+        r"""
+        Build the example executable using the local ``Makefile``.
+
+        Parameters
+        ----------
+        make_level : {"new", "default", "exe"}, default "new"
+            Build target to request from ``make``.
+
+            - ``"new"``: request a fresh rebuild via ``make new``.
+            - ``"default"``: remove local ``*.o`` and ``*.mod`` files in the
+            example directory, then run ``make .exe``.
+            - ``"exe"``: run ``make .exe`` directly.
+
+            For regression tests, ``"new"`` is generally preferred because it
+            makes build freshness explicit.
+        FFLAGS : str, optional
+            Fortran compiler flags passed to ``make``.  If omitted, the value is
+            taken from the ``FFLAGS`` environment variable, or defaults to
+            ``"-O2 -fopenmp"``.
+        LFLAGS : str, optional
+            Linker flags passed to ``make``.  If omitted, the value is taken from
+            the ``LFLAGS`` environment variable, or defaults to ``FFLAGS``.
+        verbose : bool, default False
+            If True, print the shell command before executing it.
+
+        Notes
+        -----
+        The build is performed in ``self.test_path`` using the example's own
+        ``Makefile`` so that tests exercise the same build path used by normal
+        example runs.
+
+        After a successful build, the produced executable is moved from
+        ``self.test_path`` into ``self.temp_path`` so that subsequent simulation
+        output remains isolated from the source tree.
+
+        Raises
+        ------
+        ValueError
+            If ``make_level`` is not recognized.
+        subprocess.CalledProcessError
+            If the ``make`` command fails.
+        """
 
         # Assumes GCC CLI
         if not FFLAGS:
@@ -131,7 +274,24 @@ class ClawpackTestRunner:
 
 
     def run_code(self):
-        r""""""
+        r"""
+        Run the compiled example in the temporary working directory.
+
+        Notes
+        -----
+        This method uses :func:`clawpack.clawutil.runclaw.runclaw` to execute the
+        compiled solver with:
+
+        - ``xclawcmd`` set to the executable in ``self.temp_path``,
+        - ``rundir`` set to ``self.temp_path``,
+        - ``outdir`` set to ``self.temp_path``.
+
+        As a result, both input data files and simulation output are kept in the
+        temporary test directory rather than the source tree.
+
+        This method expects :meth:`write_data` and :meth:`build_executable` to
+        have been called already.
+        """
         runclaw.runclaw(xclawcmd=self.temp_path / self.executable_name,
                         rundir=self.temp_path,
                         outdir=self.temp_path,
@@ -139,14 +299,58 @@ class ClawpackTestRunner:
                         restart=False)
 
     def clean(self):
-        """"""
+        r"""
+        Clean up after a failed build or test run.
+
+        Notes
+        -----
+        This method is currently a no-op and exists as an extension point for
+        repository-specific runners.  Subclasses may override it to remove
+        temporary files, preserve debugging artifacts, or perform other cleanup.
+        """
         pass
 
 
     def check_frame(self, frame: int, indices: Iterable=(0,), 
                                       regression_path: Optional[Path]=None, 
-                                      save: bool=False, **kwargs):
-        r""""""
+                                      save: bool=False, **kwargs):        
+        r"""
+        Compare a computed solution frame against saved regression data.
+
+        Parameters
+        ----------
+        frame : int
+            Frame number to load from the simulation output in ``self.temp_path``.
+        indices : iterable of int, default (0,)
+            Indices of the ``q`` components to compare.  For each selected
+            component, this method compares the sum of that component over the
+            loaded frame.
+        regression_path : pathlib.Path, optional
+            Directory containing saved regression files.  If omitted, the default
+            location is ``self.test_path / "regression_data"``.
+        save : bool, default False
+            If True, write the current frame summary to the regression file before
+            comparing.  This is intended for intentional baseline creation or
+            updates.
+        **kwargs
+            Additional keyword arguments passed to
+            ``numpy.testing.assert_allclose``.  By default, ``rtol=1e-14`` and
+            ``atol=1e-8``.
+
+        Notes
+        -----
+        Regression data is stored in files named ``frameNNNN.txt`` where ``NNNN``
+        is the zero-padded frame number.
+
+        The current comparison metric is deliberately lightweight: it compares
+        sums of selected solution components rather than the full solution array.
+        This keeps regression files small and reviewable, while still detecting
+        many unintended numerical changes.
+
+        If ``save`` is True, the regression directory is created if necessary and
+        a git-status metadata file is also written via
+        ``claw_git_status.make_git_status_file``.
+        """
 
         if not regression_path:
             regression_path = self.test_path / "regression_data"
@@ -174,18 +378,41 @@ class ClawpackTestRunner:
                           indices: Iterable=(0,), 
                           regression_path: Optional[Path]=None, 
                           save: bool=False, **kwargs):
-        r"""Basic test to assert gauge equality
+        r"""
+        Compare a computed gauge record against saved regression data.
 
-        :Input:
-         - *save* (bool) - If *True* will save the output from this test to
-           the file *regresion_data.txt*.  Default is *False*.
-         - *indices* (tuple) - Contains indices to compare in the gague
-           comparison.  Defaults to *(0)*.
-         - *rtol* (float) - Relative tolerance used in the comparison, default
-           is *1e-14*.  Note that the old *tolerance* input is now synonymous
-           with this parameter.
-         - *atol* (float) - Absolute tolerance used in the comparison, default
-           is *1e-08*.
+        Parameters
+        ----------
+        gauge_id : int
+            Gauge number to load from the simulation output in ``self.temp_path``.
+        indices : iterable of int, default (0,)
+            Indices of the gauge solution components to compare.
+        regression_path : pathlib.Path, optional
+            Directory containing saved regression gauge files.  If omitted, the
+            default location is ``self.test_path / "regression_data"``.
+        save : bool, default False
+            If True, copy the generated gauge file into ``regression_path`` before
+            comparing.  This is intended for intentional baseline creation or
+            updates.
+        **kwargs
+            Additional keyword arguments passed to
+            ``numpy.testing.assert_allclose``.  By default, ``rtol=1e-14`` and
+            ``atol=1e-8``.
+
+        Notes
+        -----
+        This method compares the full time series for each selected gauge field,
+        not just an aggregate summary.
+
+        The generated gauge file is expected to have the standard Clawpack name
+        ``gaugeNNNNN.txt`` where ``NNNNN`` is the zero-padded gauge number.
+
+        Raises
+        ------
+        AssertionError
+            If the computed gauge is empty, if the computed and regression gauges
+            have different shapes, or if any selected component differs beyond the
+            requested tolerances.
         """
 
         if not(isinstance(indices, tuple) or isinstance(indices, list)):
@@ -232,11 +459,10 @@ class ClawpackTestRunner:
             raise AssertionError(" ".join((err_msg, index_str)))
 
 
-
-# Old unittest based framework - works with PyTest, but is being replaced by
-# the runner above
+# NOTE: The following class is the old unittest-based regression test framework.
+# It is still available for compatibility with existing tests, but new tests
+# should prefer the ClawpackTestRunner
 class ClawpackRegressionTest(unittest.TestCase):
-
     r"""Base Clawpcak regression test setup
 
     All regression tests for Clawpack are derived from this base class.  The
