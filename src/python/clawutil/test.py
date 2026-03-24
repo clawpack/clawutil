@@ -213,15 +213,16 @@ class ClawpackTestRunner:
             For regression tests, ``"new"`` is generally preferred because it
             makes build freshness explicit.
         FFLAGS : str, optional
-            Fortran compiler flags to pass to ``make``.  If omitted, the runner
-            uses the ``FFLAGS`` environment variable if it is set, and otherwise
-            does not pass an explicit ``FFLAGS=...`` override.  This allows
-            example-specific Makefiles to define or append their own defaults.
+            Fortran compiler flags to place in the build environment passed to
+            ``make``.  If omitted, the runner leaves the inherited environment
+            unchanged.  This allows example-specific Makefiles to define or
+            append their own defaults while still permitting CI or individual
+            tests to override ``FFLAGS`` explicitly.
         LFLAGS : str, optional
-            Linker flags to pass to ``make``.  If omitted, the runner uses the
-            ``LFLAGS`` environment variable if it is set, and otherwise does not
-            pass an explicit ``LFLAGS=...`` override.  This avoids clobbering
-            Makefile-defined link settings such as LAPACK/BLAS additions.
+            Linker flags to place in the build environment passed to ``make``.
+            If omitted, the runner leaves the inherited environment unchanged.
+            This avoids clobbering Makefile-defined link settings such as
+            LAPACK/BLAS or platform-specific framework additions.
         verbose : bool, default False
             If True, print the shell command before executing it.
         make_vars : dict of str to str, optional
@@ -233,10 +234,11 @@ class ClawpackTestRunner:
         ``Makefile`` so that tests exercise the same build path used by normal
         example runs.
 
-        When explicit ``FFLAGS`` or ``LFLAGS`` overrides are not supplied, the
-        runner prefers to let the example ``Makefile`` control compiler and
-        linker settings.  This is important for examples that add specialized
-        libraries or append local build flags.
+        Explicit ``FFLAGS`` and ``LFLAGS`` values are injected through the
+        subprocess environment rather than passed as ``make`` command-line
+        variable assignments.  This preserves the normal precedence rules that
+        allow local example ``Makefile`` files to append specialized compiler
+        and linker settings.
 
         After a successful build, the produced executable is moved from
         ``self.test_path`` into ``self.temp_path`` so that subsequent simulation
@@ -250,12 +252,9 @@ class ClawpackTestRunner:
             If the ``make`` command fails.
         """
 
-        # Respect explicit arguments first, then environment variables, and
-        # otherwise let the local Makefile provide its own defaults.
-        if FFLAGS is None:
-            FFLAGS = os.environ.get("FFLAGS")
-        if LFLAGS is None:
-            LFLAGS = os.environ.get("LFLAGS")
+        def _normalize_make_flag(value: str, name: str) -> str:
+            prefix = f"{name}="
+            return value[len(prefix):] if value.startswith(prefix) else value
 
         if make_level.lower() == "new":
             make_target = "new"
@@ -272,20 +271,25 @@ class ClawpackTestRunner:
             raise ValueError(f"Invalid make_level={make_level} given.")
 
         cmd = ["make", make_target]
-        if FFLAGS is not None:
-            cmd.append(f"FFLAGS={FFLAGS}")
-        if LFLAGS is not None:
-            cmd.append(f"LFLAGS={LFLAGS}")
-
         if make_vars:
             for key, value in make_vars.items():
                 cmd.append(f"{key}={value}")
+
+        build_env = os.environ.copy()
+        if FFLAGS is not None:
+            build_env["FFLAGS"] = _normalize_make_flag(FFLAGS, "FFLAGS")
+        if LFLAGS is not None:
+            build_env["LFLAGS"] = _normalize_make_flag(LFLAGS, "LFLAGS")
 
         try:
             if verbose:
                 print("Build command:", " ".join(str(part) for part in cmd))
                 print("Build cwd:", self.test_path)
-            subprocess.run(cmd, cwd=self.test_path, check=True)
+                if "FFLAGS" in build_env:
+                    print("Build env FFLAGS:", build_env["FFLAGS"])
+                if "LFLAGS" in build_env:
+                    print("Build env LFLAGS:", build_env["LFLAGS"])
+            subprocess.run(cmd, cwd=self.test_path, check=True, env=build_env)
         except subprocess.CalledProcessError as e:
             self.clean()
             raise e
