@@ -213,12 +213,15 @@ class ClawpackTestRunner:
             For regression tests, ``"new"`` is generally preferred because it
             makes build freshness explicit.
         FFLAGS : str, optional
-            Fortran compiler flags passed to ``make``.  If omitted, the value is
-            taken from the ``FFLAGS`` environment variable, or defaults to
-            ``"-O2 -fopenmp"``.
+            Fortran compiler flags to pass to ``make``.  If omitted, the runner
+            uses the ``FFLAGS`` environment variable if it is set, and otherwise
+            does not pass an explicit ``FFLAGS=...`` override.  This allows
+            example-specific Makefiles to define or append their own defaults.
         LFLAGS : str, optional
-            Linker flags passed to ``make``.  If omitted, the value is taken from
-            the ``LFLAGS`` environment variable, or defaults to ``FFLAGS``.
+            Linker flags to pass to ``make``.  If omitted, the runner uses the
+            ``LFLAGS`` environment variable if it is set, and otherwise does not
+            pass an explicit ``LFLAGS=...`` override.  This avoids clobbering
+            Makefile-defined link settings such as LAPACK/BLAS additions.
         verbose : bool, default False
             If True, print the shell command before executing it.
         make_vars : dict of str to str, optional
@@ -229,6 +232,11 @@ class ClawpackTestRunner:
         The build is performed in ``self.test_path`` using the example's own
         ``Makefile`` so that tests exercise the same build path used by normal
         example runs.
+
+        When explicit ``FFLAGS`` or ``LFLAGS`` overrides are not supplied, the
+        runner prefers to let the example ``Makefile`` control compiler and
+        linker settings.  This is important for examples that add specialized
+        libraries or append local build flags.
 
         After a successful build, the produced executable is moved from
         ``self.test_path`` into ``self.temp_path`` so that subsequent simulation
@@ -242,38 +250,42 @@ class ClawpackTestRunner:
             If the ``make`` command fails.
         """
 
-        # Assumes GCC CLI
-        if not FFLAGS:
-            FFLAGS = os.environ.get('FFLAGS', "-O2 -fopenmp")
-        if not LFLAGS:
-            LFLAGS = os.environ.get('LFLAGS', FFLAGS)
+        # Respect explicit arguments first, then environment variables, and
+        # otherwise let the local Makefile provide its own defaults.
+        if FFLAGS is None:
+            FFLAGS = os.environ.get("FFLAGS")
+        if LFLAGS is None:
+            LFLAGS = os.environ.get("LFLAGS")
 
         if make_level.lower() == "new":
-            cmd = "".join((f"cd {self.test_path} ; make new ",
-                           f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
+            make_target = "new"
         elif make_level.lower() == "default":
             # clean up *.o and *.mod files in test path only
             for path in self.test_path.glob("*.o"):
                 path.unlink()
             for path in self.test_path.glob("*.mod"):
                 path.unlink()
-            cmd = "".join((f"cd {self.test_path} ; make .exe ",
-                           f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
+            make_target = ".exe"
         elif make_level.lower() == "exe":
-            cmd = "".join((f"cd {self.test_path} ; make .exe ",
-                           f"FFLAGS='{FFLAGS}' LFLAGS='{LFLAGS}'"))
+            make_target = ".exe"
         else:
-            raise ValueError(f"Invaled make_level={make_level} given.")
+            raise ValueError(f"Invalid make_level={make_level} given.")
 
-        # Append make variables
+        cmd = ["make", make_target]
+        if FFLAGS is not None:
+            cmd.append(f"FFLAGS={FFLAGS}")
+        if LFLAGS is not None:
+            cmd.append(f"LFLAGS={LFLAGS}")
+
         if make_vars:
             for key, value in make_vars.items():
-                cmd += f" {key}={value}"
+                cmd.append(f"{key}={value}")
 
         try:
             if verbose:
-                print(f"Build command: {cmd}")
-            subprocess.run(cmd, shell=True, check=True)
+                print("Build command:", " ".join(str(part) for part in cmd))
+                print("Build cwd:", self.test_path)
+            subprocess.run(cmd, cwd=self.test_path, check=True)
         except subprocess.CalledProcessError as e:
             self.clean()
             raise e
@@ -436,6 +448,8 @@ class ClawpackTestRunner:
 
         # Load regression data
         if save:
+            if not regression_path.exists():
+                regression_path.mkdir(parents=True)
             shutil.copy(self.temp_path / f"gauge{str(gauge_id).zfill(5)}.txt",
                         regression_path)
             claw_git_status.make_git_status_file(outdir=regression_path)
