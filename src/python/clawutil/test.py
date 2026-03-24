@@ -276,10 +276,19 @@ class ClawpackTestRunner:
                 cmd.append(f"{key}={value}")
 
         build_env = os.environ.copy()
+
+        for name in ("FFLAGS", "LFLAGS"):
+            if name in build_env and build_env[name].strip() == "":
+                del build_env[name]
+
         if FFLAGS is not None:
             build_env["FFLAGS"] = _normalize_make_flag(FFLAGS, "FFLAGS")
         if LFLAGS is not None:
             build_env["LFLAGS"] = _normalize_make_flag(LFLAGS, "LFLAGS")
+
+        # Preserve Makefile.common behavior:
+        if "FFLAGS" in build_env and "LFLAGS" not in build_env:
+            build_env["LFLAGS"] = build_env["FFLAGS"]
 
         try:
             if verbose:
