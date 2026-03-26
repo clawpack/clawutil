@@ -407,9 +407,10 @@ class ClawpackTestRunner:
         np.testing.assert_allclose(sol_sums, regression_sum, **kwargs)
 
 
-    def check_gauge(self, gauge_id: int, 
-                          indices: Iterable=(0,), 
-                          regression_path: Optional[Path]=None, 
+    def check_gauge(self, gauge_id: int,
+                          indices: Iterable=(0,),
+                          regression_path: Optional[Path]=None,
+                          regression_gauge_id: Optional[int]=None,
                           save: bool=False, **kwargs):
         r"""
         Compare a computed gauge record against saved regression data.
@@ -423,10 +424,16 @@ class ClawpackTestRunner:
         regression_path : pathlib.Path, optional
             Directory containing saved regression gauge files.  If omitted, the
             default location is ``self.test_path / "regression_data"``.
+        regression_gauge_id : int, optional
+            Gauge number to load from ``regression_path`` for comparison.  If
+            omitted, the regression gauge defaults to ``gauge_id``.  This is
+            useful for examples where multiple generated gauges should be
+            compared against the same archived reference gauge.
         save : bool, default False
-            If True, copy the generated gauge file into ``regression_path`` before
-            comparing.  This is intended for intentional baseline creation or
-            updates.
+            If True, copy the generated gauge file into ``regression_path`` using
+            the filename for ``regression_gauge_id`` (or ``gauge_id`` if no
+            override is provided) before comparing.  This is intended for
+            intentional baseline creation or updates.
         **kwargs
             Additional keyword arguments passed to
             ``numpy.testing.assert_allclose``.  By default, ``rtol=1e-14`` and
@@ -437,8 +444,11 @@ class ClawpackTestRunner:
         This method compares the full time series for each selected gauge field,
         not just an aggregate summary.
 
-        The generated gauge file is expected to have the standard Clawpack name
-        ``gaugeNNNNN.txt`` where ``NNNNN`` is the zero-padded gauge number.
+        Generated and archived gauge files are expected to use the standard
+        Clawpack name ``gaugeNNNNN.txt`` where ``NNNNN`` is the zero-padded
+        gauge number.  By default, the generated and regression gauge numbers
+        are the same, but ``regression_gauge_id`` may be used to compare against
+        a different archived gauge.
 
         Raises
         ------
@@ -454,6 +464,9 @@ class ClawpackTestRunner:
         if not regression_path:
             regression_path = self.test_path / "regression_data"
 
+        if regression_gauge_id is None:
+            regression_gauge_id = gauge_id
+
         # Load test output data
         gauge = gauges.GaugeSolution(gauge_id, path=self.temp_path)
         if gauge.q.shape[1] == 0:
@@ -463,15 +476,20 @@ class ClawpackTestRunner:
         if save:
             if not regression_path.exists():
                 regression_path.mkdir(parents=True)
-            shutil.copy(self.temp_path / f"gauge{str(gauge_id).zfill(5)}.txt",
-                        regression_path)
+            shutil.copy(
+                self.temp_path / f"gauge{str(gauge_id).zfill(5)}.txt",
+                regression_path / f"gauge{str(regression_gauge_id).zfill(5)}.txt",
+            )
             claw_git_status.make_git_status_file(outdir=regression_path)
-        regression_gauge = gauges.GaugeSolution(gauge_id, path=regression_path)
+        regression_gauge = gauges.GaugeSolution(regression_gauge_id,
+                                                path=regression_path)
 
         if gauge.q.shape[1] != regression_gauge.q.shape[1]:
-            raise AssertionError( "Gauges have different sizes, regression" + 
-                                 f" gauge = {regression_gauge.q.shape}, " +
-                                 f"test gauge = {gauge.q.shape}")
+            raise AssertionError(
+                "Gauges have different sizes, "
+                f"generated gauge {gauge_id} has shape {gauge.q.shape}, "
+                f"regression gauge {regression_gauge_id} has shape {regression_gauge.q.shape}"
+            )
 
         # Compare data
         kwargs.setdefault('rtol', 1e-14)
@@ -482,8 +500,10 @@ class ClawpackTestRunner:
                                               regression_gauge.q[n, :],
                                               **kwargs)
         except AssertionError as e:
-            err_msg = "\n".join((e.args[0],
-                                "Gauge Match Failed for gauge = %s" % gauge_id))
+            err_msg = "\n".join((
+                e.args[0],
+                f"Gauge match failed for generated gauge={gauge_id} against regression gauge={regression_gauge_id}",
+            ))
             err_msg = "\n".join((err_msg, "  failures in fields:"))
             failure_indices = []
             for n in indices:
