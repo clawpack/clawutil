@@ -84,6 +84,54 @@ FFLAGS ?=
 LFLAGS ?= $(FFLAGS)
 PPFLAGS ?=
 
+# NetCDF flags - General convenience for figuring out configuration for NetCDF.
+# These are not included in ALL_FFLAGS or ALL_LFLAGS by default.  Examples that
+# need NetCDF support should explicitly opt in, e.g.
+#     FFLAGS += -DNETCDF $(NETCDF_FFLAGS)
+#     LFLAGS += $(NETCDF_LFLAGS)
+# The variables below are populated by trying, in order:
+#   1. nf-config   (preferred for NetCDF Fortran)
+#   2. pkg-config  (netcdf-fortran)
+#   3. NETCDF4_DIR (manual fallback)
+NETCDF_FFLAGS ?=
+NETCDF_LFLAGS ?=
+HAVE_NETCDF ?= no
+
+# Prefer pkg-config for link flags, nf-config for Fortran flags when available
+NF_CONFIG := $(shell command -v nf-config 2>/dev/null)
+PKG_CONFIG := $(shell command -v pkg-config 2>/dev/null)
+
+ifneq ($(PKG_CONFIG),)
+    ifeq ($(shell pkg-config --exists netcdf-fortran && echo yes),yes)
+        ifneq ($(NF_CONFIG),)
+            NETCDF_FFLAGS += $(shell nf-config --fflags)
+        else
+            NETCDF_FFLAGS += $(shell pkg-config --cflags netcdf-fortran)
+        endif
+        NETCDF_LFLAGS += $(shell pkg-config --libs netcdf-fortran)
+        HAVE_NETCDF := yes
+    endif
+endif
+
+# Fallback to nf-config only if pkg-config is not available or fails
+ifeq ($(HAVE_NETCDF),no)
+    ifneq ($(NF_CONFIG),)
+        NETCDF_FFLAGS += $(shell nf-config --fflags)
+        # Strip -lnetcdf if present (often unnecessary and can break linking)
+        NETCDF_LFLAGS += $(shell nf-config --flibs | sed 's/-lnetcdf//g')
+        HAVE_NETCDF := yes
+    endif
+endif
+
+# Manual fallback for environments that do not provide nf-config/pkg-config.
+ifeq ($(HAVE_NETCDF), no)
+    ifdef NETCDF4_DIR
+        NETCDF_FFLAGS += -I$(NETCDF4_DIR)/include
+        NETCDF_LFLAGS += -L$(NETCDF4_DIR)/lib -lnetcdff -lnetcdf
+        HAVE_NETCDF := yes
+    endif
+endif
+
 # These will be included in all actual compilation and linking, one could
 # actually overwrite these before hand but that is not the intent of these
 # variables
@@ -343,6 +391,7 @@ help:
 	@echo '   "make clean"    to clean up compilation and html files'
 	@echo '   "make clobber"  to also clean up output and plot files'
 	@echo '   "make help"     to print this message'
+	@echo '   NetCDF examples may use $(NETCDF_FFLAGS), $(NETCDF_LFLAGS), and $(HAVE_NETCDF)'
 
 .help: help
 
@@ -357,7 +406,9 @@ check:
 	@echo FC = $(FC)
 	@echo FFLAGS = $(FFLAGS)
 	@echo LFLAGS = $(LFLAGS)
+	@echo NETCDF_FFLAGS = $(NETCDF_FFLAGS)
+	@echo NETCDF_LFLAGS = $(NETCDF_LFLAGS)
+	@echo HAVE_NETCDF = $(HAVE_NETCDF)
 	@echo OUTDIR = $(OUTDIR)
 	@echo PLOTDIR = $(PLOTDIR)
 	@echo ===================
-
