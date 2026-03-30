@@ -344,6 +344,115 @@ class ClawpackTestRunner:
         pass
 
 
+    def check_files_equal(self,
+                          file_path: Path,
+                          regression_file: Optional[Path]=None,
+                          regression_path: Optional[Path]=None,
+                          save: bool=False,
+                          mode: str="text",
+                          ignore_trailing_whitespace: bool=False):
+        r"""
+        Compare a generated file against a saved regression file.
+
+        Parameters
+        ----------
+        file_path : pathlib.Path
+            Path to the generated file to compare.
+        regression_file : pathlib.Path, optional
+            Path to the saved regression file.  If omitted, the regression file
+            is inferred from ``regression_path / file_path.name``.
+        regression_path : pathlib.Path, optional
+            Directory containing saved regression files.  If omitted, the
+            default location is ``self.test_path / "regression_data"``.
+        save : bool, default False
+            If True, copy ``file_path`` to the inferred or explicit regression
+            file location before comparing.  This is intended for intentional
+            baseline creation or updates.
+        mode : {"text", "binary"}, default "text"
+            Comparison mode.
+
+            - ``"text"``: compare decoded UTF-8 text exactly, optionally
+              trimming trailing whitespace from each line.
+            - ``"binary"``: compare raw file bytes exactly.
+        ignore_trailing_whitespace : bool, default False
+            If True and ``mode="text"``, trailing whitespace is stripped from
+            each line before comparison.
+
+        Notes
+        -----
+        This helper is intended for small deterministic artifact files such as
+        generated storm descriptors, input metadata files, and other regression
+        fixtures that are naturally reviewed as complete files.
+
+        Unlike :meth:`check_frame` and :meth:`check_gauge`, this method performs
+        exact file comparison rather than numerical tolerance-based checks.
+
+        If ``save`` is True, the regression directory is created if necessary and
+        a git-status metadata file is also written via
+        ``claw_git_status.make_git_status_file``.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the generated file or regression file does not exist.
+        ValueError
+            If ``mode`` is not recognized.
+        AssertionError
+            If the generated and regression files differ.
+        """
+
+        file_path = Path(file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"Generated file not found: {file_path}")
+
+        if regression_file is None:
+            if regression_path is None:
+                regression_path = self.test_path / "regression_data"
+            regression_file = Path(regression_path) / file_path.name
+        else:
+            regression_file = Path(regression_file)
+            if regression_path is None:
+                regression_path = regression_file.parent
+            else:
+                regression_path = Path(regression_path)
+
+        if save:
+            regression_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(file_path, regression_file)
+            claw_git_status.make_git_status_file(outdir=regression_file.parent)
+
+        if not regression_file.exists():
+            raise FileNotFoundError(f"Regression file not found: {regression_file}")
+
+        if mode == "binary":
+            file_data = file_path.read_bytes()
+            regression_data = regression_file.read_bytes()
+            if file_data != regression_data:
+                raise AssertionError(
+                    "Binary files differ: "
+                    f"generated={file_path}, regression={regression_file}"
+                )
+            return
+
+        if mode != "text":
+            raise ValueError(f"Unrecognized file comparison mode={mode}")
+
+        file_text = file_path.read_text(encoding="utf-8")
+        regression_text = regression_file.read_text(encoding="utf-8")
+
+        if ignore_trailing_whitespace:
+            file_text = "\n".join(line.rstrip() for line in file_text.splitlines())
+            regression_text = "\n".join(
+                line.rstrip() for line in regression_text.splitlines()
+            )
+
+        if file_text != regression_text:
+            raise AssertionError(
+                "Text files differ: "
+                f"generated={file_path}, regression={regression_file}"
+            )
+
+
     def check_frame(self, frame: int, indices: Iterable=(0,), 
                                       regression_path: Optional[Path]=None, 
                                       save: bool=False, **kwargs):        
