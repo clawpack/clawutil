@@ -11,15 +11,14 @@ Changes in 5.0:
 
 """
 
+from pathlib import Path
 import os
-import sys
 import shutil
 import inspect
 import tarfile
 import zipfile
 import gzip
 import bz2
-import string
 from pathlib import Path
 
 try:
@@ -51,15 +50,15 @@ def strip_archive_extensions(path,
         return path
 
 
-def get_remote_file(url, output_dir=None, file_name=None, force=False,  
+def get_remote_file(url, output_dir=None, file_name=None, force=False,
                          verbose=False, ask_user=False, unpack=True):
     r"""Fetch file located at *url* and store at *output_dir*.
 
     :Input:
-    
+
      - *url* (path) - URL to file to be downloaded.
      - *output_dir* (path) - Directory that the remote file will be downloaded
-       to.  Defaults to the GeoClaw sratch directory defined by 
+       to.  Defaults to the GeoClaw scratch directory defined by
        *os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')*.
      - *file_name* (string) - Name of local file.  This defaults to the name of
        the remote file.
@@ -70,7 +69,7 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
        file before proceeding.  Default is *False*
 
     :Raises:
-     
+
     Exceptions are raised from the *urllib* module having to do with errors
     fetching the remote file.  Please see its documentation for more details of
     the exceptions that can be raised.
@@ -85,84 +84,85 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
     """
 
     if output_dir is None:
-        output_dir = os.path.join(os.environ['CLAW'], 'geoclaw', 'scratch')
+        output_dir = Path(os.environ['CLAW']) / 'geoclaw' / 'scratch'
+    else:
+        output_dir = Path(output_dir)
 
     if file_name is None:
         file_name = os.path.basename(url)
-        
-    output_path = os.path.join(output_dir, file_name)
-    unarchived_output_path = strip_archive_extensions(output_path)
 
-    if not os.path.exists(unarchived_output_path) or force:
+    output_path = output_dir / file_name
+    unarchived_output_path = Path(strip_archive_extensions(str(output_path)))
+
+    # Ensure the destination directory exists before attempting to write.
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if not unarchived_output_path.exists() or force:
 
         if ask_user:
-            ans = input("  Ok to download topo file and save as %s?  \n"
+            ans = input("  Ok to download remote file and save as %s?  \n"
                             % unarchived_output_path,
                             "     Type y[es], n[o].")
-            if ans.lower() in ['y', 'yes']:
+            if ans.lower() not in ['y', 'yes']:
                 if verbose:
                     print("*** Aborting download.")
                 return None
-            
-        # if not os.path.exists(output_path):
-        # Fetch remote file, will raise a variety of exceptions depending on
-        # the retrieval problem if it happens
+
         if verbose:
             print("Downloading %s to %s..." % (url, output_path))
-        with open(output_path, "wb") as output_file:
-            remote_file = urlopen(url)
-            shutil.copyfileobj(remote_file, output_file)
+
+        with urlopen(url) as remote_file:
+            with output_path.open("wb") as output_file:
+                shutil.copyfileobj(remote_file, output_file)
+
         if verbose:
             print("Done downloading.")
-        # elif verbose:
-        #     print("File already exists, not downloading")
 
-        if tarfile.is_tarfile(output_path) and unpack:
+        if tarfile.is_tarfile(str(output_path)) and unpack:
             if verbose:
-                print("Un-archiving %s to %s..." % (output_path, 
+                print("Un-archiving %s to %s..." % (output_path,
                                                     unarchived_output_path))
             with tarfile.open(output_path, mode="r:*") as tar_file:
                 def is_within_directory(directory, target):
-                    
+
                     abs_directory = os.path.abspath(directory)
                     abs_target = os.path.abspath(target)
-                
+
                     prefix = os.path.commonprefix([abs_directory, abs_target])
-                    
+
                     return prefix == abs_directory
-                
+
                 def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-                
+
                     for member in tar.getmembers():
                         member_path = os.path.join(path, member.name)
                         if not is_within_directory(path, member_path):
                             raise Exception("Attempted Path Traversal in Tar File")
-                
-                    tar.extractall(path, members, numeric_owner=numeric_owner) 
-                    
-                
+
+                    tar.extractall(path, members, numeric_owner=numeric_owner)
+
                 safe_extract(tar_file, path=output_dir)
             if verbose:
                 print("Done un-archiving.")
-        elif zipfile.is_zipfile(output_path) and unpack:
+        elif zipfile.is_zipfile(str(output_path)) and unpack:
             if verbose:
-                print("Un-archiving %s to %s..." % (output_path, 
+                print("Un-archiving %s to %s..." % (output_path,
                                                     unarchived_output_path))
             with zipfile.ZipFile(output_path, mode="r") as zip_file:
                 zip_file.extractall(path=output_dir)
                 # Add file suffix
                 extension = os.path.splitext(zip_file.namelist()[0])[-1]
-                unarchived_output_path = "".join((unarchived_output_path,
-                                                  extension))
+                unarchived_output_path = Path("".join((str(unarchived_output_path),
+                                                        extension)))
             if verbose:
                 print("Done un-archiving.")
-        elif os.path.splitext(output_path)[-1] in [".gz",".bz2"] and unpack:
-            unzipper = gzip if output_path[-2:] == "gz" else bz2
+        elif output_path.suffix in [".gz", ".bz2"] and unpack:
+            unzipper = gzip if output_path.suffix == ".gz" else bz2
             if verbose:
                 print("Un-archiving %s to %s..." % (output_path,
                                                     unarchived_output_path))
-            with unzipper.open(output_path, "r") as f_in:
-                with open(unarchived_output_path, "wb") as f_out:
+            with unzipper.open(output_path, "rb") as f_in:
+                with unarchived_output_path.open("wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
             if verbose:
                 print("Done un-archiving.")
@@ -173,9 +173,9 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
             print("  because file already exists: %s" % output_path)
 
     if unpack:
-        return unarchived_output_path
+        return str(unarchived_output_path)
     else:
-        return output_path
+        return str(output_path)
 
 
 
