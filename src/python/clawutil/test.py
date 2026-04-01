@@ -61,7 +61,142 @@ import clawpack.pyclaw.gauges as gauges
 import tempfile
 import unittest
 import time
+
 import glob
+
+
+def load_local_module(module_path: Path | str,
+                      module_name: Optional[str]=None):
+    r"""
+    Load a Python module from a local file path under a unique temporary name.
+
+    Parameters
+    ----------
+    module_path : pathlib.Path or str
+        Path to the Python source file to import.
+    module_name : str, optional
+        Module name to register in ``sys.modules``.  If omitted, a unique name
+        is generated from the file stem.
+
+    Returns
+    -------
+    module
+        Imported Python module object.
+
+    Notes
+    -----
+    This helper is intended for example-local setup helpers such as
+    ``maketopo.py`` or ``setrun.py`` that should be imported without creating
+    collisions in ``sys.modules`` when multiple tests are run in the same
+    Python session.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``module_path`` does not exist.
+    ImportError
+        If the module spec cannot be created.
+    """
+    module_path = Path(module_path)
+    if not module_path.exists():
+        raise FileNotFoundError(f"Local module not found: {module_path}")
+
+    if module_name is None:
+        module_name = "_".join((
+            module_path.stem,
+            "".join(random.choices(string.ascii_letters + string.digits, k=32)),
+        ))
+
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to create import spec for {module_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+
+def run_example_for_test(runner_cls,
+                         output_dir: Path,
+                         example_path: Path,
+                         *,
+                         configure_runner=None,
+                         build: bool=True,
+                         run: bool=True,
+                         set_data: bool=True,
+                         write_data: bool=True,
+                         build_kwargs: Optional[dict]=None,
+                         run_kwargs: Optional[dict]=None):
+    r"""
+    Instantiate a runner for an example, optionally configure it, then build
+    and run the example for use in a regression test.
+
+    Parameters
+    ----------
+    runner_cls : type
+        Runner class to instantiate, typically ``AMRClawTestRunner`` or
+        ``GeoClawTestRunner``.
+    output_dir : pathlib.Path
+        Temporary output directory for the test run.
+    example_path : pathlib.Path
+        Path to the example directory containing the ``Makefile`` and default
+        ``setrun.py``.
+    configure_runner : callable, optional
+        Callback of the form ``configure_runner(runner)`` invoked after
+        ``runner.set_data()`` and before ``runner.write_data()``.  This is
+        useful for tests that need to modify ``rundata`` before writing files.
+    build : bool, default True
+        If True, call ``runner.build_executable()``.
+    run : bool, default True
+        If True, call ``runner.run_code()``.
+    set_data : bool, default True
+        If True, call ``runner.set_data()`` before applying
+        ``configure_runner``.
+    write_data : bool, default True
+        If True, call ``runner.write_data()`` after applying
+        ``configure_runner``.
+    build_kwargs : dict, optional
+        Extra keyword arguments passed to ``runner.build_executable()``.
+    run_kwargs : dict, optional
+        Extra keyword arguments passed to ``runner.run_code()`` if supported by
+        the runner implementation.
+
+    Returns
+    -------
+    ClawpackTestRunner
+        The configured runner instance.
+
+    Notes
+    -----
+    This helper is intended for concise multi-stage regression tests, such as
+    adjoint workflows, where one example run produces output used by a second
+    example run.
+    """
+    runner = runner_cls(output_dir, test_path=example_path)
+
+    if set_data:
+        runner.set_data()
+    if configure_runner is not None:
+        configure_runner(runner)
+    if write_data:
+        runner.write_data()
+
+    if build:
+        if build_kwargs is None:
+            build_kwargs = {}
+        runner.build_executable(**build_kwargs)
+
+    if run:
+        if run_kwargs is None:
+            run_kwargs = {}
+        if run_kwargs:
+            runner.run_code(**run_kwargs)
+        else:
+            runner.run_code()
+
+    return runner
 
 # TODO: Update documentation
 class ClawpackTestRunner:
@@ -160,13 +295,7 @@ class ClawpackTestRunner:
         if not setrun_path:
             setrun_path = Path(self.test_path) / "setrun.py"
 
-        mod_name = '_'.join(("setrun",
-                             "".join(random.choices(string.ascii_letters
-                                                    + string.digits, k=32))))
-        spec = importlib.util.spec_from_file_location(mod_name, setrun_path)
-        setrun_module = importlib.util.module_from_spec(spec)
-        sys.modules[mod_name] = setrun_module
-        spec.loader.exec_module(setrun_module)
+        setrun_module = load_local_module(setrun_path)
         self.rundata = setrun_module.setrun()
 
 
@@ -302,6 +431,7 @@ class ClawpackTestRunner:
         except subprocess.CalledProcessError as e:
             self.clean()
             raise e
+
 
         shutil.move(self.test_path / self.executable_name, self.temp_path)
 
