@@ -1,67 +1,120 @@
 r"""
-clawutil.util Module  `$CLAW/clawutil/src/python/clawutil/util.py`
+Utility helpers for ``clawutil``.
 
-Provides general utility functions.
-
-:Functions:
-
- - fullpath_import: import a module using its full path
-
+Functions
+---------
+fullpath_import
+    Import a Python module from an explicit filesystem path.
 """
 
-import os, sys
+from __future__ import annotations
+
 import importlib.util
+import random
+import string
+import sys
+import os
 from pathlib import Path
+from typing import Optional
 
 
-def fullpath_import(fullpath, verbose=False):
+__all__ = ["fullpath_import"]
+
+
+def _unique_module_name(path: Path) -> str:
+    """Return a collision-resistant temporary module name for ``path``."""
+    suffix = "".join(random.choices(string.ascii_letters + string.digits, k=32))
+    return f"{path.stem}_{suffix}"
+
+
+def fullpath_import(fullpath,
+                    module_name: Optional[str] = None,
+                    unique_name: bool = True,
+                    verbose: bool = False):
     """
-    Return a module imported from a full path name, e.g. if you have
-    a personal enhanced version of the geoclaw topotools module at
-    /full/path/to/topotools.py then instead of:
+    Import and return a module from a filesystem path.
+
+    This is useful for example-local helper files such as ``setrun.py`` or
+    ``maketopo.py`` that should be imported without relying on the package
+    import path.
+
+    Examples
+    --------
+    Instead of::
 
         from clawpack.geoclaw import topotools
 
-    use:
+    you can import a local file directly::
 
         from clawpack.clawutil.util import fullpath_import
         topotools = fullpath_import('/full/path/to/topotools.py')
 
-    Relative imports also work, e.g.
+    Relative paths also work::
 
-        topotools = fullpath_import('../topotools.py')
+        setrun = fullpath_import('../setrun.py')
 
-    To reload the module if you make changes to it, use this function again
-    (rather than using importlib.reload).
+    Environment variables and ``~`` are expanded, so this also works::
 
-    Input `fullpath` can also be a `pathlib.Path` object instead of a string.
+        setrun = fullpath_import('$CLAW/amrclaw/examples/advection_2d_swirl/setrun.py')
 
-    If `fullpath` is a string that starts with `$`, then the path is assumed
-    to start with an environment variable and this is resolved, if possible,
-    from `os.environ`.  For example, this works:
+    Parameters
+    ----------
+    fullpath : str or pathlib.Path
+        Path to a Python source file.
+    module_name : str, optional
+        Explicit module name to register in ``sys.modules``.  If provided, this
+        takes precedence over ``unique_name``.
+    unique_name : bool, default True
+        If True and ``module_name`` is not supplied, generate a collision-
+        resistant temporary module name instead of using the file stem.  This is
+        the safer default for test suites that may import many different files
+        named ``setrun.py`` or ``maketopo.py`` in the same Python session.
+    verbose : bool, default False
+        If True, print the loaded module path and module name.
 
-        setrun_file = '$CLAW/amrclaw/examples/advection_2d_swirl/setrun.py'
-        setrun = util.fullpath_import(setrun_file)
+    Returns
+    -------
+    module
+        Imported Python module object.
 
-    It also expands `~` and `~user` constructs and resolves symlinks.
+    Notes
+    -----
+    Calling this function again re-imports the module from disk.  This is often
+    more convenient for local helper files than using ``importlib.reload``.
+
+    Returns the imported module after registering it in ``sys.modules``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``fullpath`` does not exist.
+    ValueError
+        If ``fullpath`` does not point to a ``.py`` file.
+    ImportError
+        If an import specification cannot be created for the file.
     """
+    # Expand environment variables after string conversion so both strings and
+    # Path-like inputs are handled consistently, then expand ``~`` and resolve
+    # symlinks.
+    full_path = Path(os.path.expandvars(str(fullpath))).expanduser().resolve()
 
-    # expand any environment variables:
-    fullpath = os.path.expandvars(fullpath)
+    if not full_path.exists():
+        raise FileNotFoundError(f"Module file not found: {full_path}")
+    if full_path.suffix != ".py":
+        raise ValueError(f"Expected path to a .py file, got: {full_path}")
 
-    # convert to a Path object if necessary, expand user prefix `~`,
-    # and convert to absolute path, resolving any symlinks:
-    fullPath = Path(fullpath).expanduser().resolve()
+    if module_name is None:
+        module_name = _unique_module_name(full_path) if unique_name else full_path.stem
 
-    assert fullPath.suffix == '.py', '*** Expecting path to .py file'
+    spec = importlib.util.spec_from_file_location(module_name, full_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to create import spec for {full_path}")
 
-    fname = fullPath.name     # should be modname.py
-    modname = fullPath.stem   # without extension
-
-    spec = importlib.util.spec_from_file_location(modname, fullPath)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    sys.modules[modname] = module
+    sys.modules[module_name] = module
+
     if verbose:
-        print('loaded module from file: ',module.__file__)
+        print(f"loaded module '{module_name}' from file: {module.__file__}")
+
     return module

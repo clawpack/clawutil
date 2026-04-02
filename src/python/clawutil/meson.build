@@ -17,6 +17,7 @@ python_sources = [
   'runclaw.py',
   'setenv.py',
   'test.py',
+  'util.py',
   'whichclaw.py',
 ]
 

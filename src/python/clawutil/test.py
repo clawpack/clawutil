@@ -41,11 +41,8 @@ from pathlib import Path
 import os
 import sys
 import subprocess
-import importlib
 import shutil
 import inspect
-import random
-import string
 from collections.abc import Iterable
 from typing import Optional
 
@@ -53,6 +50,7 @@ import numpy as np
 
 import clawpack.clawutil.runclaw as runclaw
 import clawpack.clawutil.claw_git_status as claw_git_status
+import clawpack.clawutil.util as util
 import clawpack.pyclaw.solution as solution
 import clawpack.pyclaw.gauges as gauges
 
@@ -63,59 +61,6 @@ import unittest
 import time
 
 import glob
-
-
-def load_local_module(module_path: Path | str,
-                      module_name: Optional[str]=None):
-    r"""
-    Load a Python module from a local file path under a unique temporary name.
-
-    Parameters
-    ----------
-    module_path : pathlib.Path or str
-        Path to the Python source file to import.
-    module_name : str, optional
-        Module name to register in ``sys.modules``.  If omitted, a unique name
-        is generated from the file stem.
-
-    Returns
-    -------
-    module
-        Imported Python module object.
-
-    Notes
-    -----
-    This helper is intended for example-local setup helpers such as
-    ``maketopo.py`` or ``setrun.py`` that should be imported without creating
-    collisions in ``sys.modules`` when multiple tests are run in the same
-    Python session.
-
-    Raises
-    ------
-    FileNotFoundError
-        If ``module_path`` does not exist.
-    ImportError
-        If the module spec cannot be created.
-    """
-    module_path = Path(module_path)
-    if not module_path.exists():
-        raise FileNotFoundError(f"Local module not found: {module_path}")
-
-    if module_name is None:
-        module_name = "_".join((
-            module_path.stem,
-            "".join(random.choices(string.ascii_letters + string.digits, k=32)),
-        ))
-
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Unable to create import spec for {module_path}")
-
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module
-
 
 
 def run_example_for_test(runner_cls,
@@ -174,6 +119,9 @@ def run_example_for_test(runner_cls,
     adjoint workflows, where one example run produces output used by a second
     example run.
     """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     runner = runner_cls(output_dir, test_path=example_path)
 
     if set_data:
@@ -198,7 +146,7 @@ def run_example_for_test(runner_cls,
 
     return runner
 
-# TODO: Update documentation
+
 class ClawpackTestRunner:
     r"""
     Helper for pytest-based Clawpack regression tests.
@@ -295,7 +243,7 @@ class ClawpackTestRunner:
         if not setrun_path:
             setrun_path = Path(self.test_path) / "setrun.py"
 
-        setrun_module = load_local_module(setrun_path)
+        setrun_module = util.fullpath_import(setrun_path)
         self.rundata = setrun_module.setrun()
 
 
@@ -314,10 +262,16 @@ class ClawpackTestRunner:
         This method expects :meth:`set_data` to have been called already.  Tests
         commonly modify values in ``self.rundata`` before calling this method in
         order to reduce run time or adjust output times for regression checks.
+
+        The destination directory is created automatically if it does not yet
+        exist.  This makes it safe to write data files into fresh subdirectories
+        such as ``tmp_path / "_adjoint_output"`` used by multi-stage tests.
         """
         
         if not path:
             path = self.temp_path
+        path = Path(path)
+        path.mkdir(parents=True, exist_ok=True)
         self.rundata.write(out_dir=path)
 
 
