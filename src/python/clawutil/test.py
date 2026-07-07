@@ -219,7 +219,7 @@ class ClawpackTestRunner:
         self.verbose = False
 
 
-    def set_data(self, setrun_path: Optional[Path]=None):
+    def set_data(self, setrun_path: Optional[Path]=None, **setrun_kwargs):
         r"""
         Load ``rundata`` from a ``setrun.py`` file.
 
@@ -228,6 +228,13 @@ class ClawpackTestRunner:
         setrun_path : pathlib.Path, optional
             Path to the ``setrun.py`` file to import.  If omitted, the runner
             uses ``test_path / "setrun.py"``.
+        **setrun_kwargs
+            Additional keyword arguments passed through to the ``setrun.py``
+            file's ``setrun`` function.  This allows tests to redirect
+            example-specific behavior, such as where a ``setrun.py`` file
+            downloads remote topography, into a pytest-managed directory
+            (e.g. a shared ``download_cache`` fixture) instead of a
+            hardcoded scratch directory.
 
         Notes
         -----
@@ -244,7 +251,7 @@ class ClawpackTestRunner:
             setrun_path = Path(self.test_path) / "setrun.py"
 
         setrun_module = util.fullpath_import(setrun_path)
-        self.rundata = setrun_module.setrun()
+        self.rundata = setrun_module.setrun(**setrun_kwargs)
 
 
     def write_data(self, path: Optional[Path]=None):
