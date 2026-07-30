@@ -538,6 +538,14 @@ class ClawRunData(ClawData):
                 self.add_data(geoclaw.FGmaxData(),'fgmax_data')
                 self.add_data(geoclaw.QinitData(),'qinit_data')
                 self.add_data(geoclaw.SurgeData(),'surge_data')
+                # ``rundata.met_data`` is an alias for the same object as
+                # ``rundata.surge_data`` (the meteorological-forcing name; the
+                # data still writes to ``surge.data``).  It is added via
+                # ``add_attribute`` rather than ``add_data`` so it is not a
+                # second entry in ``data_list`` -- only one file is written.
+                # Mutate in place (``rundata.met_data.wind_forcing = True``);
+                # reassigning ``rundata.met_data`` will not propagate.
+                self.add_attribute('met_data', self.surge_data)
                 self.add_data(geoclaw.FrictionData(),'friction_data')
                 self.add_data(geoclaw.MultilayerData(), 'multilayer_data')
             elif num_dim == 1:
