@@ -8,7 +8,10 @@ python_sources = [
   'clawcode2html.py',
   'claw_git_status.py',
   'clawmultip_tools.py',
-  'convert_readme.py',
+  # convert_readme.py is deliberately not installed: its body runs at import
+  # (it reads README.rst from the working directory, or calls sys.exit), so it
+  # cannot be used as a module.  Makefile.common, apps/notebooks/Makefile and
+  # doc's application_documentation.rst all invoke it by $CLAW path instead.
   'data.py',
   'git.py',
   'imagediff.py',
