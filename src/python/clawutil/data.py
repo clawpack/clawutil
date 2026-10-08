@@ -476,6 +476,22 @@ class ClawData(object):
 # ==============================================================================
 
 
+def _make_dim_aware(cls, num_dim):
+    r"""Construct *cls*, passing ``num_dim`` if the class accepts it.
+
+    ``geoclaw.TopographyData`` and ``geoclaw.DTopoData`` gained a ``num_dim``
+    argument so they can emit the topo.data / dtopo.data layouts the 1D Fortran
+    readers expect, which differ from the 2D ones.  A geoclaw predating that
+    takes no argument, and mixed clawutil/geoclaw checkouts are routine during
+    development, so fall back rather than breaking every geoclaw setrun.  Drop
+    this once the geoclaw requirement catches up.
+    """
+    try:
+        return cls(num_dim=num_dim)
+    except TypeError:
+        return cls()
+
+
 # ==============================================================================
 # Clawpack input data classes
 class ClawRunData(ClawData):
@@ -521,8 +537,10 @@ class ClawRunData(ClawData):
             # Required data set for basic run parameters:
             self.add_data(geoclaw.GeoClawData(),('geo_data'))
             self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
-            self.add_data(geoclaw.TopographyData(),'topo_data')
-            self.add_data(geoclaw.DTopoData(),'dtopo_data')
+            self.add_data(_make_dim_aware(geoclaw.TopographyData, num_dim),
+                          'topo_data')
+            self.add_data(_make_dim_aware(geoclaw.DTopoData, num_dim),
+                          'dtopo_data')
             #self.add_data(geoclaw.BoussData(), 'bouss_data') # add to setrun
 
             if num_dim == 2:
@@ -567,8 +585,10 @@ class ClawRunData(ClawData):
             # Required data set for basic run parameters:
             self.add_data(geoclaw.GeoClawData(),('geo_data'))
             self.add_data(amrclaw.GaugeData(num_dim=num_dim),'gaugedata')
-            self.add_data(geoclaw.TopographyData(),'topo_data')
-            self.add_data(geoclaw.DTopoData(),'dtopo_data')
+            self.add_data(_make_dim_aware(geoclaw.TopographyData, num_dim),
+                          'topo_data')
+            self.add_data(_make_dim_aware(geoclaw.DTopoData, num_dim),
+                          'dtopo_data')
 
             if num_dim == 2:
                 # options not available in 1d:
