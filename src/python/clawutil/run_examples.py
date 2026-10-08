@@ -8,24 +8,34 @@ Two files
     make_all_errors.txt
 will be created that contain the output normally sent to the screen and any
 error messages from running the examples.
+
+Invoke either as a script or, once Clawpack is installed, with
+
+    python -m clawpack.clawutil.run_examples
 """
 
 from clawpack.clawutil import make_all
 import os
 
-# run examples with the user's current environment by default:
-env = os.environ
+# Guarded so that importing this module does not build and run every example
+# in the current directory -- it is installed alongside the rest of clawutil,
+# and anything that imports the package (autodoc, an import check) would
+# otherwise trigger a full run.
+if __name__ == '__main__':
 
-# Explicitly set some environment variables, if desired, e.g.:
-#env['GIT_STATUS'] = 'True'
-#env['FFLAGS'] = '-O2 -fopenmp'
-#env['OMP_NUM_THREADS'] = '6'
+    # run examples with the user's current environment by default:
+    env = os.environ
 
-make_all.make_all(make_clean_first=True, env=env)
+    # Explicitly set some environment variables, if desired, e.g.:
+    #env['GIT_STATUS'] = 'True'
+    #env['FFLAGS'] = '-O2 -fopenmp'
+    #env['OMP_NUM_THREADS'] = '6'
 
-run_notebooks = True  # run any *.ipynb files and create html versions?
+    make_all.make_all(make_clean_first=True, env=env)
 
-if run_notebooks:
-    make_all.make_notebook_htmls(env=env)
+    run_notebooks = True  # run any *.ipynb files and create html versions?
+
+    if run_notebooks:
+        make_all.make_notebook_htmls(env=env)
 
 
