@@ -397,9 +397,18 @@ class ClawpackTestRunner:
         shutil.move(self.test_path / self.executable_name, self.temp_path)
 
 
-    def run_code(self):
+    def run_code(self, runexe: Optional[str]=None):
         r"""
         Run the compiled example in the temporary working directory.
+
+        Parameters
+        ----------
+        runexe : str, optional
+            Command prefix used to launch the executable, passed through to
+            :func:`clawpack.clawutil.runclaw.runclaw`.  For example,
+            ``"mpiexec -n 2"`` for codes that must run under MPI, such as the
+            GeoClaw Boussinesq solvers.  It plays the role of ``RUNEXE`` in an
+            example ``Makefile``.  If omitted, the executable is run directly.
 
         Notes
         -----
@@ -420,7 +429,8 @@ class ClawpackTestRunner:
                         rundir=self.temp_path,
                         outdir=self.temp_path,
                         overwrite=True,
-                        restart=False)
+                        restart=False,
+                        runexe=runexe)
 
     def clean(self):
         r"""
