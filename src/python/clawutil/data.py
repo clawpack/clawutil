@@ -178,6 +178,36 @@ def get_remote_file(url, output_dir=None, file_name=None, force=False,
         return str(output_path)
 
 
+def _format_sequence(value, name=None):
+    r"""Format a 1-D tuple, list, or numpy array for a Fortran list read.
+
+    Elements are separated by single spaces.  Strings and paths are quoted.
+    Every other element is written with `str` of the element itself, not of
+    the container: `str` of a list uses `repr` of its elements (giving e.g.
+    `np.int64(1)` or `PosixPath('a')`), and `str` of a numpy array rounds to
+    8 significant digits, wraps long lines and elides large arrays with `...`.
+    `str` of a Python or numpy scalar is the shortest string that reads back
+    to the same value.
+
+    Multi-dimensional input raises `ValueError` since the Fortran ordering
+    expected by the reader is not known here.
+    """
+    if isinstance(value, np.ndarray) and value.ndim == 0:
+        return str(value[()])
+    if isinstance(value, np.ndarray) and value.ndim > 1:
+        raise ValueError(f"Cannot write {value.ndim}-D array for {name}, "
+                         "only 1-D values are supported.")
+    elements = []
+    for element in value:
+        if isinstance(element, (tuple, list, np.ndarray)):
+            raise ValueError(f"Cannot write nested sequence for {name}, "
+                             "only 1-D values are supported.")
+        if isinstance(element, (str, Path)):
+            elements.append(f"'{element}'")
+        else:
+            elements.append(str(element))
+    return " ".join(elements)
+
 
 # ==============================================================================
 #  Base data class for Clawpack data objects
@@ -373,9 +403,11 @@ class ClawData(object):
             try:
                 import pandas as pd
                 if isinstance(value, pd.DataFrame):
-                    # This may not always be the right thing to do, but works
-                    # for a basic 1D array
-                    value = value.to_numpy().flatten()
+                    # Only a single row or column is unambiguous, anything
+                    # else is rejected below as multi-dimensional
+                    value = value.to_numpy()
+                    if 1 in value.shape:
+                        value = value.flatten()
             except ImportError as e:
                 if "pandas" not in e.msg:
                     raise e
@@ -388,10 +420,8 @@ class ClawData(object):
                     raise e
 
             # Convert value to an appropriate string
-            if (isinstance(value, tuple) | isinstance(value, list)
-                                         | isinstance(value, np.ndarray)):
-                # Remove [], (), and ','
-                string_value = str(value)[1:-1].replace(',', '')
+            if isinstance(value, (tuple, list, np.ndarray)):
+                string_value = _format_sequence(value, alt_name)
             elif isinstance(value, bool):
                 if value:
                     string_value = 'T'
